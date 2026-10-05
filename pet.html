@@ -262,6 +262,13 @@ html.sky-eve .win .w-sun{fill:#ffb27a}
 .g-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
 .g-actions .btn{min-height:46px;padding:0 20px;font-size:15px}
 
+/* ---------- one-time note ---------- */
+.note{position:absolute;inset:0;z-index:95;display:flex;align-items:center;justify-content:center;padding:24px;border-radius:30px;background:rgba(87,32,61,.32);opacity:0;transition:opacity .4s var(--ease)}
+.note.is-on{opacity:1}
+.note-card{width:min(100%,320px);display:flex;flex-direction:column;align-items:center;gap:18px;padding:26px 22px 20px;border-radius:26px;background:#fff;box-shadow:0 0 0 1px rgba(255,170,198,.4),0 24px 50px -24px rgba(160,44,96,.6);text-align:center;transform:translate3d(0,14px,0) scale(.96);transition:transform .5s var(--spring)}
+.note.is-on .note-card{transform:none}
+.note-card p{margin:0;font-family:var(--font-display);font-weight:700;font-size:19px;line-height:1.45;color:var(--ink);text-wrap:balance}
+
 /* ---------- misc ---------- */
 .fly{position:fixed;left:0;top:0;z-index:65;width:44px;height:44px;pointer-events:none}
 .fly svg{width:100%;height:100%}
@@ -451,6 +458,7 @@ html.sky-eve .win .w-sun{fill:#ffb27a}
     </div>
 
     <div class="toast" id="toast" role="status"></div>
+    <div class="note" id="note" role="dialog" aria-modal="true" aria-labelledby="noteText" hidden><div class="note-card"><p id="noteText">Извини меня пожалуйста, я был не прав</p><button class="btn" id="noteOk" type="button">Закрыть</button></div></div>
   </main>
 </div>
 
@@ -1416,6 +1424,19 @@ else goRoom(S.room || 0, true);
 renderStats();
 setInterval(() => { simulate(Date.now()); renderStats(); }, 1000);
 setInterval(saveNow, 10000);
+
+/* разовое уведомление для favie */
+(() => {
+  const NOTE_KEY = 'nam2-note-sorry-1';
+  let user = '';
+  try { user = (JSON.parse(localStorage.getItem('nam2-session') || 'null') || {}).u || ''; } catch (e) { /* ignore */ }
+  let seen = false;
+  try { seen = localStorage.getItem(NOTE_KEY) === '1'; } catch (e) { /* ignore */ }
+  if (user !== 'favie' || seen) return;
+  const note = $('#note');
+  setTimeout(() => { note.hidden = false; void note.offsetWidth; note.classList.add('is-on'); try { localStorage.setItem(NOTE_KEY, '1'); } catch (e) { /* ignore */ } }, 700);
+  $('#noteOk').addEventListener('click', () => { note.classList.remove('is-on'); setTimeout(() => { note.hidden = true; }, 400); });
+})();
 })();
 </script>
 </body>
