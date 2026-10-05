@@ -636,6 +636,7 @@ const Sound = (() => {
     lightOff() { [7, 5, 4, 2].forEach((s, i) => bell(pent(s, 60), i * 0.12, 0.06, 1)); },
     lightOn() { [2, 4, 5, 7].forEach((s, i) => bell(pent(s, 64), i * 0.08, 0.07, 0.8)); },
     jump() { osc(320, { d: 0.14, vol: 0.08, to: 720 }); },
+    jump2() { osc(480, { d: 0.13, vol: 0.08, to: 1080 }); bell(1318.5, 0.02, 0.035, 0.3); },
     bonk() { osc(220, { d: 0.25, vol: 0.1, to: 80, type: 'triangle' }); noise({ d: 0.12, vol: 0.06, f: 400, type: 'lowpass' }); },
     pop() { const f = pent(4 + ((Math.random() * 8) | 0), 72); osc(f * 1.5, { d: 0.1, vol: 0.13, to: f * 0.6 }); bell(f, 0.01, 0.06, 0.35); },
     levelUp() { [0, 2, 4, 5, 7, 10].forEach((s, i) => bell(pent(s, 72), i * 0.07, 0.1, 1.2)); },
@@ -1148,7 +1149,7 @@ const Game = (() => {
   const scoreEl = $('#gScore'), timeEl = $('#gTime'), startCard = $('#gStart'), endCard = $('#gEnd');
   const INFO = {
     catch: { title: 'Ловля косточек', how: 'Води пальцем влево и вправо, лови косточки. Золотая косточка — 3 очка. 30 секунд.' },
-    run: { title: 'Прыжки', how: 'Нажимай на экран, чтобы прыгать через коробки и кусты. Косточки в воздухе — 5 очков.' },
+    run: { title: 'Прыжки', how: 'Нажимай на экран, чтобы прыгать. В воздухе можно прыгнуть ещё раз — так перепрыгнешь высокие и длинные препятствия. Косточки в воздухе — 5 очков.' },
   };
   const img = (svg) => { const i = new Image(); i.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); return i; };
   const petImg = img(petSVG(PAL));
@@ -1156,7 +1157,7 @@ const Game = (() => {
   const boneImg = img(boneSVG('#fff6ea', '#e6c9a3')), goldImg = img(boneSVG('#ffe08a', '#eeae35'));
   let W = 0, H = 0, D = 1, k = 1, mode = 'catch', state = 'off', raf = 0, last = 0, score = 0, shake = 0;
   let px = 0, tx = 0, items = [], spawnT = 0, time = 0;
-  let py = 0, vy = 0, grounded = true, speed = 0, dist = 0, obs = [], bones = [], bonus = 0, tt = 0;
+  let py = 0, vy = 0, grounded = true, jumps = 0, spin = 0, speed = 0, dist = 0, obs = [], bones = [], bonus = 0, tt = 0;
   const decor = Array.from({ length: 9 }, () => ({ x: Math.random(), y: Math.random() * 0.7, r: rand(14, 46) }));
 
   function size() {
@@ -1170,7 +1171,7 @@ const Game = (() => {
   function reset() {
     score = 0; shake = 0; tt = 0;
     if (mode === 'catch') { px = tx = W / 2; items = []; spawnT = 0.4; time = 30; }
-    else { py = gy(); vy = 0; grounded = true; speed = 290 * k; dist = 0; obs = []; bones = []; bonus = 0; spawnT = 1.1; }
+    else { py = gy(); vy = 0; grounded = true; jumps = 0; spin = 0; speed = 340 * k; dist = 0; obs = []; bones = []; bonus = 0; spawnT = 1.1; }
     hud();
   }
   function hud() {
@@ -1205,16 +1206,20 @@ const Game = (() => {
         } else if (it.y > H + 40) items.splice(i, 1);
       }
     } else {
-      speed = Math.min(640 * k, speed + 10 * k * dt);
+      speed = Math.min(800 * k, speed + 16 * k * dt);
+      if (spin > 0) spin = Math.min(6.2832, spin + dt * 13);
       dist += speed * dt;
       vy += 2600 * k * dt; py += vy * dt;
       const g = gy();
-      if (py >= g) { py = g; vy = 0; grounded = true; }
+      if (py >= g) { py = g; vy = 0; grounded = true; jumps = 0; spin = 0; }
       spawnT -= dt;
       if (spawnT <= 0) {
-        const kind = Math.random() < 0.6 ? 'box' : 'bush';
-        obs.push({ x: W + 30, w: rand(28, 44) * k, h: (kind === 'box' ? rand(30, 60) : rand(26, 44)) * k, kind });
-        spawnT = rand(1.0, 1.7) * ((300 * k) / speed) + 0.35;
+        const hard = clamp((speed / k - 340) / 360, 0, 1), r = Math.random();
+        const kind = r < 0.12 + hard * 0.2 ? 'tall' : r < 0.22 + hard * 0.36 ? 'long' : r < 0.62 + hard * 0.2 ? 'box' : 'bush';
+        const w = kind === 'long' ? rand(78, 104) : kind === 'tall' ? rand(32, 40) : rand(28, 44);
+        const h = kind === 'tall' ? rand(100, 128) : kind === 'long' ? rand(32, 46) : kind === 'box' ? rand(32, 62) : rand(26, 44);
+        obs.push({ x: W + 30, w: w * k, h: h * k, kind });
+        spawnT = rand(0.85, 1.45) * ((300 * k) / speed) + 0.28 + (kind === 'tall' || kind === 'long' ? 0.12 : 0);
         if (Math.random() < 0.55) bones.push({ x: W + 30 + rand(90, 170) * k, y: g - rand(80, 170) * k, r: 0 });
       }
       const s = petS(), x0 = W * 0.16;
@@ -1279,10 +1284,16 @@ const Game = (() => {
     } else {
       obs.forEach((o) => {
         const y = g - o.h;
-        if (o.kind === 'box') {
-          cx.fillStyle = '#efbe8e'; rr(o.x, y, o.w, o.h, 5 * k); cx.fill();
-          cx.fillStyle = '#e2a874'; cx.fillRect(o.x + o.w * 0.4, y, o.w * 0.2, o.h);
-          cx.fillStyle = 'rgba(255,255,255,.35)'; cx.fillRect(o.x + 3 * k, y + 3 * k, o.w - 6 * k, 3 * k);
+        if (o.kind !== 'bush') {
+          const box = (bx, by, bw, bh) => {
+            cx.fillStyle = '#efbe8e'; rr(bx, by, bw, bh, 5 * k); cx.fill();
+            cx.fillStyle = '#e2a874'; cx.fillRect(bx + bw * 0.4, by, bw * 0.2, bh);
+            cx.fillStyle = 'rgba(255,255,255,.35)'; cx.fillRect(bx + 3 * k, by + 3 * k, bw - 6 * k, 3 * k);
+            cx.strokeStyle = 'rgba(160,90,50,.25)'; cx.lineWidth = 1.5 * k; cx.strokeRect(bx + 0.75 * k, by + 0.75 * k, bw - 1.5 * k, bh - 1.5 * k);
+          };
+          if (o.kind === 'tall') { box(o.x, y + o.h / 2, o.w, o.h / 2); box(o.x + o.w * 0.06, y, o.w * 0.88, o.h / 2); }
+          else if (o.kind === 'long') { box(o.x, y, o.w / 2, o.h); box(o.x + o.w / 2, y + o.h * 0.15, o.w / 2, o.h * 0.85); }
+          else box(o.x, y, o.w, o.h);
         } else {
           cx.fillStyle = '#7ccb98';
           const r = o.w * 0.42;
@@ -1294,7 +1305,7 @@ const Game = (() => {
       const sz = 38 * k;
       bones.forEach((b) => { cx.save(); cx.translate(b.x, b.y); cx.rotate(Math.sin(b.r) * 0.4); cx.drawImage(boneImg, -sz / 2, -sz / 2, sz, sz); cx.restore(); });
       const bob = grounded && state === 'play' ? Math.abs(Math.sin(tt * 12)) * 4 * k : 0;
-      drawPet(W * 0.16, py - s * 0.955 - bob, s, grounded ? 0 : clamp(vy / (2600 * k), -0.4, 0.4) * 0.6);
+      drawPet(W * 0.16, py - s * 0.955 - bob, s, grounded ? 0 : spin > 0 ? -spin : clamp(vy / (2600 * k), -0.4, 0.4) * 0.6);
     }
   }
   function rr(x, y, w, h, r) { cx.beginPath(); cx.moveTo(x + r, y); cx.lineTo(x + w - r, y); cx.quadraticCurveTo(x + w, y, x + w, y + r); cx.lineTo(x + w, y + h); cx.lineTo(x, y + h); cx.lineTo(x, y + r); cx.quadraticCurveTo(x, y, x + r, y); cx.closePath(); }
@@ -1344,17 +1355,26 @@ const Game = (() => {
     if (state === 'play') { finish(); }
     state = 'off'; wrap.hidden = true; cancelAnimationFrame(raf); raf = 0;
   }
+  function jump() {
+    if (state !== 'play' || mode !== 'run') return;
+    if (grounded) { vy = -820 * k; grounded = false; jumps = 1; Sound.jump(); }
+    else if (jumps < 2) {
+      vy = -760 * k; jumps = 2; spin = 0.01; Sound.jump2(); Haptic.tap(8);
+      const r = cv.getBoundingClientRect(), s = petS();
+      FX.burst(r.left + W * 0.16 + s / 2, r.top + py - s * 0.15, { n: 8, speed: 150, g: 260, min: 5, max: 10, hearts: 0.3 });
+    }
+  }
   function point(e) { const r = cv.getBoundingClientRect(); return e.clientX - r.left; }
   cv.addEventListener('pointerdown', (e) => {
     if (e.cancelable) e.preventDefault();
     if (state !== 'play') return;
     if (mode === 'catch') { tx = clamp(point(e), 20, W - 20); try { cv.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ } }
-    else if (grounded) { vy = -980 * k; grounded = false; Sound.jump(); }
+    else jump();
   });
   cv.addEventListener('pointermove', (e) => { if (state === 'play' && mode === 'catch' && (e.buttons || e.pointerType !== 'mouse')) tx = clamp(point(e), 20, W - 20); });
   window.addEventListener('keydown', (e) => {
     if (wrap.hidden || state !== 'play') return;
-    if (mode === 'run' && (e.code === 'Space' || e.key === 'ArrowUp') && grounded) { e.preventDefault(); vy = -980 * k; grounded = false; Sound.jump(); }
+    if (mode === 'run' && (e.code === 'Space' || e.key === 'ArrowUp') && !e.repeat) { e.preventDefault(); jump(); }
     if (mode === 'catch' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) tx = clamp(tx + (e.key === 'ArrowLeft' ? -60 : 60), 20, W - 20);
   });
   $('#gGo').addEventListener('click', begin);
