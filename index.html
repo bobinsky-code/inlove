@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffe9f0">
+<title>Вход</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<script>
+(function () { var l = document.createElement('link'); l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Nunito:wght@600..800&display=swap';
+  document.head.appendChild(l); })();
+/* уже вошли — сразу на главную */
+(function () { try { var t = JSON.parse(localStorage.getItem('nam2-session') || 'null');
+  var ok = ['06fa86697704c28dd78f8b1a68524b5a614fd36d7093b7340d0d38eeff3fc083', 'd90e464ee19f40e230422dfc18fe94ba3e3b00182a6fb7dad12cf19ccdd860bb'];
+  if (t && ok.indexOf(t.t) !== -1) location.replace('home.html'); } catch (e) {} })();
+</script>
+<style>
+:root{
+  --rose:#ff7ea6; --rose-deep:#e64f7e; --ink:#57203d; --ink-soft:#8d5a74;
+  --font-display:'Comfortaa',ui-rounded,'Nunito',system-ui,sans-serif;
+  --font-body:'Nunito',ui-rounded,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --ease:cubic-bezier(.22,1,.36,1);
+  color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{background:#ffe7ef}
+body{margin:0;min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:max(14px,env(safe-area-inset-top)) 14px max(14px,env(safe-area-inset-bottom));background:linear-gradient(168deg,#fff4f8 0%,#ffe7ef 45%,#ffd8e5 100%);color:var(--ink);font-family:var(--font-body);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+.card{width:100%;max-width:400px;border-radius:34px;padding:36px 22px 30px;background:linear-gradient(180deg,#fffdfe 0%,#fff7fa 55%,#fff1f6 100%);box-shadow:0 0 0 1px rgba(255,160,192,.32),inset 0 1px 0 #fff,0 38px 80px -32px rgba(206,58,110,.42),0 16px 32px -18px rgba(206,58,110,.3)}
+h1{margin:0 0 24px;text-align:center;font-family:var(--font-display);font-size:28px}
+form{display:flex;flex-direction:column;gap:16px}
+label{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:14px;color:var(--ink-soft)}
+input{width:100%;height:52px;padding:0 16px;border:0;border-radius:16px;background:#fff;box-shadow:0 0 0 1.5px rgba(255,170,198,.55);font:600 17px var(--font-body);color:var(--ink);outline:none;transition:box-shadow .2s var(--ease);-webkit-appearance:none;appearance:none}
+input:focus{box-shadow:0 0 0 2.5px var(--rose)}
+.err input{box-shadow:0 0 0 2px var(--rose-deep)}
+.msg{min-height:20px;margin:-4px 0 0;font-weight:700;font-size:14px;color:var(--rose-deep);text-align:center}
+button{height:54px;margin-top:4px;border:0;border-radius:999px;background:linear-gradient(180deg,#ff97b8 0%,#ff6795 100%);color:#fff;font:700 17px var(--font-display);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 14px 26px -12px rgba(230,79,126,.8);cursor:pointer;touch-action:manipulation;transition:transform .2s var(--ease)}
+button:active{transform:scale(.96)}
+button:disabled{opacity:.7}
+.shake{animation:shake .4s ease-in-out}
+@keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+</style>
+</head>
+<body>
+<main class="card" id="card">
+  <h1>Вход</h1>
+  <form id="form" novalidate>
+    <label>Логин<input id="login" name="login" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required></label>
+    <label>Пароль<input id="password" name="password" type="password" autocomplete="current-password" required></label>
+    <p class="msg" id="msg" role="alert"></p>
+    <button type="submit" id="btn">Войти</button>
+  </form>
+</main>
+<script>
+(() => {
+'use strict';
+// SHA-256("nam2|логин|пароль") — пароли в коде не хранятся
+const USERS = {
+  bob: '06fa86697704c28dd78f8b1a68524b5a614fd36d7093b7340d0d38eeff3fc083',
+  favie: 'd90e464ee19f40e230422dfc18fe94ba3e3b00182a6fb7dad12cf19ccdd860bb',
+};
+const form = document.getElementById('form'), msg = document.getElementById('msg'), btn = document.getElementById('btn'), card = document.getElementById('card');
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+function fail(text) {
+  msg.textContent = text; form.classList.add('err');
+  card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+}
+form.addEventListener('input', () => { msg.textContent = ''; form.classList.remove('err'); });
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const login = form.login.value.trim().toLowerCase(), pass = form.password.value;
+  if (!login || !pass) return fail('Введите логин и пароль');
+  if (!window.crypto || !crypto.subtle) return fail('Откройте сайт по https');
+  btn.disabled = true;
+  try {
+    const h = await sha256('nam2|' + login + '|' + pass);
+    if (USERS[login] && USERS[login] === h) {
+      try { localStorage.setItem('nam2-session', JSON.stringify({ u: login, t: h })); } catch (err) { /* ignore */ }
+      location.replace('home.html');
+      return;
+    }
+    fail('Неверный логин или пароль');
+  } finally { btn.disabled = false; }
+});
+})();
+</script>
+</body>
+</html>

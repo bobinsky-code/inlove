@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffe9f0">
+<title>Мы вместе</title>
+<script>
+/* без входа — на страницу входа */
+(function () { var ok = false; try { var t = JSON.parse(localStorage.getItem('nam2-session') || 'null');
+  ok = !!t && ['06fa86697704c28dd78f8b1a68524b5a614fd36d7093b7340d0d38eeff3fc083', 'd90e464ee19f40e230422dfc18fe94ba3e3b00182a6fb7dad12cf19ccdd860bb'].indexOf(t.t) !== -1; } catch (e) {}
+  if (!ok) location.replace('index.html'); })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<script>
+(function () { var l = document.createElement('link'); l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Comfortaa:wght@700&family=Nunito:wght@600..800&display=swap';
+  document.head.appendChild(l); })();
+</script>
+<style>
+:root{
+  /* Layout: the same rounded pink card as the gift; a live "together for" clock on top, the next anniversary below, then milestones. */
+  --ground:#ffe9f0; --rose:#ff7ea6; --rose-deep:#e64f7e; --ink:#57203d; --ink-soft:#8d5a74; --honey:#ffc978;
+  --font-display:'Comfortaa',ui-rounded,'Nunito',system-ui,sans-serif;
+  --font-body:'Nunito',ui-rounded,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-hand:'Caveat','Segoe Print','Bradley Hand',cursive;
+  --ease:cubic-bezier(.22,1,.36,1); --spring:cubic-bezier(.34,1.56,.64,1);
+  color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+html{background:#ffe7ef}
+body{background:transparent;color:var(--ink);font-family:var(--font-body);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;padding:max(14px,env(safe-area-inset-top)) 14px max(14px,env(safe-area-inset-bottom));min-height:100vh;min-height:100dvh;display:flex;justify-content:center}
+.bg{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0;background:linear-gradient(168deg,#fff4f8 0%,#ffe7ef 45%,#ffd8e5 100%)}
+.fl{position:absolute;bottom:-40px;animation:rise linear infinite}
+.fl svg{display:block;width:100%;height:100%;animation:sway 4s ease-in-out infinite alternate}
+@keyframes rise{to{transform:translate3d(0,calc(-100vh - 90px),0)}}
+@keyframes sway{from{transform:translateX(-12px) rotate(-12deg)}to{transform:translateX(12px) rotate(12deg)}}
+.card{position:relative;z-index:1;width:100%;max-width:430px;border-radius:34px;padding:34px 20px 30px;background:linear-gradient(180deg,#fffdfe 0%,#fff7fa 55%,#fff1f6 100%);box-shadow:0 0 0 1px rgba(255,160,192,.32),inset 0 1px 0 #fff,0 38px 80px -32px rgba(206,58,110,.42),0 16px 32px -18px rgba(206,58,110,.3);display:flex;flex-direction:column;align-items:center;gap:26px;text-align:center;align-self:flex-start}
+.head{display:flex;flex-direction:column;align-items:center;gap:6px}
+.heart{width:46px;height:46px;fill:var(--rose);filter:drop-shadow(0 6px 10px rgba(230,79,126,.35));animation:beat 1.3s ease-in-out infinite}
+@keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.14)}30%{transform:scale(.98)}45%{transform:scale(1.07)}}
+h1{margin:6px 0 0;font-family:var(--font-display);font-size:28px;letter-spacing:-.01em}
+.since{margin:0;font-family:var(--font-hand);font-weight:500;font-size:22px;color:var(--ink-soft)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
+.tile{border-radius:20px;padding:14px 4px 12px;background:#fff;box-shadow:0 0 0 1px rgba(255,170,198,.35),0 10px 20px -14px rgba(206,58,110,.55)}
+.tile b{display:block;font-family:var(--font-display);font-weight:700;font-size:34px;line-height:1.05;color:var(--rose-deep);font-variant-numeric:tabular-nums}
+.tile span{display:block;margin-top:4px;font-weight:700;font-size:13px;color:var(--ink-soft)}
+.tile.tick b{animation:tick .45s var(--spring)}
+@keyframes tick{0%{transform:scale(1.18)}100%{transform:scale(1)}}
+.totals{margin:-6px 0 0;font-weight:600;font-size:15px;line-height:1.6;color:var(--ink-soft)}
+.totals b{color:var(--ink);font-variant-numeric:tabular-nums}
+.box{width:100%;border-radius:24px;padding:18px 18px 20px;background:linear-gradient(180deg,#ffeef4,#fff6f9);box-shadow:inset 0 0 0 1px rgba(255,170,198,.4);text-align:left}
+.box h2{margin:0 0 4px;font-family:var(--font-display);font-size:18px}
+.next-left{margin:0 0 12px;font-weight:700;font-size:15px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.meter{height:12px;border-radius:999px;background:#ffdce7;overflow:hidden}
+.meter i{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,#ffa7c2,#ff6795);transition:width 1s var(--ease)}
+.pct{display:flex;justify-content:space-between;margin-top:6px;font-weight:700;font-size:13px;color:var(--ink-soft)}
+ul{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:16px;background:#fff;box-shadow:0 0 0 1px rgba(255,170,198,.3)}
+li svg{flex:none;width:26px;height:26px;fill:none;stroke:#ffb6cb;stroke-width:2}
+li.done svg{fill:var(--rose);stroke:var(--rose)}
+li div{min-width:0;flex:1}
+li strong{display:block;font-size:15px}
+li small{display:block;font-weight:600;font-size:13px;color:var(--ink-soft)}
+li em{flex:none;font-style:normal;font-weight:800;font-size:12px;color:var(--rose-deep);background:#ffeef4;padding:4px 8px;border-radius:999px}
+li.done em{background:var(--rose);color:#fff}
+.foot{margin:0;font-family:var(--font-hand);font-size:22px;color:var(--rose-deep)}
+@media (prefers-reduced-motion:reduce){.fl,.fl svg,.heart{animation:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs><path id="ht" d="M12 21.2c-.32 0-.63-.11-.88-.32C6.86 17.32 2 13.4 2 8.66 2 5.53 4.42 3 7.43 3c1.86 0 3.53.98 4.57 2.47C13.04 3.98 14.71 3 16.57 3 19.58 3 22 5.53 22 8.66c0 4.74-4.86 8.66-9.12 12.22-.25.21-.56.32-.88.32z"/></defs></svg>
+<div class="bg" id="bg" aria-hidden="true"></div>
+
+<main class="card">
+  <header class="head">
+    <svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><use href="#ht"/></svg>
+    <h1>Мы вместе</h1>
+    <p class="since">с 4 октября 2024, примерно с&nbsp;19:00</p>
+  </header>
+
+  <section class="grid" aria-label="Сколько мы вместе" aria-live="off">
+    <div class="tile"><b id="y">0</b><span id="yL">лет</span></div>
+    <div class="tile"><b id="mo">0</b><span id="moL">месяцев</span></div>
+    <div class="tile"><b id="d">0</b><span id="dL">дней</span></div>
+    <div class="tile"><b id="h">0</b><span id="hL">часов</span></div>
+    <div class="tile"><b id="mi">0</b><span id="miL">минут</span></div>
+    <div class="tile" id="sTile"><b id="s">0</b><span id="sL">секунд</span></div>
+  </section>
+
+  <p class="totals">Это уже <b id="tDays">0</b> <span id="tDaysL">дней</span>,<br><b id="tHours">0</b> <span id="tHoursL">часов</span> или <b id="tMin">0</b> <span id="tMinL">минут</span></p>
+
+  <section class="box">
+    <h2 id="nextTitle">До 3 лет</h2>
+    <p class="next-left" id="nextLeft">…</p>
+    <div class="meter"><i id="bar"></i></div>
+    <div class="pct"><span id="from">4 окт 2026</span><span id="pct">0%</span><span id="to">4 окт 2027</span></div>
+  </section>
+
+  <section class="box">
+    <h2>Наши рубежи</h2>
+    <ul id="ms"></ul>
+  </section>
+
+  <p class="foot">и это только начало 💗</p>
+</main>
+
+<script>
+(() => {
+'use strict';
+/* Начало отношений: 4 октября 2024, 19:00 по Москве (UTC+3) */
+const START = Date.UTC(2024, 9, 4, 16, 0, 0);
+const MSK = 3 * 3600e3;
+const $ = (id) => document.getElementById(id);
+const nf = new Intl.NumberFormat('ru-RU');
+const plural = (n, one, few, many) => { const a = Math.abs(n) % 100, b = a % 10; return a > 10 && a < 20 ? many : b === 1 ? one : b > 1 && b < 5 ? few : many; };
+const W = {
+  y: ['год', 'года', 'лет'], mo: ['месяц', 'месяца', 'месяцев'], d: ['день', 'дня', 'дней'],
+  h: ['час', 'часа', 'часов'], mi: ['минута', 'минуты', 'минут'], s: ['секунда', 'секунды', 'секунд'],
+};
+const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+const MONTHS_FULL = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+// work in Moscow wall-clock time, expressed through UTC getters
+const msk = (t) => new Date(t + MSK);
+const fromMsk = (y, m, d, h, mi, s) => Date.UTC(y, m, d, h || 0, mi || 0, s || 0) - MSK;
+const s0 = msk(START);
+const addYears = (n) => fromMsk(s0.getUTCFullYear() + n, s0.getUTCMonth(), s0.getUTCDate(), s0.getUTCHours());
+const fmtDate = (t, full) => { const d = msk(t); return d.getUTCDate() + ' ' + (full ? MONTHS_FULL : MONTHS)[d.getUTCMonth()] + ' ' + d.getUTCFullYear(); };
+
+function diff(now) {
+  const a = msk(START), b = msk(now);
+  let y = b.getUTCFullYear() - a.getUTCFullYear(), mo = b.getUTCMonth() - a.getUTCMonth(), d = b.getUTCDate() - a.getUTCDate();
+  let h = b.getUTCHours() - a.getUTCHours(), mi = b.getUTCMinutes() - a.getUTCMinutes(), s = b.getUTCSeconds() - a.getUTCSeconds();
+  if (s < 0) { s += 60; mi--; } if (mi < 0) { mi += 60; h--; } if (h < 0) { h += 24; d--; }
+  if (d < 0) { const prevMonthDays = new Date(Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), 0)).getUTCDate(); d += prevMonthDays; mo--; }
+  if (mo < 0) { mo += 12; y--; }
+  return { y, mo, d, h, mi, s };
+}
+
+const set = (id, n, words) => { const el = $(id); const t = String(n); if (el.textContent !== t) el.textContent = t; $(id + 'L').textContent = plural(n, ...words); };
+
+// milestones
+const DAY = 864e5;
+const MILESTONES = [
+  { t: START + 100 * DAY, name: '100 дней' },
+  { t: addYears(1), name: '1 год' },
+  { t: START + 500 * DAY, name: '500 дней' },
+  { t: START + 1e6 * 60e3, name: '1 000 000 минут' },
+  { t: addYears(2), name: '2 года' },
+  { t: START + 1000 * DAY, name: '1000 дней' },
+  { t: addYears(3), name: '3 года' },
+  { t: START + 1e8 * 1e3, name: '100 000 000 секунд' },
+  { t: addYears(5), name: '5 лет' },
+  { t: START + 2000 * DAY, name: '2000 дней' },
+].sort((p, q) => p.t - q.t);
+
+function renderMilestones(now) {
+  const html = MILESTONES.map((m) => {
+    const done = now >= m.t;
+    let tag;
+    if (done) tag = 'есть!';
+    else { const days = Math.ceil((m.t - now) / DAY); tag = 'через ' + nf.format(days) + ' ' + plural(days, 'день', 'дня', 'дней'); }
+    return '<li class="' + (done ? 'done' : '') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ht"/></svg><div><strong>' + m.name + '</strong><small>' + fmtDate(m.t, true) + '</small></div><em>' + tag + '</em></li>';
+  }).join('');
+  const ul = $('ms'); if (ul.innerHTML !== html) ul.innerHTML = html;
+}
+
+let lastS = -1;
+function tick() {
+  const now = Date.now();
+  const r = diff(now);
+  set('y', r.y, W.y); set('mo', r.mo, W.mo); set('d', r.d, W.d); set('h', r.h, W.h); set('mi', r.mi, W.mi); set('s', r.s, W.s);
+  if (r.s !== lastS) { const t = $('sTile'); t.classList.remove('tick'); void t.offsetWidth; t.classList.add('tick'); lastS = r.s; }
+  const ms = now - START;
+  const days = Math.floor(ms / DAY), hours = Math.floor(ms / 36e5), mins = Math.floor(ms / 6e4);
+  $('tDays').textContent = nf.format(days); $('tDaysL').textContent = plural(days, 'день', 'дня', 'дней');
+  $('tHours').textContent = nf.format(hours); $('tHoursL').textContent = plural(hours, 'час', 'часа', 'часов');
+  $('tMin').textContent = nf.format(mins); $('tMinL').textContent = plural(mins, 'минуту', 'минуты', 'минут');
+  // next anniversary
+  const n = r.y + 1, prev = addYears(r.y), next = addYears(n);
+  $('nextTitle').textContent = 'До ' + n + ' ' + plural(n, 'года', 'лет', 'лет');
+  const left = next - now, ld = Math.floor(left / DAY), lh = Math.floor((left % DAY) / 36e5), lm = Math.floor((left % 36e5) / 6e4);
+  $('nextLeft').textContent = 'осталось ' + ld + ' ' + plural(ld, 'день', 'дня', 'дней') + ' ' + lh + ' ' + plural(lh, 'час', 'часа', 'часов') + ' ' + lm + ' ' + plural(lm, 'минута', 'минуты', 'минут');
+  const p = (now - prev) / (next - prev);
+  $('bar').style.width = (p * 100).toFixed(2) + '%';
+  $('pct').textContent = (p * 100).toFixed(1).replace('.', ',') + '%';
+  $('from').textContent = fmtDate(prev); $('to').textContent = fmtDate(next);
+  renderMilestones(now);
+}
+tick();
+setInterval(tick, 1000);
+
+// floating hearts
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  const cols = ['#ffb3c9', '#ff9dbb', '#ffc9d8', '#ffd2c2', '#f3c6f0']; let h = '';
+  for (let i = 0; i < 12; i++) { const s = 12 + Math.random() * 18, d = 16 + Math.random() * 14;
+    h += '<i class="fl" style="left:' + (Math.random() * 95).toFixed(1) + '%;width:' + s.toFixed(0) + 'px;height:' + s.toFixed(0) + 'px;opacity:' + (.35 + Math.random() * .4).toFixed(2) + ';animation-duration:' + d.toFixed(1) + 's;animation-delay:' + (-Math.random() * d).toFixed(1) + 's"><svg viewBox="0 0 24 24" style="fill:' + cols[i % 5] + '"><use href="#ht"/></svg></i>'; }
+  $('bg').innerHTML = h;
+}
+})();
+</script>
+</body>
+</html>
