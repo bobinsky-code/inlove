@@ -5,11 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffe9f0">
 <title>Мы вместе</title>
-<script>
+<script type="module">
 /* без входа — на страницу входа */
-(function () { var ok = false; try { var t = JSON.parse(localStorage.getItem('nam2-session') || 'null');
-  ok = !!t && ['06fa86697704c28dd78f8b1a68524b5a614fd36d7093b7340d0d38eeff3fc083', 'd90e464ee19f40e230422dfc18fe94ba3e3b00182a6fb7dad12cf19ccdd860bb'].indexOf(t.t) !== -1; } catch (e) {}
-  if (!ok) location.replace('index.html'); })();
+import { CONFIGURED, onAuth } from './fb.js';
+if (CONFIGURED) onAuth((user) => { if (!user) location.replace('index.html'); });
 </script>
 <style>
 /* Pixel font built from the koi6x10 bitmap font: Copyright (C) 1994 Cronyx Ltd., Portions Copyright (C) 1996-1997 by Andrey A. Chernov, Moscow, Russia. */

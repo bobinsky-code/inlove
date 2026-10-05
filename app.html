@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffe9f0">
+<title>Друзья</title>
+<style>
+/* Pixel font built from the koi6x10 bitmap font: Copyright (C) 1994 Cronyx Ltd., Portions Copyright (C) 1996-1997 by Andrey A. Chernov, Moscow, Russia. */
+@font-face{font-family:'Px';src:url(data:font/woff;base64,d09GRgABAAAAABMEAAoAAAAAPRQAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAABPUy8yAAABZAAAADkAAABgkRf9QGNtYXAAAAIIAAAAjwAAAMy+WaX5Z2x5ZgAABAQAAArjAAAsqJfD94VoZWFkAAAA9AAAADYAAAA2MAn2DmhoZWEAAAEsAAAAHgAAACQGQgPWaG10eAAAAaAAAABnAAAC1I2oAABsb2NhAAACmAAAAWwAAAFs4vvuJG1heHAAAAFMAAAAGAAAACAAwwA2bmFtZQAADugAAAF1AAACsjK+g7hwb3N0AAAQYAAAAqEAAAckfz8d2gABAAAAAQAAI8upH18PPPUAAwPoAAAAAObpWWsAAAAA5ulZawAA/zgDIAMgAAAAAwACAAAAAAAAeJxjYGRgYFb4bwEkWxgYGFKYFRiAIihgKwBBiQMgAAB4nGNgZGBg2MpgwsDLAAJMDGgAABm3APp4nGNgZjJinMDAykAQNDAwMTMwOHjA+AERbiFASkEtlVnhvwUDA7MCwwmYHOMXpj0gOQYGAAOjB+AAAAB4nGOKYGBg1IFghhMQzDiBgYFpDxI7AhXDxJHlQPphcujq8WGwWSD7v0DN+UK8XmxuIwfDzEHxDxFmg8PgC+VuAZkBDgeY3/cg4oAa/iPXTeTI0dp+ZgVEegWpgaljbkHIAwDZ5ErtAHicY2BgYGJgYGAGYhEgyQimWRh2AGktBgUgiwtI1jEsYFjNsIFhN8N1FkYWf5ZABWYFTgURBUkFWQU1BX1FMSUhtdT//4F6FBgUUdQKANUyAdUKK0goyCCr/f/w/7P/Sf93/d/2f83/iX8y/kT9iXzAfP/3gxkPpj6Y/KD7/pX7c+4tvOUPdhGRAACJaTGRAAAAABQAFAAUABQAFAAUABQAJQA2AGAAkADdARsBJwFJAWkBnAGwAcABzQHYAfgCLAJHAnACmAK5AuEDDAMrA1kDhgOXA60D2APrBBQEOgRlBIsErwTVBPEFCAUcBUIFWQVvBYsFuwXKBesGDAYrBkYGbgaXBscG2AbyBxkHOgdyB5UHvAfNB+0H/wggCCwIPwhgCIUIqgjRCPEJEAlNCWkJggmiCccJ2gn6ChYKNQpVCnUKkAqzCtQK8QsUCzcLbQuWC7cL4QvtDBYMOAx1DJEMzg0EDScNTQ1qDYwNmw27DdIOAQ4uDk8OgQ6xDswO7Q8EDyMPNQ9QD3YPhw+1D98QFxAtEEYQXRB2EJIQsBDJEPERFxE/EWARihGsEbsR2BH4EiISTxJwEqISxxLiEwMTGBM3E0kTbhOTE6QTyBPyFCgUPhRVFGwUhRSgFL0U1RT9FSIVQRVsFXkVhhWXFagVxRXiFfgWJxY0FlR4nL1a3W0bRxBeUmIYxTKMg0AQRh7iAyHoIQQC4UDQBagIFbAFsIAUwQJcgItQAVsAC0gRfIzozP/O7h1JWXIsmyZF387Ozs8338xdGAf4Ge3HT+EiTEO4b9rmtm3a0f6wGS0Pu/HT80Mc7UOg60LU65quWcy62SLCz/jpcB0jXjHaj5b5itliTVckvCSlFPJev4c/QrjpZt2qQyn0WqzoterwNYfvYvmjYvAjv8GmsJeXuWCpIlGkskR8TeHXCXybKtFxtEXh9bcJ5L8v7PMufAg3YS573YU/w1+hoz0XHbzuQP4tvLdy9oX7fi7vrXzvtz7s6Hg9lWLWyv83Hj6E305qVug0d58nohu+3zo9bN8lvR12KeFH2D8ltbqqEUa4s0QDeZp8E8KEdFoWOpEm97DzrFk0qpU7Dp/wsMNww3MNymhkXQdxR7LgVYrAxVHXQ8iOH2G92kPXa7xZrKEFRuKVnhlAJAXGow8J2iegBWSXdxZzJDGhnVIaP9IHjPlvX0IKkbNiLbZQeWTJJeTNlizZzjDzrmFX3gH2oJVhJfqJdUqvh5Fa2L0kftAvLnDCr0ejpogY9FULtka73MLvU+8zDVkOFY1Q9SB7Iec67gGywQPtCiRyFoJxDteJlz9/1WgPvwxo9xFWg13uxUv5nPDlKtKeuDrBv4drUsYUtYhEiRM7LdoZhE1mCAtzyYOObB8B9ra0/rChKEAI5LinHHDnasIMLd+w51uMLMUYNgwoJicEWZhCqfLgtNConUlmYoxnjXgtbu40iilHYmkz9WfOOg7NRjGgBakCnyJ2JzLZcmzLcOnsdgUo2HirWYyxvTTKFCYCRvpglBWebKvP2ZcSSvkjoxC9jp7XpDWUh4hvqmuWbMCWSORhk5PDahwgm1WwRvIOT7qjTMRslis48+manNN8JYhjG2z7NqizVT2DL0HfChwrHWF/0xHjRlGDXnTV0b0bt1dX6XFq58HMnA9nJtnMWdzJAovvagz7AHmkOS6ow3kEYlYXRVxwiEpA0IEZb0jqZaXhvEI0gR8I4kadLiBvNRYxCZ3rWIVDDOEUJKYVfgFgkTCMFMEkNSEKUok+vh7aSWE9fL4t7MUBL6WXHIoI0EdU1KgxbRrSRPWglajE4VrqiKyzeJGYIY4nuJlol3z1Vb4apMu1fMDDrncyQkN/MqwYq8W09B+ChHOfYGqpYQcUtEMhzSI7CC3y/IBL5eqlncesIBfn03s/MoqBhiB5cSHoSkCQDFWfvxLcRo9fVY1sCO9hL587Lp8oqrZlHoFOiq9cm7yVJ3xitBK5AYqh03pq7Ed2Re0hN4qdmBhDmCBZp69OS8DsujsugTWss+lDmaFDeK05ee2rJFndxRHljMN3iSegS5Qt3764PTPCGBsh/ta2VcZEVsFSBt0fPSK8p/j8aJoQV2Ntpoq8Wxbh/UfKRVYvlXFxoq5NWtZQa/hQbhe1PA3ExVRiG7VELIHrnr8Spy01oE5spB4pvIHXYzgNo5Ctw3fY5oIioqZ2LEv1Rpgdii3mQCdiCx1CrSSxg6sTnQtVKO2hlHlmDFemXuopaL7NHaL+YNt57Pz1Ps3A+VXaYVMwSWZE8yFOxLw0MyNO67K7S8Gh2DSj2GiJBZLx67jWXfUqRAvf7+/QCEYi/7GufoIsoVefBixecH9HDXAXzNlAcXEvTISrFUheirVI79VizpKSaqmxRGyGOOYN5Q7oSn8myt3AHVKrKJX2nD9ljmcuzfFIMXkjfDp33Ex6ExqB2YNQO7W3cbterZ6cqNUkBKtJyZ1NJ80N7TnvpRdWrEGvoFacJDEaBw7DNrrHkodA1twowpCNGFSIBTJRigViuH68Y3ABlci/0uNry6+nwSnDt8+VVaopg+KeThXw93nN7VPyk4XYs+Fei6NFlscZZjxSe9Wn2ZtSYykupPbw/OA9azi17pN3EZYg9kJ/wRmZLUuvw5XBuIIyc5mAoJ9iJLqwS8c6OkNFYQqarWgJV2GQ3Ym/osvZK5FAWqvG1CnvNb7gU+7NxDLZOsmZU9AIqR5aKEeUWXZ2xLKomRrW7ftiTiB5IfxcIsmjmds3z8UsR5EiIiuRrHKRWEyWkBegrxZq36VIYYpJrOjcqWdDp44nUEGinDsfnUTEXOA5pCmUXSxnjLUEvOlsUqptufAxyelUoYBmg1XcidVE6W/35G5mQYMnGKqydfUD3iE/x9BRdbgT361NCocemZJU2TDTvxqQUs/oSK/7o5U/lkWft0NblyWW2eRnZzHNSmPRE2V/xpwUnBRFqev4qttVEXQjXaHVf6z73UpiZ4kirmMOgniyL9dIng+827QmGvR4oTIn1Flss2CqdX4GMLRfuVc1AzjLFm67/mw7Cl9I3F/S1Hr8eK6eaAygZVuJBZV+K3yEpDPaJA4KeSuMbtpfGiPJ6OV0n5dMyo5+TmO15tphGGWWaK4n0ISIpiarzv/2AziGn5otEtsXn2gv8etaWI/+Yd0pM2xycPFJZKSBrvEtM5j+vCNPLlwXCa+NNZII/amPtvXa2cB6k0CT+6pDtxlIpD6Mp/o2H2J2h07usGbzHQpQhDtTAvN//5HJB4Lq985kfCfgspjqvasizWIildjcm/JNDGnlDJt2Uphf1tMqRvR72noyLQwpDk8hcqeodwIcTggbsjGGTR0lKhFzizsVzDiHZdKPMHwRj6HKFknYGcse//es58gMCllTg4hLPJsge/yow4vBLvs7Z0DfN1V727ynmlvwPtxY8cE4Z143E/phE9Tz05WjuZCnJZkv5fuQ9TTCkm0AYUF2rvkd3z3gO4fkVbF3Ac/ac0s0L/WIP3+SMmJOZTEleLdqeU620aET0Kjgnyxwcyrs7fOcKsdgrFGxsz8t5/K1SofXg9flfXE1asMLNnnBv3+nfkXROYHEIE3yM1pSKcCDFJHb+HXKvyOt1CrCS7GRt7Vbi3q3lnqVpJFKq7B61XdHqvssmfHXOFyiMN5eTeUkt+hNKd4E3coJSY4E1Arrsc2kBiaqjGYUweBZ1PHG7rpto2ikCMdNtKj6Q+Y/Z+5LzXsYttUhSYlkXC2KiQlo9V38QWinR98t9ejKH7aqu07N4H8buTde8Ae+LcvS9nSPkrnD8u3TIN/HFR3B2j3DQHXVEKLHJagxjPo3KWr2eOprGETZMPmO60UMgm8J0p3Q5WB8vI1BYKCIb9weE6ely7FZd37+Q9XHxj/uvKe4Aj8ikp+YGbDSGa6gAw45giIvRXywJzXamXEFdDkS8zfOgEZO04onyKE2bs5T27LzM6qBiS7HDoPVj53oVno75iCjtWI6VU1HCMmKOQOjhkU8jxkYri+sqr2OJVDTISOwiiX8lD5y5Lw3xBB0HuQYgthM+ArbK9tJIq8Xoz12oJKxdfJ6HGUHecHzQ67yEnc55iBCJyU7QMejgu6uPKwSbqCrhriBLNzr85JSIYQZ6MrbghnwmlTP8V7DCyg/7Dm5y+K8lmfMC2YneQHqhGGWn4oxG0hNYi8yH5gLFzBOjAbQSWef4TOrEGye9qtbforA1bj8hEk0pDn+XB3yzvw/0jLxPat9SPoEq86iFPhfdMUlWWI7PjJl8k9cSoeimfP6lWJ/ecbwHT8tuO7c87eWpWzti0/WV2r9L+rFum3aNcTilO2t83S6eZif4GBG/sCJak+PnHqacfwEPda8ePJ3IbgmueLwhB67VO7xHwtoi2AAeJyNkD1uwkAQhZ/5i6JElKlSTAkSWFhCIOjALUiIgt5gCyyQF+3y5yZdTpA2TboUUcocJAeJcoQ8zKYgkaLY8uz35s3s7BpAGa9wcHoO/E7soER14hwucGc5z/p7ywXyg+UirvBkuZTV5OEULqk+8WLZwbXzaDmHsvNsOY9b581ygfxuuYgb58Ny6VjTD0wUikpkqeLWwWt0xVfrVMfzxUYqflW8TqcpvlZJepDBJnRrMlJ6E6vE/C5s1RnaMk2ll4Q64uKKv4h0onY1GSozU/uajLfGxIE7OhynjaP5dhXok6ifKbFqEmnDceK5DfQRwCBCCIFCwrjkGqPF/+qhgS4zPjNrpNDMz7HAhrkKs1WuHjp8m1mVznZI2SkYsCqEixp5xLymjjPf/GvHFuqW2sxNWSvosTtkT2SVm+20oNZ0FHbZtCHJYMa4z/QYW2rDSQE7Rjzd993G7JzTXdHRZ079D09+eJNsvrG3O57fReMLI517wQAAAHicfdT1sxtlAEbhnhYoTnG34r7Zfb9v78VKcnMv7u4uRUqBFnd3d/cixeH/4zJ7+iuZybyzSWafTHZPlixd8v+Pfxafy1jKMjZjc7ZgOVuyFVuzDduyHduzAyvYkZ3YmV3Yld3YnT3Yk73Ym33Yl/3YnwM4kJUcxMEcwqEcxuEcwZEcxdEcw7EcR8OIlo5QqPTMMMvxnMCJnMTJrOIUxkyYY8o8C5zKaZzOGZzJWZzNOZzLeZzPBVzIRVzMJVzKZVzOFVzJVVzNNVzLdVzPDdzITdzMLdzKbazmdu7gTu5iDXezlnu4l/tYx3ru5wEe5CEe5hEe5TEe5wme5Cme5hme5Tme5wVe5CVe5hVe5TVe5w3e5C3e5h3e5T3e5wM+5CM+5hM+5TM+5wu+5Cu+5hu+5Tu+ZwM/8CM/8TMb+YVf+Y3f+YM/+Yu/l69fs7ppxs1/2zbtwrDNrNu63fC5duS27qbX4xa3ur074866Y3fizrlTd95dGLZrXP1Ov9Pv9Dv9Tr/T7/Q7/U6/0+/0O/1Ov9OPfvSjH/3oRz/60Y9+9KMf/ehHP/rRL/pFv+gX/aJf9It+0S/6Rb/oF/2iX/SLftGv+lW/6lf9ql/1q37Vr/pVv+pX/apf9at+1e/1e/1ev9fv9Xv9Xr/X7/V7/V6/1+/1e/1ef+z7E/2Jx9PhvGmG75NR4246bt3OjVvc6nqe0Yw7647diTvnTt15d/h90urbZ+wz9hn7jH3GPmOfsc/YZ+wz9hn7jH3GPmOfsc/YZ+wz9hn7jH3GPmOfsc/YZ+wz9hn7jH3GPmOfsc/YZ+wz9hn7jH3GPmOfsc/YZ+wz9hn7jH3GPmOfGbpsm+F6L27cGdf/0+E6Lu502OE6tKPhfmjb4b5pay3/Amiyvy0AAAA=) format('woff');font-display:block}
+:root{
+  --ground:#ffe9f0; --paper:#fff6f9; --ink:#5a2a3c; --ink2:#8e5470; --rose:#ff6f9c; --rose2:#e64f7e; --rose0:#ffd3e0;
+  --p:2px; --f1:15px; --f2:20px; --f3:30px;
+  --font:'Px',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{background:var(--ground)}
+body{margin:0;min-height:100vh;min-height:100dvh;display:flex;align-items:flex-start;justify-content:center;padding:max(18px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom));background:conic-gradient(#ffe2eb 25%,#ffe9f0 0 50%,#ffe2eb 0 75%,#ffe9f0 0) 0 0/24px 24px;color:var(--ink);font:var(--f2)/1.2 var(--font);font-synthesis:none;-webkit-font-smoothing:none;-webkit-tap-highlight-color:transparent}
+h1,h2,b{font-weight:400}
+button{font:inherit;color:inherit;border:0;border-radius:0;background:none;padding:0;margin:0;cursor:pointer;touch-action:manipulation;-webkit-appearance:none;appearance:none}
+input{-webkit-user-select:text;user-select:text}
+:focus{outline:none}
+:focus-visible{outline:var(--p) dashed var(--rose2);outline-offset:calc(var(--p) * 3)}
+.pb2{--bc:var(--ink);--bg:#fff;--ds:rgba(90,42,60,.2);background:linear-gradient(var(--bc),var(--bc)) 0 0/var(--p) var(--p) no-repeat,linear-gradient(var(--bc),var(--bc)) 100% 0/var(--p) var(--p) no-repeat,linear-gradient(var(--bc),var(--bc)) 0 100%/var(--p) var(--p) no-repeat,linear-gradient(var(--bc),var(--bc)) 100% 100%/var(--p) var(--p) no-repeat,var(--bg);box-shadow:0 calc(var(--p) * -2) 0 calc(var(--p) * -1) var(--bc),0 calc(var(--p) * 2) 0 calc(var(--p) * -1) var(--bc),calc(var(--p) * -2) 0 0 calc(var(--p) * -1) var(--bc),calc(var(--p) * 2) 0 0 calc(var(--p) * -1) var(--bc),0 calc(var(--p) * 4) 0 calc(var(--p) * -1) var(--ds)}
+.pb{--bc:var(--ink);--bg:#fff;--hi:transparent;--sh:transparent;--ds:rgba(90,42,60,.2);background:var(--bg);box-shadow:0 calc(var(--p) * -1) 0 0 var(--bc),0 var(--p) 0 0 var(--bc),calc(var(--p) * -1) 0 0 0 var(--bc),var(--p) 0 0 0 var(--bc),0 calc(var(--p) * 2) 0 0 var(--ds),inset 0 var(--p) 0 0 var(--hi),inset 0 calc(var(--p) * -2) 0 0 var(--sh)}
+.press:active{transform:translateY(var(--p));--ds:transparent}
+.card{--bc:#ef9cbb;--bg:var(--paper);--ds:rgba(230,79,126,.22);width:100%;max-width:420px;padding:20px 18px 24px}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.who{flex:1 1 auto;min-width:0;font-size:var(--f1);line-height:1.3;color:var(--ink2);overflow:hidden;text-overflow:ellipsis}
+.who b{display:block;font-size:var(--f2);color:var(--ink)}
+.mini{--bg:#fff;flex:none;min-height:34px;padding:0 10px 2px;font-size:var(--f1);line-height:1;color:var(--ink2)}
+.lead{margin:0 0 20px;padding:16px 14px;font-size:var(--f1);line-height:1.45;color:var(--ink);text-align:center;background:#fff1f6;box-shadow:inset 0 0 0 var(--p) #ffd3e0}
+.open{--bg:var(--rose);--hi:rgba(255,255,255,.42);--sh:rgba(170,30,85,.28);width:100%;min-height:52px;margin-bottom:20px;padding:0 14px 2px;color:#fff;font-size:var(--f2);line-height:1;text-shadow:0 var(--p) 0 rgba(170,30,85,.4)}
+h2{margin:20px 0 10px;font-size:var(--f1);line-height:1;color:var(--ink2)}
+h2:first-of-type{margin-top:0}
+.add{display:flex;gap:10px;margin-bottom:6px}
+.add input{flex:1 1 auto;min-width:0;height:44px;padding:0 12px;font:var(--f2)/1 var(--font);color:var(--ink);outline:none;-webkit-appearance:none;appearance:none}
+.add input:focus{--bc:var(--rose2)}
+.add button{--bg:var(--rose);--hi:rgba(255,255,255,.42);--sh:rgba(170,30,85,.28);flex:none;min-height:44px;padding:0 14px 2px;color:#fff;font-size:var(--f1);line-height:1;text-shadow:0 var(--p) 0 rgba(170,30,85,.4)}
+.msg{min-height:15px;margin:0 0 6px;font-size:var(--f1);line-height:1.3;color:var(--rose2)}
+.msg.ok{color:var(--ink2)}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.row{--bg:#fff;display:flex;align-items:center;gap:10px;padding:10px 12px}
+.row .nm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row small{display:block;font-size:var(--f1);line-height:1.25;color:var(--ink2);white-space:normal}
+.act{--bg:var(--rose);--hi:rgba(255,255,255,.42);--sh:rgba(170,30,85,.28);flex:none;min-height:34px;padding:0 10px 2px;color:#fff;font-size:var(--f1);line-height:1}
+.act.ghost{--bg:#fff;--bc:#ef9cbb;--hi:transparent;--sh:transparent;color:var(--rose2)}
+.act[disabled]{opacity:.45;pointer-events:none}
+.empty{margin:0;font-size:var(--f1);line-height:1.4;color:var(--ink2)}
+.note{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(90,42,60,.34)}
+.note-card{--bg:#fff;width:min(100%,340px);display:flex;flex-direction:column;gap:18px;padding:22px 18px 20px;text-align:center}
+.note-card h3{margin:0;font-size:var(--f3);line-height:1}
+.note-card p{margin:0;font-size:var(--f1);line-height:1.5;color:var(--ink2)}
+.note-card p b{color:var(--ink)}
+.note-act{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.note-act button{min-height:42px;padding:0 14px 2px;font-size:var(--f1);line-height:1}
+.load{padding:40px 0;text-align:center;font-size:var(--f1);color:var(--ink2)}
+</style>
+</head>
+<body>
+<main class="card pb2">
+  <div class="top">
+    <span class="who"><b id="me">…</b>ваш логин</span>
+    <button class="mini pb press" type="button" id="out">Выйти</button>
+  </div>
+
+  <div id="body" class="load">Загрузка…</div>
+</main>
+
+<div class="note" id="note" hidden>
+  <div class="note-card pb2">
+    <h3>Памятка</h3>
+    <p>Питомец заводится <b>только с одним человеком</b>. После создания сменить напарника нельзя, второго питомца завести тоже нельзя.</p>
+    <p>Создать питомца с <b id="noteWho"></b>?</p>
+    <div class="note-act">
+      <button class="act pb press" type="button" id="noteOk">Пригласить</button>
+      <button class="act ghost pb press" type="button" id="noteNo">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { CONFIGURED, LOGIN_RE, onAuth, loginOf, leave, sendFriendRequest, acceptFriend, dropFriendRequest,
+         invitePet, acceptPet, dropPetInvite, watchLobby, watchMyPet, petOwners, errText } from './fb.js';
+'use strict';
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const body = $('#body'), note = $('#note');
+let me = null, myLogin = '', petId = null, lobby = null, owners = {}, busy = false, asking = null;
+
+const other = (f) => f.uids.find((u) => u !== me);
+const nameOf = (f) => (f.names && f.names[other(f)]) || '—';
+let msgT = 0, msgNow = null;
+function say(text, ok) {
+  msgNow = text ? { t: text, ok: !!ok } : null;
+  const el = $('#msg');
+  if (el) { el.textContent = text || ''; el.classList.toggle('ok', !!ok); }
+  clearTimeout(msgT);
+  if (text) msgT = setTimeout(() => say(''), 4000);
+}
+
+function render() {
+  if (!lobby) return;
+  const keep = (() => { const el = $('#findLogin'); return el ? { v: el.value, f: document.activeElement === el } : null; })();
+
+  let h = '';
+
+  if (petId) h += '<button class="open pb press" type="button" id="toPet">Открыть питомца</button>';
+  else h += '<p class="lead">Добавьте в друзья человека и создайте с ним питомца, чтобы начать.</p>';
+
+  h += '<h2>Добавить в друзья</h2>'
+    + '<div class="add"><input class="pb" id="findLogin" placeholder="логин" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="16">'
+    + '<button class="pb press" type="button" id="findBtn">Добавить</button></div><p class="msg" id="msg"></p>';
+
+  if (lobby.incoming.length) {
+    h += '<h2>Заявки в друзья</h2><ul class="list">';
+    lobby.incoming.forEach((r, i) => {
+      h += '<li class="row pb"><span class="nm">' + esc(r.fromLogin) + '<small>хочет добавить вас</small></span>'
+        + '<button class="act pb press" type="button" data-act="accept" data-i="' + i + '">Принять</button>'
+        + '<button class="act ghost pb press" type="button" data-act="decline" data-i="' + i + '">Нет</button></li>';
+    });
+    h += '</ul>';
+  }
+
+  if (lobby.petIn.length && !petId) {
+    h += '<h2>Приглашения завести питомца</h2><ul class="list">';
+    lobby.petIn.forEach((v, i) => {
+      h += '<li class="row pb"><span class="nm">' + esc(v.fromLogin) + '<small>зовёт создать питомца</small></span>'
+        + '<button class="act pb press" type="button" data-act="petYes" data-i="' + i + '">Принять</button>'
+        + '<button class="act ghost pb press" type="button" data-act="petNo" data-i="' + i + '">Нет</button></li>';
+    });
+    h += '</ul>';
+  }
+
+  h += '<h2>Друзья</h2>';
+  if (!lobby.friends.length) {
+    h += '<p class="empty">Пока никого. Добавьте человека по логину.</p>';
+  } else {
+    h += '<ul class="list">';
+    lobby.friends.forEach((f, i) => {
+      const u = other(f), sent = lobby.petOut.some((v) => v.to === u);
+      let btn = '', sub = '';
+      if (petId) btn = '';
+      else if (sent) { btn = '<button class="act ghost pb press" type="button" data-act="petCancel" data-u="' + u + '">Отменить</button>'; sub = '<small>приглашение отправлено</small>'; }
+      else if (owners[u]) { btn = '<button class="act pb" type="button" disabled>Занят</button>'; sub = '<small>уже с питомцем</small>'; }
+      else btn = '<button class="act pb press" type="button" data-act="petAsk" data-i="' + i + '">Создать питомца</button>';
+      h += '<li class="row pb"><span class="nm">' + esc(nameOf(f)) + sub + '</span>' + btn + '</li>';
+    });
+    h += '</ul>';
+  }
+
+  if (lobby.outgoing.length) {
+    h += '<h2>Отправленные заявки</h2><ul class="list">';
+    lobby.outgoing.forEach((r, i) => {
+      h += '<li class="row pb"><span class="nm">' + esc(r.toLogin) + '<small>ждёт подтверждения</small></span>'
+        + '<button class="act ghost pb press" type="button" data-act="cancel" data-i="' + i + '">Отменить</button></li>';
+    });
+    h += '</ul>';
+  }
+
+  body.className = '';
+  body.innerHTML = h;
+  if (keep) { const el = $('#findLogin'); el.value = keep.v; if (keep.f) el.focus(); }
+  if (msgNow) { const el = $('#msg'); el.textContent = msgNow.t; el.classList.toggle('ok', msgNow.ok); }
+}
+
+async function addFriend() {
+  const el = $('#findLogin'), login = el.value.trim();
+  if (!login) return;
+  if (!LOGIN_RE.test(login)) return say('Логин: 3–16 знаков, латиница, цифры, _');
+  say('');
+  try {
+    const r = await sendFriendRequest(me, myLogin, login);
+    el.value = '';
+    say(r === 'friends' ? 'Теперь вы друзья' : 'Заявка отправлена', true);
+  } catch (e) { say(errText(e)); }
+}
+
+function askPet(f) {
+  asking = f;
+  $('#noteWho').textContent = nameOf(f);
+  note.hidden = false;
+}
+$('#noteNo').addEventListener('click', () => { note.hidden = true; asking = null; });
+$('#noteOk').addEventListener('click', async () => {
+  const f = asking;
+  note.hidden = true; asking = null;
+  if (!f) return;
+  try {
+    const r = await invitePet(me, myLogin, other(f), nameOf(f));
+    if (r === 'created') location.replace('pet.html');
+    else say('Приглашение отправлено для ' + nameOf(f), true);
+  } catch (e) { say(errText(e)); }
+});
+
+body.addEventListener('click', async (e) => {
+  if (e.target.closest('#toPet')) { location.href = 'pet.html'; return; }
+  if (e.target.closest('#findBtn')) { addFriend(); return; }
+  const b = e.target.closest('button[data-act]');
+  if (!b || busy) return;
+  const act = b.dataset.act, i = +b.dataset.i;
+  if (act === 'petAsk') { askPet(lobby.friends[i]); return; }
+  busy = true; b.disabled = true;
+  try {
+    if (act === 'accept') await acceptFriend(lobby.incoming[i]);
+    else if (act === 'decline') await dropFriendRequest(lobby.incoming[i]);
+    else if (act === 'cancel') await dropFriendRequest(lobby.outgoing[i]);
+    else if (act === 'petNo') await dropPetInvite(lobby.petIn[i]);
+    else if (act === 'petCancel') { const v = lobby.petOut.find((x) => x.to === b.dataset.u); if (v) await dropPetInvite(v); }
+    else if (act === 'petYes') { await acceptPet(lobby.petIn[i]); location.replace('pet.html'); return; }
+  } catch (err) { say(errText(err)); b.disabled = false; }
+  busy = false;
+});
+body.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'findLogin') { e.preventDefault(); addFriend(); } });
+
+$('#out').addEventListener('click', () => leave().then(() => location.replace('index.html')));
+
+if (!CONFIGURED) {
+  body.className = '';
+  body.innerHTML = '<p class="empty">Сайт ещё не подключён к серверу.</p>';
+} else {
+  onAuth((user) => {
+    if (!user) { location.replace('index.html'); return; }
+    if (me) return;
+    me = user.uid; myLogin = loginOf(user);
+    $('#me').textContent = myLogin;
+    watchMyPet(me, (id) => { petId = id; render(); });
+    watchLobby(me, (st) => {
+      lobby = st;
+      render();
+      const uids = st.friends.map(other).filter(Boolean);
+      if (uids.length) petOwners(uids).then((o) => { owners = o; render(); });
+    });
+  });
+}
+</script>
+</body>
+</html>

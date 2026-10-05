@@ -1,0 +1,102 @@
+rules_version = '2';
+
+/* Правила доступа к Firestore. Вставляются в консоли Firebase:
+   Firestore Database → Rules → заменить всё и опубликовать. */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function authed() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function pairOf(a, b) { return a < b ? a + '__' + b : b + '__' + a; }
+    function other(uids) { return uids[0] == me() ? uids[1] : uids[0]; }
+    function inviteBetween(a, b) {
+      return exists(/databases/$(database)/documents/petInvites/$(a + '__' + b))
+          || exists(/databases/$(database)/documents/petInvites/$(b + '__' + a));
+    }
+
+    /* Справочник логинов: найти человека по логину может кто угодно,
+       занять логин — только владелец соответствующей почты. Перебирать список нельзя. */
+    match /logins/{login} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if authed()
+                    && request.resource.data.uid == me()
+                    && request.auth.token.email == login + '@inlove.app';
+      allow update, delete: if false;
+    }
+
+    match /users/{uid} {
+      allow get: if authed();
+      allow list: if false;
+      allow write: if authed() && uid == me();
+    }
+
+    /* Заявка в друзья: создаёт отправитель, видят и убирают оба. */
+    match /friendRequests/{id} {
+      allow get: if authed() && (resource == null || resource.data.from == me() || resource.data.to == me());
+      allow list: if authed() && (resource.data.from == me() || resource.data.to == me());
+      allow create: if authed()
+                    && request.resource.data.from == me()
+                    && request.resource.data.to != me()
+                    && id == me() + '__' + request.resource.data.to;
+      allow delete: if authed() && (resource.data.from == me() || resource.data.to == me());
+      allow update: if false;
+    }
+
+    /* Дружба: записывает тот, кто принял заявку, и только при наличии этой заявки. */
+    match /friendships/{id} {
+      allow get: if authed() && (resource == null || me() in resource.data.uids);
+      allow list: if authed() && me() in resource.data.uids;
+      allow create: if authed()
+                    && me() in request.resource.data.uids
+                    && request.resource.data.uids.size() == 2
+                    && id == pairOf(request.resource.data.uids[0], request.resource.data.uids[1])
+                    && exists(/databases/$(database)/documents/friendRequests/$(other(request.resource.data.uids) + '__' + me()));
+      allow update: if false;
+      allow delete: if authed() && me() in resource.data.uids;
+    }
+
+    /* Приглашение завести питомца: только другу и только если ни у кого ещё нет питомца. */
+    match /petInvites/{id} {
+      allow get: if authed() && (resource == null || resource.data.from == me() || resource.data.to == me());
+      allow list: if authed() && (resource.data.from == me() || resource.data.to == me());
+      allow create: if authed()
+                    && request.resource.data.from == me()
+                    && request.resource.data.to != me()
+                    && id == me() + '__' + request.resource.data.to
+                    && exists(/databases/$(database)/documents/friendships/$(pairOf(me(), request.resource.data.to)))
+                    && !exists(/databases/$(database)/documents/userPet/$(me()))
+                    && !exists(/databases/$(database)/documents/userPet/$(request.resource.data.to));
+      allow delete: if authed() && (resource.data.from == me() || resource.data.to == me());
+      allow update: if false;
+    }
+
+    /* Отметка «у человека есть питомец». Пишется один раз и навсегда:
+       изменять и удалять нельзя, повторное создание отклоняется базой.
+       Поэтому второго питомца завести невозможно. */
+    match /userPet/{uid} {
+      allow get: if authed();
+      allow list: if false;
+      allow create: if authed()
+                    && (me() == uid || me() == request.resource.data['with'])
+                    && request.resource.data.petId == pairOf(uid, request.resource.data['with'])
+                    && inviteBetween(uid, request.resource.data['with']);
+      allow update, delete: if false;
+    }
+
+    /* Сам питомец: читают и пишут только двое владельцев, состав владельцев не меняется. */
+    match /pets/{petId} {
+      allow get: if authed() && (resource == null || me() in resource.data.owners);
+      allow list: if false;
+      allow create: if authed()
+                    && me() in request.resource.data.owners
+                    && request.resource.data.owners.size() == 2
+                    && petId == pairOf(request.resource.data.owners[0], request.resource.data.owners[1])
+                    && inviteBetween(request.resource.data.owners[0], request.resource.data.owners[1]);
+      allow update: if authed()
+                    && me() in resource.data.owners
+                    && request.resource.data.owners == resource.data.owners;
+      allow delete: if false;
+    }
+  }
+}

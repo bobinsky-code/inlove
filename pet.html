@@ -6,10 +6,53 @@
 <meta name="theme-color" content="#ffe9f0">
 <title>Питомец</title>
 <script>
-/* без входа — на страницу входа */
-(function () { var ok = false; try { var t = JSON.parse(localStorage.getItem('nam2-session') || 'null');
-  ok = !!t && ['06fa86697704c28dd78f8b1a68524b5a614fd36d7093b7340d0d38eeff3fc083', 'd90e464ee19f40e230422dfc18fe94ba3e3b00182a6fb7dad12cf19ccdd860bb'].indexOf(t.t) !== -1; } catch (e) {}
-  if (!ok) location.replace('index.html'); })();
+/* игра стартует, когда придёт общее состояние питомца из облака */
+window.__boot = new Promise(function (go) { window.__bootGo = go; });
+</script>
+<script type="module">
+import { CONFIGURED, onAuth, myPetId, watchPet, savePet } from './fb.js';
+const KEY = 'nam2-pet-v1';
+const client = Math.random().toString(36).slice(2) + Date.now().toString(36);
+if (!CONFIGURED) {
+  document.documentElement.innerHTML = '<body style="font:16px system-ui;padding:24px">Сайт ещё не подключён к серверу.</body>';
+} else {
+  onAuth(async (user) => {
+    if (!user) { location.replace('index.html'); return; }
+    if (window.__started) return;
+    const petId = await myPetId(user.uid).catch(() => null);
+    if (!petId) { location.replace('app.html'); return; }
+    window.__started = true;
+    let started = false, remote = null, writeT = 0, lastWrite = 0, dirty = null;
+    const push = () => {
+      if (!dirty) return;
+      const state = dirty; dirty = null; lastWrite = Date.now();
+      savePet(petId, state, client).catch(() => { /* уйдёт, когда вернётся сеть */ });
+    };
+    const sync = {
+      /* в облако пишем не чаще раза в три секунды, чтобы не жечь лимиты */
+      save(state) {
+        dirty = state;
+        clearTimeout(writeT);
+        writeT = setTimeout(push, Math.max(1500, 3000 - (Date.now() - lastWrite)));
+      },
+      flush() { clearTimeout(writeT); push(); },
+      onRemote(cb) { remote = cb; },
+    };
+    watchPet(petId, (d) => {
+      if (!d) return;
+      if (!started) {
+        started = true;
+        if (d.state) { try { localStorage.setItem(KEY, JSON.stringify(d.state)); } catch (e) { /* играем без кэша */ } }
+        window.__bootGo(sync);
+        return;
+      }
+      if (d.by === client || !d.state || !remote) return;
+      remote(d.state);
+    }, () => { if (!started) { started = true; window.__bootGo(sync); } });
+    addEventListener('pagehide', () => sync.flush());
+    document.addEventListener('visibilitychange', () => { if (document.hidden) sync.flush(); });
+  });
+}
 </script>
 <style>
 /* Pixel font built from the koi6x10 bitmap font: Copyright (C) 1994 Cronyx Ltd., Portions Copyright (C) 1996-1997 by Andrey A. Chernov, Moscow, Russia. */
@@ -323,7 +366,7 @@ input{-webkit-user-select:text;user-select:text}
 </div>
 
 <script>
-(() => {
+window.__boot.then((Sync) => {
 'use strict';
 
 /* ---------- helpers ---------- */
@@ -1855,8 +1898,27 @@ function load() {
 }
 const S = load();
 let saveT = 0;
-function saveNow() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable */ } }
+function saveNow() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable */ }
+  if (Sync) Sync.save(S);
+}
 function save() { clearTimeout(saveT); saveT = setTimeout(saveNow, 400); }
+/* питомец общий: пришло состояние, записанное на другом устройстве.
+   Комната у каждого своя — её из чужого состояния не берём. */
+const LOCAL_KEYS = { room: 1, home: 1 };
+function applyRemote(st) {
+  if (!st || typeof st !== 'object') return;
+  const wasSleeping = S.sleeping;
+  Object.keys(st).forEach((k) => { if (!LOCAL_KEYS[k]) S[k] = st[k]; });
+  if (!(S.t > 0) || S.t > Date.now()) S.t = Date.now();
+  const sleeping = S.sleeping;
+  S.sleeping = wasSleeping;
+  simulate(Date.now());
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* без кэша */ }
+  renderTop(); renderStats(); renderBest(); renderRooms(); renderKitchen();
+  if (sleeping !== wasSleeping) setSleep(sleeping, true);
+  Scene.kick();
+}
 const buffOn = (k, now) => (S.buffs[k] || 0) > (now || Date.now());
 
 let sickNews = false;
@@ -3489,6 +3551,7 @@ renderKitchen();
 renderStats();
 setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); }, 1000);
 setInterval(saveNow, 10000);
+if (Sync) Sync.onRemote(applyRemote);
 if (location.hash === '#t') window.__t = { S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS };
 
 /* разовое уведомление для favie */
@@ -3503,7 +3566,7 @@ if (location.hash === '#t') window.__t = { S, emote, Scene, sickTick, setSleep, 
   setTimeout(() => { note.hidden = false; void note.offsetWidth; note.classList.add('is-on'); try { localStorage.setItem(NOTE_KEY, '1'); } catch (e) { /* ignore */ } }, 700);
   $('#noteOk').addEventListener('click', () => { note.classList.remove('is-on'); setTimeout(() => { note.hidden = true; }, 400); });
 })();
-})();
+});
 </script>
 </body>
 </html>
