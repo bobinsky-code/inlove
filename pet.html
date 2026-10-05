@@ -122,6 +122,22 @@ input{-webkit-user-select:text;user-select:text}
 .tab.is-on{background:var(--rose0);color:var(--rose2);box-shadow:inset var(--p) 0 0 0 var(--ink),inset 0 calc(var(--p) * 2) 0 0 rgba(90,42,60,.12)}
 .tab.is-on:first-child{box-shadow:inset 0 calc(var(--p) * 2) 0 0 rgba(90,42,60,.12)}
 
+/* ---------- locations map ---------- */
+.map{position:absolute;inset:0;z-index:38;background:#aee09f;overflow:hidden;opacity:0;transition:opacity .24s steps(3,end);clip-path:polygon(var(--p) 0,calc(100% - var(--p)) 0,100% var(--p),100% calc(100% - var(--p)),calc(100% - var(--p)) 100%,var(--p) 100%,0 calc(100% - var(--p)),0 var(--p))}
+.map.is-on{opacity:1}
+.map canvas{position:absolute;left:0;top:0;display:block;width:100%;height:100%}
+.m-h{position:absolute;left:12px;right:12px;top:12px;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.m-h h2{--bg:#fff;margin:0;padding:5px 12px 7px;font-size:var(--f3);line-height:1}
+.m-spots{position:absolute;inset:0;z-index:1}
+.m-spot{position:absolute;display:flex;flex-direction:column;align-items:center;gap:7px;transform:translate(-50%,-50%)}
+.m-spot img{display:block;image-rendering:pixelated}
+.m-spot .lab{--bg:#fff;display:inline-flex;align-items:center;gap:5px;padding:4px 9px 6px;font-size:var(--f1);line-height:1;white-space:nowrap}
+.m-spot:active .lab{transform:translateY(var(--p));--ds:transparent}
+.m-spot.is-off img{filter:grayscale(1);opacity:.7}
+.m-spot.is-off .lab{--bg:#f3e8ed;--bc:#b9a3ae;color:#a08893}
+.map.is-gate{pointer-events:none}
+.map.is-gate .m-h,.map.is-gate .m-spots{display:none}
+
 /* ---------- shop ---------- */
 .sheet-bg{position:absolute;inset:0;z-index:30;background:rgba(90,42,60,.32);opacity:0;visibility:hidden;transition:opacity .24s steps(3,end),visibility 0s linear .24s}
 .sheet-bg.is-on{opacity:1;visibility:visible;transition:opacity .24s steps(3,end)}
@@ -266,7 +282,7 @@ input{-webkit-user-select:text;user-select:text}
       <button class="tab" type="button" data-room="2"><i data-ic="bath"></i>Ванная</button>
       <button class="tab" type="button" data-room="3"><i data-ic="moon"></i>Спальня</button>
       <button class="tab" type="button" data-room="4"><i data-ic="pad"></i>Игры</button>
-      <button class="tab" type="button" data-room="5"><i data-ic="sprout"></i>Сад</button>
+      <button class="tab" type="button" data-room="5" aria-haspopup="dialog"><i data-ic="pin"></i>Локации</button>
     </nav>
 
     <div class="sheet-bg" id="sheetBg"></div>
@@ -280,6 +296,12 @@ input{-webkit-user-select:text;user-select:text}
       <div class="g-hud"><span class="g-pill pb" id="gScore">0</span><span class="g-pill pb" id="gTime" hidden>0:30</span><button class="x pb press" id="gX" type="button" aria-label="Закрыть"><i data-ic="close"></i></button></div>
       <div class="g-card pb2" id="gStart"><h3 id="gTitle"></h3><p id="gHow"></p><button class="btn pb press" id="gGo" type="button">Старт</button></div>
       <div class="g-card pb2" id="gEnd" hidden><h3>Результат</h3><dl class="res"><dt>Очки</dt><dd id="rScore">0</dd><dt>Рекорд</dt><dd id="rBest">0</dd><dt>Монеты</dt><dd id="rCoins">+0</dd></dl><div class="g-actions"><button class="btn pb press" id="gAgain" type="button">Ещё раз</button><button class="btn btn--ghost pb press" id="gExit" type="button">Выйти</button></div></div>
+    </div>
+
+    <div class="map" id="map" role="dialog" aria-modal="true" aria-label="Локации" hidden>
+      <canvas id="mapCv" aria-hidden="true"></canvas>
+      <div class="m-spots" id="mapSpots"></div>
+      <div class="m-h"><h2 class="pb">Локации</h2><button class="x pb press" id="mapX" type="button" aria-label="Закрыть"><i data-ic="close"></i></button></div>
     </div>
 
     <div class="toast pb" id="toast" role="status"></div>
@@ -1221,6 +1243,7 @@ const IC = {
   phone: ['.#####.', '#.....#', '#.....#', '#.....#', '#.....#', '#.....#', '#.....#', '#.....#', '#..#..#', '.#####.'],
   left: ['....##', '...##.', '..##..', '.##...', '##....', '.##...', '..##..', '...##.', '....##'],
   right: ['##....', '.##...', '..##..', '...##.', '....##', '...##.', '..##..', '.##...', '##....'],
+  pin: ['..#####..', '.#.....#.', '#..###..#', '#.#...#.#', '#..###..#', '.#.....#.', '..#...#..', '...#.#...', '....#....'],
   sprout: ['##.....##', '###...###', '.###.###.', '..##.##..', '....#....', '....#....', '#.#.#.#.#', '#########'],
   seed: ['.#######.', '#.......#', '#..#.#..#', '#.#####.#', '#..###..#', '#...#...#', '#.......#', '#########', '#.#.#.#.#', '#########'],
   pot: ['..#...#...#', '...#...#...', '..#...#...#', '###########', '#.........#', '#.........#', '.#.......#.', '..#######..'],
@@ -1391,6 +1414,168 @@ function gardenBeds(ctx, lw, lh, ox, o, t) {
     const st = o.stageOf(pl);
     ctx.drawImage(plantArt(pl.p, st), ox + r.x + 2, r.y - 12);
     if (st === 'ripe' && (Math.floor(t / 400) + i) % 5 === 0) { ctx.fillStyle = WHITE; const sx = ox + r.x + 15, sy = r.y - 11; ctx.fillRect(sx, sy - 1, 1, 3); ctx.fillRect(sx - 1, sy, 3, 1); }
+  });
+}
+
+/* ---------- locations: map art and the iron gate ---------- */
+const IRON = { d: '#39414e', m: '#5a6472', l: '#80899a', h: '#aab3c0' };
+const STONE = { d: '#8d7d87', m: '#b2a2ab', l: '#d8ccd2', o: '#6b5a63' };
+const MAPART = {
+  garden() {
+    const L = Lay(30, 28);
+    L.fill(0, 25, 30, 3, '#aee09f');
+    [[0, 7], [23, 30]].forEach((seg) => {
+      for (let x = seg[0]; x < seg[1]; x++) {
+        const top = 15 + (x % 3 === 1 ? 1 : 0);
+        for (let y = top; y < 26; y++) L.px(x, y, y === top ? '#8cc79b' : y === top + 1 ? '#6fae82' : (x * 5 + y * 3) % 11 === 0 ? '#58996c' : '#4e8c62');
+      }
+    });
+    [7, 21].forEach((px) => {
+      L.part(L.rect(L.M(), px, 11, 2, 15), (x) => (x === px ? STONE.l : STONE.m), STONE.o);
+      L.part(L.rect(L.M(), px - 1, 9, 4, 2), (x, y) => (y === 9 ? STONE.l : STONE.m), STONE.o);
+      L.px(px, 8, IRON.d);
+    });
+    [[9, 16], [10, 15], [11, 14], [12, 13], [13, 13], [14, 12], [15, 12], [16, 13], [17, 13], [18, 14], [19, 15], [20, 16]].forEach((p) => L.px(p[0], p[1], IRON.l));
+    [[10, 15], [13, 13], [16, 13], [19, 15]].forEach((b) => { L.fill(b[0], b[1] + 1, 1, 24 - b[1], IRON.m); L.px(b[0], b[1] - 1, IRON.d); });
+    L.fill(9, 24, 12, 1, IRON.l);
+    L.fill(9, 20, 12, 1, IRON.m);
+    return L.canvas();
+  },
+  street() {
+    const L = Lay(30, 28);
+    L.fill(0, 25, 30, 3, '#aee09f');
+    L.part(L.rect(L.M(), 2, 12, 10, 10), (x, y) => (y < 14 ? '#ffd3e0' : x === 2 ? '#ffc0d4' : '#fff1f6'), INK);
+    L.part(L.poly(L.M(), [[1, 12], [7, 6], [13, 12]]), (x, y) => (y < 10 ? '#ff8fb0' : '#e8698f'), INK);
+    L.fill(4, 15, 2, 2, '#9fd5ff'); L.fill(8, 15, 2, 2, '#9fd5ff');
+    L.part(L.rect(L.M(), 18, 14, 9, 8), (x, y) => (y < 16 ? '#dceeff' : x === 18 ? '#bedcf5' : '#f2f9ff'), INK);
+    L.part(L.poly(L.M(), [[17, 14], [22.5, 9], [28, 14]]), '#7fb0e8', INK);
+    L.fill(21, 17, 2, 2, '#ffe08a');
+    L.fill(0, 22, 30, 4, '#c8bcc4'); L.fill(0, 22, 30, 1, '#ddd2d9');
+    for (let x = 1; x < 30; x += 7) L.fill(x, 24, 3, 1, '#fff6f9');
+    L.fill(15, 11, 1, 11, IRON.m);
+    L.part(L.rect(L.M(), 14, 8, 3, 3), '#ffe08a', IRON.d);
+    return L.canvas();
+  },
+  events() {
+    const L = Lay(30, 28);
+    L.fill(0, 25, 30, 3, '#aee09f');
+    L.part(L.poly(L.M(), [[15, 6], [27, 25], [3, 25]]), (x, y) => (Math.floor(((x - 15) / Math.max(1, y - 5)) * 4 + 8) % 2 ? '#ff8fb0' : '#fff1f6'), INK);
+    L.part(L.rrect(L.M(), 12, 17, 6, 9, 3), (x, y) => (y > 23 ? '#5a2a3c' : '#7a3c52'), INK);
+    L.fill(15, 2, 1, 5, IRON.d);
+    L.pts([[16, 2], [17, 2], [18, 3], [16, 3], [17, 3], [16, 4]], '#ffe08a');
+    return L.canvas();
+  },
+};
+const mapTree = (big) => art('mtree:' + (big ? 1 : 0), () => {
+  const r = big ? 6 : 5, w = r * 2 + 1, L = Lay(w, r * 2 + 5);
+  L.fill(r - 1, r * 2 - 2, 2, 6, '#8a5f3c');
+  L.part(L.clean(L.ell(L.M(), r, r + 0.5, r, r - 0.5)), (x, y, m) => (!L.has(m, x, y - 1) || !L.has(m, x - 1, y) ? '#bfe8c8' : (x * 5 + y * 7) % 11 === 0 ? '#8cc79b' : '#9fd8ae'), GREEN_O);
+  return L.canvas();
+});
+const MAPDECO = [[0.08, 0.33, 1], [0.87, 0.16, 0], [0.13, 0.46, 0], [0.9, 0.73, 1], [0.62, 0.92, 0], [0.52, 0.4, 1], [0.19, 0.93, 0], [0.8, 0.36, 0], [0.07, 0.68, 1], [0.44, 0.63, 0]];
+function mapPath(ctx, a, b) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], n = Math.max(1, Math.round(Math.hypot(dx, dy) / 6));
+  for (let i = 0; i <= n; i++) {
+    const x = Math.round(a[0] + (dx * i) / n), y = Math.round(a[1] + (dy * i) / n);
+    ctx.fillStyle = '#a86a42'; ctx.fillRect(x - 2, y - 2, 5, 4);
+    ctx.fillStyle = '#c99064'; ctx.fillRect(x - 1, y - 2, 3, 3);
+    ctx.fillStyle = '#ddb189'; ctx.fillRect(x - 1, y - 2, 3, 1);
+  }
+}
+function drawMapBase(ctx, lw, lh) {
+  pattern(ctx, 0, 0, lw, lh, (x, y) => {
+    const s = (x * 7 + y * 13) % 29;
+    if (s === 0) return '#d2f2c4';
+    if (s === 5 || s === 6) return '#9dd793';
+    return Math.floor((y + 3) / 7) % 2 ? '#b5e6a6' : '#aee09f';
+  });
+  const node = (L) => [Math.round(L.nx * lw), Math.round(L.ny * lh) + 10];
+  for (let i = 1; i < LOCS.length; i++) mapPath(ctx, node(LOCS[i - 1]), node(LOCS[i]));
+  MAPDECO.forEach((t) => {
+    const cv = mapTree(!!t[2]);
+    ctx.drawImage(cv, Math.round(t[0] * lw) - (cv.width >> 1), Math.round(t[1] * lh) - (cv.height >> 1));
+  });
+  ctx.fillStyle = GREEN_O;
+  for (let x = 0; x < lw; x++) for (let y = 0; y < lh; y++) {
+    const e = Math.min(x, y, lw - 1 - x, lh - 1 - y);
+    if (e < 3 && (e === 0 || (x + y) % (e + 1) === 0)) ctx.fillRect(x, y, 1, 1);
+  }
+}
+/* the gate is redrawn every frame, so the bars stay on the pixel grid as the leaves swing */
+function gateLeaf(ctx, hx, dir, w, ty, by, arch, nb, face) {
+  const topAt = (i) => ty - Math.round(arch * Math.pow(i / Math.max(1, w - 1), 1.7));
+  const rx = dir > 0 ? hx : hx - w + 1;
+  /* top rail follows the arch */
+  for (let i = 0; i < w; i++) {
+    const x = hx + dir * i, t = topAt(i);
+    ctx.fillStyle = IRON.l; ctx.fillRect(x, t, 1, 1);
+    ctx.fillStyle = IRON.m; ctx.fillRect(x, t + 1, 1, 2);
+  }
+  ctx.fillStyle = IRON.m; ctx.fillRect(rx, by - 3, w, 4);
+  ctx.fillStyle = IRON.l; ctx.fillRect(rx, by - 3, w, 1);
+  const mid = ty + Math.round((by - ty) * 0.62);
+  ctx.fillStyle = IRON.m; ctx.fillRect(rx, mid, w, 2);
+  ctx.fillStyle = IRON.l; ctx.fillRect(rx, mid, w, 1);
+  for (let k = 0; k < nb; k++) {
+    const i = Math.round((k / (nb - 1)) * (w - 1)), x = hx + dir * i, t = topAt(i), bx0 = dir > 0 ? x : x - 1;
+    ctx.fillStyle = IRON.m; ctx.fillRect(bx0, t - 4, 2, by - t + 2);
+    ctx.fillStyle = IRON.l; ctx.fillRect(bx0, t - 4, 1, by - t + 2);
+    ctx.fillStyle = IRON.d; ctx.fillRect(bx0, t - 7, 2, 3);
+  }
+  if (face && w > 18) {
+    const cm = hx + dir * Math.round(w * 0.5), cy = ty + Math.round((by - ty) * 0.34);
+    ctx.fillStyle = IRON.l;
+    [[-4, 0], [-3, -2], [-2, -3], [0, -4], [2, -3], [3, -2], [4, 0], [3, 2], [2, 3], [0, 4], [-2, 3], [-3, 2]].forEach((o) => ctx.fillRect(cm + o[0], cy + o[1], 1, 1));
+    ctx.fillStyle = IRON.h; ctx.fillRect(cm - 1, cy, 3, 1); ctx.fillRect(cm, cy - 1, 1, 3);
+  }
+}
+/* standing outside: hedge walls and stone pillars frame the gate, the garden shows through it */
+function drawGate(ctx, lw, lh, open) {
+  const fy = lh - Math.max(6, Math.round(lh * 0.1));
+  const by = fy + 1;
+  const ht = Math.round(Math.min(lh * 0.46, lw * 0.92));
+  const ty = by - ht;
+  const arch = Math.round(ht * 0.16);
+  const pw = clamp(Math.round(lw * 0.08), 5, 10);
+  const span = Math.min(lw - 8, Math.round(lw * 0.82));
+  const x0 = Math.round((lw - span) / 2), x1 = x0 + span - 1;
+  const half = Math.floor((span - pw * 2) / 2);
+  const e = 1 - Math.pow(1 - open, 3);
+  const w = Math.max(2, Math.round(half * (1 - 0.9 * e)));
+  /* hedge walls out to both edges */
+  const hy = ty - arch - 11;
+  [[0, x0], [x1 + 1, lw]].forEach((seg) => {
+    for (let x = seg[0]; x < seg[1]; x++) {
+      const top = hy + Math.round(1.4 * Math.sin(x * 0.5) + 1.2 * Math.sin(x * 0.17 + 1));
+      for (let y = top; y < fy + 2; y++) {
+        ctx.fillStyle = y === top ? '#8cc79b' : y === top + 1 ? '#6fae82' : (x * 5 + y * 3) % 11 === 0 ? '#58996c' : '#4e8c62';
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  });
+  /* the path we stand on */
+  pattern(ctx, 0, fy, lw, lh - fy, (x, y) => ((x * 7 + y * 11) % 13 === 0 ? '#ddb189' : (x * 5 + y * 3) % 17 === 0 ? '#9a5f3a' : y === 0 ? '#c99064' : '#b87c50'));
+  ctx.fillStyle = '#8a5530'; ctx.fillRect(0, fy, lw, 1);
+  /* leaves, then pillars on top so the leaves tuck behind them */
+  const nb = clamp(Math.round(half / 11) + 1, 3, 6);
+  gateLeaf(ctx, x0 + pw, 1, w, ty, by, arch, nb, open < 0.4);
+  gateLeaf(ctx, x1 - pw, -1, w, ty, by, arch, nb, open < 0.4);
+  if (open < 0.05) {
+    const cm = Math.round(lw / 2), cy = ty + Math.round((by - ty) * 0.46);
+    ctx.fillStyle = IRON.d;
+    [[-1, -3], [0, -3], [-2, -2], [1, -2], [-3, -1], [2, -1], [-3, 0], [2, 0], [-2, 1], [1, 1], [-1, 2], [0, 2]].forEach((o) => ctx.fillRect(cm + o[0], cy + o[1], 1, 1));
+  }
+  [x0, x1 - pw + 1].forEach((px) => {
+    for (let y = ty - arch - 4; y <= by + 2; y++) for (let x = px; x < px + pw; x++) {
+      ctx.fillStyle = x === px ? STONE.l : x === px + pw - 1 ? STONE.d : (y - ty) % 6 === 0 ? STONE.d : STONE.m;
+      ctx.fillRect(x, y, 1, 1);
+    }
+    const cy = ty - arch - 9;
+    ctx.fillStyle = STONE.m; ctx.fillRect(px - 2, cy, pw + 4, 5);
+    ctx.fillStyle = STONE.l; ctx.fillRect(px - 2, cy, pw + 4, 1);
+    ctx.fillStyle = STONE.o; ctx.fillRect(px - 3, cy - 1, pw + 6, 1); ctx.fillRect(px - 3, cy + 5, pw + 6, 1);
+    ctx.fillStyle = IRON.d; ctx.fillRect(px + (pw >> 1) - 1, cy - 5, 3, 4);
+    ctx.fillStyle = IRON.l; ctx.fillRect(px + (pw >> 1) - 1, cy - 5, 1, 4);
   });
 }
 
@@ -1775,6 +1960,8 @@ const Sound = (() => {
     bubble() { const f = rand(500, 900); osc(f, { d: 0.06, vol: 0.045, to: f * 1.9 }); },
     splash() { noise({ d: 1.5, vol: 0.05, f: 3200, q: 0.4 }); noise({ at: 0.05, d: 1.3, vol: 0.03, f: 900, type: 'lowpass', q: 0.5 }); },
     whoosh() { noise({ d: 0.38, vol: 0.022, f: 450, f2: 1600, q: 0.6 }); },
+    clank() { noise({ d: 0.1, vol: 0.05, f: 2400, q: 1.3 }); bell(1046.5, 0.01, 0.04, 0.26); },
+    gate() { noise({ d: 0.75, vol: 0.028, f: 1150, f2: 300, q: 3.6 }); osc(136, { d: 0.62, vol: 0.026, to: 94, type: 'triangle' }); noise({ at: 0.62, d: 0.12, vol: 0.04, f: 2000, q: 1.2 }); },
     lightOff() { [7, 5, 4, 2].forEach((s, i) => bell(pent(s, 60), i * 0.12, 0.06, 1)); },
     lightOn() { [2, 4, 5, 7].forEach((s, i) => bell(pent(s, 64), i * 0.08, 0.07, 0.8)); },
     jump() { osc(320, { d: 0.14, vol: 0.08, to: 720 }); },
@@ -2271,9 +2458,9 @@ function goRoom(i, instant) {
   if (i === 1) renderKitchen();
   save();
 }
-tabs.forEach((t) => t.addEventListener('click', () => goRoom(+t.dataset.room)));
+tabs.forEach((t) => t.addEventListener('click', () => { const i = +t.dataset.room; if (i === 5) MapView.open(); else goRoom(i); }));
 window.addEventListener('keydown', (e) => {
-  if (!$('#game').hidden || sheetOpen || document.activeElement && document.activeElement.tagName === 'INPUT') return;
+  if (!$('#game').hidden || MapView.on || sheetOpen || document.activeElement && document.activeElement.tagName === 'INPUT') return;
   if (e.key === 'ArrowRight') goRoom(room + 1);
   if (e.key === 'ArrowLeft') goRoom(room - 1);
 });
@@ -3168,6 +3355,91 @@ $$('.gcard').forEach((c) => c.addEventListener('click', () => {
   Sound.unlock(); Game.open(c.dataset.game);
 }));
 
+/* ---------- locations: the map and the gate into the garden ---------- */
+const LOCS = [
+  { id: 'garden', name: 'Сад', nx: 0.3, ny: 0.26, room: 5, open: true },
+  { id: 'street', name: 'Улица', nx: 0.71, ny: 0.53, open: false },
+  { id: 'events', name: 'Ивенты', nx: 0.35, ny: 0.79, open: false },
+];
+const MapView = (() => {
+  const wrap = $('#map'), cv = $('#mapCv'), cx = cv.getContext('2d'), spots = $('#mapSpots');
+  const buf = document.createElement('canvas'), bx = buf.getContext('2d');
+  const HOLD = 260, SWING = 900, AFTER = 260, FADE = 240;
+  let d = 1, N = 3, lw = 0, lh = 0, offX = 0, offY = 0, baseCv = null;
+  let raf = 0, t0 = 0, creak = false, gating = false, opened = false, going = null;
+
+  function size() {
+    const r = wrap.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    d = DPR();
+    const W = Math.max(1, Math.round(r.width * d)), H = Math.max(1, Math.round(r.height * d));
+    N = Math.max(2, Math.round(Math.min(H / 140, W / 110)));
+    lw = Math.ceil(W / N); lh = Math.ceil(H / N);
+    offX = Math.floor((W - lw * N) / 2); offY = Math.floor((H - lh * N) / 2);
+    cv.width = W; cv.height = H;
+    buf.width = lw; buf.height = lh;
+    baseCv = null;
+  }
+  function blit() { cx.imageSmoothingEnabled = false; cx.drawImage(buf, 0, 0, lw, lh, offX, offY, lw * N, lh * N); }
+  function base() {
+    if (!baseCv) { const c = document.createElement('canvas'); c.width = lw; c.height = lh; drawMapBase(c.getContext('2d'), lw, lh); baseCv = c; }
+    return baseCv;
+  }
+  function drawMap() { if (!lw) return; bx.drawImage(base(), 0, 0); blit(); }
+  function frame(t) {
+    if (!gating) { raf = 0; return; }
+    raf = requestAnimationFrame(frame);
+    const el = t - t0, open = el < HOLD ? 0 : Math.min(1, (el - HOLD) / SWING);
+    if (open > 0 && !creak) { creak = true; Sound.gate(); }
+    gardenBG(bx, lw, lh, skyNow());
+    drawGate(bx, lw, lh, open);
+    blit();
+    if (el > HOLD + SWING + AFTER) { gating = false; arrive(); }
+  }
+  function arrive() {
+    Scene.pause(false);
+    if (going) goRoom(going.room, true);
+    wrap.classList.remove('is-on');
+    setTimeout(() => { opened = false; wrap.hidden = true; wrap.classList.remove('is-gate'); cancelAnimationFrame(raf); raf = 0; }, FADE);
+  }
+  function render() {
+    spots.innerHTML = LOCS.map((L) => '<button class="m-spot' + (L.open ? '' : ' is-off') + '" type="button" data-loc="' + L.id + '" style="left:' + (L.nx * 100).toFixed(2) + '%;top:' + (L.ny * 100).toFixed(2) + '%">' + imgTag('loc:' + L.id, art('loc:' + L.id, () => MAPART[L.id]()), 3) + '<span class="lab pb">' + (L.open ? '' : icon('lock', 1.5)) + L.name + '</span></button>').join('');
+  }
+  function open() {
+    if (opened) return;
+    opened = true; gating = false; creak = false;
+    wrap.hidden = false; wrap.classList.remove('is-gate');
+    size(); render(); drawMap();
+    void wrap.offsetWidth;
+    wrap.classList.add('is-on');
+    Scene.pause(true); Sound.whoosh();
+  }
+  function close() {
+    if (!opened || gating) return;
+    opened = false;
+    wrap.classList.remove('is-on');
+    Scene.pause(false);
+    setTimeout(() => { if (!opened) wrap.hidden = true; }, FADE);
+  }
+  function enter(L) {
+    going = L; gating = true; creak = false; t0 = performance.now();
+    wrap.classList.add('is-gate');
+    Sound.clank(); Haptic.tap(14);
+    cancelAnimationFrame(raf); raf = requestAnimationFrame(frame);
+  }
+  spots.addEventListener('click', (e) => {
+    const b = e.target.closest('.m-spot');
+    if (!b || gating) return;
+    const L = LOCS.find((x) => x.id === b.dataset.loc);
+    if (!L) return;
+    if (!L.open) { nope($('.lab', b)); toast('Закрыто'); Sound.error(); return; }
+    enter(L);
+  });
+  $('#mapX').addEventListener('click', close);
+  window.addEventListener('keydown', (e) => { if (opened && !gating && e.key === 'Escape') close(); });
+  return { open, close, resize() { if (!wrap.hidden) { size(); if (!gating) drawMap(); } }, get on() { return opened; } };
+})();
+
 /* ---------- sound button, global ---------- */
 const snd = $('#snd');
 function syncSnd() { snd.setAttribute('aria-pressed', String(Sound.on)); snd.setAttribute('aria-label', Sound.on ? 'Выключить звук' : 'Включить звук'); }
@@ -3183,7 +3455,7 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('pagehide', () => { simulate(Date.now()); saveNow(); });
 let rz = 0;
-function onResize() { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => { sizeApp(); FX.resize(); Scene.size(); Game.resize(); }); }
+function onResize() { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => { sizeApp(); FX.resize(); Scene.size(); Game.resize(); MapView.resize(); }); }
 window.addEventListener('resize', onResize);
 if (window.visualViewport) window.visualViewport.addEventListener('resize', onResize);
 window.addEventListener('orientationchange', () => setTimeout(onResize, 300));
@@ -3200,7 +3472,7 @@ renderKitchen();
 renderStats();
 setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); }, 1000);
 setInterval(saveNow, 10000);
-if (location.hash === '#t') window.__t = { S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game };
+if (location.hash === '#t') window.__t = { S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS };
 
 /* разовое уведомление для favie */
 (() => {
