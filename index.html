@@ -14,7 +14,7 @@
 /* уже вошли — сразу на главную */
 (function () { try { var t = JSON.parse(localStorage.getItem('nam2-session') || 'null');
   var ok = ['06fa86697704c28dd78f8b1a68524b5a614fd36d7093b7340d0d38eeff3fc083', 'd90e464ee19f40e230422dfc18fe94ba3e3b00182a6fb7dad12cf19ccdd860bb'];
-  if (t && ok.indexOf(t.t) !== -1) location.replace('home.html'); } catch (e) {} })();
+  if (t && ok.indexOf(t.t) !== -1) location.replace('pet.html'); } catch (e) {} })();
 </script>
 <style>
 :root{
@@ -80,7 +80,7 @@ form.addEventListener('submit', async (e) => {
     const h = await sha256('nam2|' + login + '|' + pass);
     if (USERS[login] && USERS[login] === h) {
       try { localStorage.setItem('nam2-session', JSON.stringify({ u: login, t: h })); } catch (err) { /* ignore */ }
-      location.replace('home.html');
+      location.replace('pet.html');
       return;
     }
     fail('Неверный логин или пароль');
