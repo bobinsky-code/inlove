@@ -121,6 +121,7 @@ input{-webkit-user-select:text;user-select:text}
 .tab:active{background:#fff0f5}
 .tab.is-on{background:var(--rose0);color:var(--rose2);box-shadow:inset var(--p) 0 0 0 var(--ink),inset 0 calc(var(--p) * 2) 0 0 rgba(90,42,60,.12)}
 .tab.is-on:first-child{box-shadow:inset 0 calc(var(--p) * 2) 0 0 rgba(90,42,60,.12)}
+.tabs--loc{grid-template-columns:repeat(2,1fr)}
 
 /* ---------- locations map ---------- */
 .map{position:absolute;inset:0;z-index:38;background:#aee09f;overflow:hidden;opacity:0;transition:opacity .24s steps(3,end);clip-path:polygon(var(--p) 0,calc(100% - var(--p)) 0,100% var(--p),100% calc(100% - var(--p)),calc(100% - var(--p)) 100%,var(--p) 100%,0 calc(100% - var(--p)),0 var(--p))}
@@ -276,13 +277,18 @@ input{-webkit-user-select:text;user-select:text}
       </div>
     </section>
 
-    <nav class="tabs pb" aria-label="Комнаты">
+    <nav class="tabs pb" id="tabsHouse" aria-label="Комнаты">
       <button class="tab" type="button" data-room="0"><i data-ic="sofa"></i>Комната</button>
       <button class="tab" type="button" data-room="1"><i data-ic="bowl"></i>Кухня</button>
       <button class="tab" type="button" data-room="2"><i data-ic="bath"></i>Ванная</button>
       <button class="tab" type="button" data-room="3"><i data-ic="moon"></i>Спальня</button>
       <button class="tab" type="button" data-room="4"><i data-ic="pad"></i>Игры</button>
       <button class="tab" type="button" data-room="5" aria-haspopup="dialog"><i data-ic="pin"></i>Локации</button>
+    </nav>
+
+    <nav class="tabs tabs--loc pb" id="tabsLoc" aria-label="Локация" hidden>
+      <button class="tab" type="button" id="homeBtn"><i data-ic="home"></i>Домой</button>
+      <button class="tab is-on" type="button" id="locBtn" aria-haspopup="dialog"><i data-ic="pin"></i>Локации</button>
     </nav>
 
     <div class="sheet-bg" id="sheetBg"></div>
@@ -1243,6 +1249,7 @@ const IC = {
   phone: ['.#####.', '#.....#', '#.....#', '#.....#', '#.....#', '#.....#', '#.....#', '#.....#', '#..#..#', '.#####.'],
   left: ['....##', '...##.', '..##..', '.##...', '##....', '.##...', '..##..', '...##.', '....##'],
   right: ['##....', '.##...', '..##..', '...##.', '....##', '...##.', '..##..', '.##...', '##....'],
+  home: ['.....#.....', '....###....', '...#####...', '..#######..', '.#########.', '.#.......#.', '.#..###..#.', '.#..#.#..#.', '.#########.'],
   pin: ['..#####..', '.#.....#.', '#..###..#', '#.#...#.#', '#..###..#', '.#.....#.', '..#...#..', '...#.#...', '....#....'],
   sprout: ['##.....##', '###...###', '.###.###.', '..##.##..', '....#....', '....#....', '#.#.#.#.#', '#########'],
   seed: ['.#######.', '#.......#', '#..#.#..#', '#.#####.#', '#..###..#', '#...#...#', '#.......#', '#########', '#.#.#.#.#', '#########'],
@@ -1813,11 +1820,13 @@ const BUFF_TX = { xp2: 'Опыт ×2', coins2: 'Монеты ×2', nofun: 'На�
 const RATE = { awake: { food: -12, fun: -10, energy: -8, clean: -6 }, sleep: { food: -6, fun: 0, energy: 25, clean: -3 } };
 const needXP = (l) => 60 + (l - 1) * 40;
 const GAME_COST = 10;
+/* комнаты дома — 0..4, дальше идут локации с карты */
+const HOUSE = 4;
 
 /* ---------- state ---------- */
 function freshGarden() { return { plots: [null, null, null], seeds: {}, crops: {}, dishes: {}, known: {} }; }
 function fresh(now) {
-  return { v: 1, name: 'Питомец', t: now, food: 80, fun: 75, energy: 90, clean: 85, sleeping: false, xp: 0, lvl: 1, coins: 50, owned: {}, walls: { pink: true }, wall: 'pink', best: { catch: 0, run: 0 }, petWin: { t: now, n: 0 }, room: 0,
+  return { v: 1, name: 'Питомец', t: now, food: 80, fun: 75, energy: 90, clean: 85, sleeping: false, xp: 0, lvl: 1, coins: 50, owned: {}, walls: { pink: true }, wall: 'pink', best: { catch: 0, run: 0 }, petWin: { t: now, n: 0 }, room: 0, home: 0,
     wardrobe: {}, wear: {}, garden: freshGarden(), sick: null, healedAt: 0, buffs: {}, created: now };
 }
 function load() {
@@ -1838,6 +1847,7 @@ function load() {
       m.sick = s.sick && SICK[s.sick.k] ? s.sick : null;
       m.created = s.created || now;
       if (m.room > 5) m.room = 0;
+      m.home = clamp(Math.round(+s.home || 0), 0, HOUSE);
       return m;
     }
   } catch (e) { /* fresh state */ }
@@ -2443,26 +2453,33 @@ nameBtn.addEventListener('click', () => {
 
 /* ---------- rooms ---------- */
 let room = -1;
-const tabs = $$('.tab'), panes = $$('.pane');
+const houseBar = $('#tabsHouse'), locBar = $('#tabsLoc');
+const tabs = $$('.tab', houseBar), panes = $$('.pane');
 function goRoom(i, instant) {
   i = clamp(i, 0, 5);
   if (i === room) return;
   if (S.sleeping && i !== 3) setSleep(false);
   const first = room === -1;
   room = i; S.room = i;
+  if (i <= HOUSE) S.home = i;
   if (instant || first) Scene.go(i, true);
   else { Scene.go(i); Sound.whoosh(); }
   tabs.forEach((t, k) => { t.classList.toggle('is-on', k === i); t.setAttribute('aria-current', k === i ? 'page' : 'false'); });
   panes.forEach((p, k) => p.classList.toggle('is-on', k === i));
+  houseBar.hidden = i > HOUSE; locBar.hidden = i <= HOUSE;
   if (i !== 2) Scene.sponge(null);
   if (i === 1) renderKitchen();
   save();
 }
-tabs.forEach((t) => t.addEventListener('click', () => { const i = +t.dataset.room; if (i === 5) MapView.open(); else goRoom(i); }));
+/* swipes and arrows walk the house only: a location is entered through the map */
+function stepRoom(d) { if (room > HOUSE) return; goRoom(clamp(room + d, 0, HOUSE)); }
+tabs.forEach((t) => t.addEventListener('click', () => { const i = +t.dataset.room; if (i > HOUSE) MapView.open(); else goRoom(i); }));
+$('#homeBtn').addEventListener('click', () => goRoom(clamp(S.home, 0, HOUSE)));
+$('#locBtn').addEventListener('click', () => MapView.open());
 window.addEventListener('keydown', (e) => {
   if (!$('#game').hidden || MapView.on || sheetOpen || document.activeElement && document.activeElement.tagName === 'INPUT') return;
-  if (e.key === 'ArrowRight') goRoom(room + 1);
-  if (e.key === 'ArrowLeft') goRoom(room - 1);
+  if (e.key === 'ArrowRight') stepRoom(1);
+  if (e.key === 'ArrowLeft') stepRoom(-1);
 });
 function renderRooms() {
   Scene.refresh();
@@ -2529,7 +2546,7 @@ sceneCv.addEventListener('pointerup', (e) => {
   if (rub) { endRub(e); return; }
   if (!sw) return;
   const dx = e.clientX - sw.x, dy = e.clientY - sw.y; sw = null;
-  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3) { goRoom(room + (dx < 0 ? 1 : -1)); return; }
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3) { stepRoom(dx < 0 ? 1 : -1); return; }
   if (Math.hypot(dx, dy) > 12) return;
   const hit = Scene.tapAt(e);
   if (!hit) return;
