@@ -14,10 +14,10 @@ import {
 /* локально поднимается эмулятор, на сайте — настоящий проект */
 const LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 const PROD = {
-  apiKey: '',
-  authDomain: '',
-  projectId: '',
-  appId: '',
+  apiKey: 'AIzaSyBJXEd_E18fIBLnp_WSk0lFo1Hg-zRgTh4',
+  authDomain: 'inlove-83f63.firebaseapp.com',
+  projectId: 'inlove-83f63',
+  appId: '1:1059697884669:web:123d6191b81a9777faad94',
 };
 const CFG = LOCAL ? { apiKey: 'emulator', authDomain: 'localhost', projectId: 'demo-inlove', appId: 'emulator' } : PROD;
 
