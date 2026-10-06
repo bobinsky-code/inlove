@@ -287,7 +287,7 @@ input{-webkit-user-select:text;user-select:text}
 .gcard .go i{display:inline-flex;align-items:center;gap:2px;font-style:normal}
 
 /* ---------- tabs ---------- */
-.tabs{flex:none;display:grid;grid-template-columns:repeat(3,1fr);margin:0 2px 4px}
+.tabs{flex:none;display:grid;grid-template-columns:repeat(4,1fr);margin:0 2px 4px}
 .tab{min-width:0;display:grid;grid-template-rows:20px auto;justify-items:center;align-items:center;gap:5px;padding:7px 0 7px;color:var(--ink2);font-size:10px;line-height:1;white-space:nowrap;box-shadow:inset var(--p) 0 0 0 var(--ink)}
 .tab:first-child{box-shadow:none}
 .tab:active{background:#fff0f5}
@@ -356,6 +356,10 @@ input{-webkit-user-select:text;user-select:text}
 .wd-item.is-breed{--bc:#000}
 .wd-item.is-breed.is-on{--bg:#f3eef0;--bc:#000}
 .wd-empty{grid-column:1/-1;margin:10px 2px;font-size:var(--f1);line-height:1.4;color:var(--ink2);text-align:center}
+.mk-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:6px 2px -2px}
+.mk-h p{margin:0;font-size:var(--f1);color:var(--ink2)}
+.mk-h b{font-size:var(--f1);line-height:1;color:var(--rose2);white-space:nowrap}
+.wd-item.is-soon{opacity:.55}
 .mx{display:flex;flex-direction:column;align-items:center;gap:16px;padding:4px 2px 2px}
 .mx-row{display:flex;align-items:center;gap:8px}
 .mx-slot{--bg:#fff7fa;width:56px;height:56px;display:grid;place-items:center;color:var(--ink2);font-size:var(--f3);line-height:1}
@@ -433,7 +437,6 @@ input{-webkit-user-select:text;user-select:text}
 
     <section class="panel" aria-live="polite">
       <div class="pane" data-pane="0">
-        <button class="btn pb press" id="shopBtn" type="button"><i data-ic="cart"></i>Магазин</button>
         <p class="hint">Нажми на питомца или погладь его</p>
       </div>
       <div class="pane" data-pane="1">
@@ -470,6 +473,7 @@ input{-webkit-user-select:text;user-select:text}
     <nav class="tabs pb" aria-label="Разделы">
       <button class="tab" type="button" id="homeBtn"><i data-ic="home"></i>Дом</button>
       <button class="tab" type="button" id="locBtn" aria-haspopup="dialog"><i data-ic="pin"></i>Локации</button>
+      <button class="tab" type="button" id="marketBtn" aria-haspopup="dialog"><i data-ic="cart"></i>Магазин</button>
       <button class="tab" type="button" id="peopleBtn" aria-haspopup="dialog"><i data-ic="user"></i>Люди</button>
     </nav>
 
@@ -2877,7 +2881,7 @@ nameBtn.addEventListener('click', () => {
 
 /* ---------- rooms ---------- */
 let room = -1;
-const homeBtn = $('#homeBtn'), locBtn = $('#locBtn'), peopleBtn = $('#peopleBtn'), dotsEl = $('#dots'), panes = $$('.pane');
+const homeBtn = $('#homeBtn'), locBtn = $('#locBtn'), marketBtn = $('#marketBtn'), peopleBtn = $('#peopleBtn'), dotsEl = $('#dots'), panes = $$('.pane');
 const ROOM_NAMES = ['Комната', 'Кухня', 'Ванная', 'Спальня', 'Игры'];
 dotsEl.innerHTML = ROOM_NAMES.map((n) => '<button type="button" aria-label="' + n + '"></button>').join('');
 const dots = $$('button', dotsEl);
@@ -2908,6 +2912,7 @@ function stepRoom(d) { if (room > HOUSE) return; goRoom(clamp(room + d, 0, HOUSE
 dotsEl.addEventListener('click', (e) => { const i = dots.indexOf(e.target.closest('button')); if (i >= 0) goRoom(i); });
 homeBtn.addEventListener('click', () => { if (room > HOUSE) goRoom(clamp(S.home, 0, HOUSE)); });
 locBtn.addEventListener('click', () => MapView.open());
+marketBtn.addEventListener('click', () => openSheet('shop'));
 peopleBtn.addEventListener('click', () => { foundList = null; openSheet('people'); });
 window.addEventListener('keydown', (e) => {
   if (!$('#game').hidden || MapView.on || sheetOpen || document.activeElement && document.activeElement.tagName === 'INPUT') return;
@@ -3221,10 +3226,42 @@ function burstAt(el, o) { const b = el.getBoundingClientRect(); FX.burst(b.right
 
 /* shop */
 const THUMB = { rug: () => obj('rug'), ball: () => obj('ball'), plant: () => obj('plant'), picture: () => obj('picture'), lamp: () => obj('lamp'), garland: () => obj('garlandThumb'), bigbowl: () => obj('bowl', 1), bed: () => obj('bed') };
+/* ---------- витрина дня: случайная одежда, одна и та же у обоих ---------- */
+const MK_DAY = 5;                                   /* сколько вещей в витрине */
+const mkDay = () => Math.floor(Date.now() / 86400e3);
+const mkLeft = () => 86400e3 - (Date.now() % 86400e3);
+function mkLeftTX() {
+  const m = Math.max(0, Math.floor(mkLeft() / 60e3)), h = Math.floor(m / 60);
+  return h ? h + ' ч ' + (m % 60) + ' мин' : m + ' мин';
+}
+/* один и тот же набор у обоих владельцев и на всех устройствах: считаем от номера дня */
+function mkPick(day, list, n) {
+  let seed = (day * 2654435761 + 12345) % 2147483647;
+  if (seed <= 0) seed += 2147483646;
+  const rnd = () => (seed = (seed * 48271) % 2147483647) / 2147483647;
+  const a = list.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a.slice(0, n);
+}
+const mkToday = () => mkPick(mkDay(), CLOTHES, MK_DAY);
+function mkTick() {
+  if (!sheetOpen || sheetMode !== 'shop') return;
+  const el = $('#mkLeft');
+  if (el) el.textContent = mkLeftTX();
+}
+
 SHEETS.shop = {
   title: 'Магазин',
   render() {
-    let html = '', sec = '';
+    let html = '<div class="mk-h"><p>Сегодня в продаже</p><b id="mkLeft">' + mkLeftTX() + '</b></div><div class="wd-grid">';
+    mkToday().forEach((c) => {
+      const own = !!S.wardrobe[c.id], low = S.lvl < c.lvl;
+      html += '<button class="wd-item pb press' + (own ? ' is-on' : low ? ' is-soon' : '') + '" type="button" data-cloth="' + c.id + '">'
+        + imgTag('wdi:' + c.id + ':' + S.skin, petFrame(Object.assign({}, PET_BASE, { wear: { [c.slot]: c.id } })).cv, 1.5)
+        + '<b>' + c.name + '</b>' + priceTag(c.price, c.lvl, own, 'Куплено') + '</button>';
+    });
+    html += '</div><div class="mk-h"><p>Всегда в продаже</p></div>';
+    let sec = '';
     ITEMS.forEach((it) => {
       if (it.sec !== sec) { sec = it.sec; html += '<p class="sec">' + sec + '</p>'; }
       html += rowHTML('data-kind="item" data-id="' + it.id + '"', thumb('it-' + it.id, THUMB[it.id]()), it.name, it.fx || 'Украшение', priceTag(it.price, it.lvl, !!S.owned[it.id], 'Куплено'));
@@ -3237,6 +3274,18 @@ SHEETS.shop = {
     sheetBody.innerHTML = html;
   },
   click(e) {
+    const cl = e.target.closest('[data-cloth]');
+    if (cl) {
+      const c = CLOTHES.find((x) => x.id === cl.dataset.cloth); if (!c) return;
+      if (S.wardrobe[c.id]) { toast('Уже куплено'); Sound.error(); return; }
+      if (!buyCheck(cl, c.price, c.lvl)) return;
+      addCoins(-c.price);
+      S.wardrobe[c.id] = true; S.wear[c.slot] = c.id;
+      Sound.coin(); Haptic.tap(12); burstAt(cl);
+      toast('Куплено: ' + c.name);
+      this.render(); Scene.kick(); save();
+      return;
+    }
     const r = e.target.closest('.row'); if (!r) return;
     const kind = r.dataset.kind, id = r.dataset.id;
     const it = (kind === 'item' ? ITEMS : WALLS).find((x) => x.id === id); if (!it) return;
@@ -3254,7 +3303,6 @@ SHEETS.shop = {
     this.render(); renderRooms(); renderKitchen(); save();
   },
 };
-$('#shopBtn').addEventListener('click', () => openSheet('shop'));
 
 /* wardrobe */
 let wdSlot = 'head';
@@ -3279,7 +3327,8 @@ SHEETS.wardrobe = {
     } else {
       CLOTHES.filter((c) => c.slot === wdSlot).forEach((c) => {
         const own = !!S.wardrobe[c.id], worn = w[c.slot] === c.id;
-        const tag = own ? '<span class="buy pb is-owned">' + (worn ? 'Снять' : 'Надеть') + '</span>' : priceTag(c.price, c.lvl, false, '');
+        const tag = own ? '<span class="buy pb is-owned">' + (worn ? 'Снять' : 'Надеть') + '</span>'
+          : '<span class="buy pb is-locked">В магазине</span>';
         html += '<button class="wd-item pb press' + (worn ? ' is-on' : '') + '" type="button" data-cloth="' + c.id + '">' + imgTag('wdi:' + c.id + ':' + S.skin, petFrame(Object.assign({}, PET_BASE, { wear: { [c.slot]: c.id } })).cv, 1.5) + '<b>' + c.name + '</b>' + tag + '</button>';
       });
     }
@@ -3298,13 +3347,8 @@ SHEETS.wardrobe = {
       return;
     }
     const c = CLOTHES.find((x) => x.id === el.dataset.cloth); if (!c) return;
-    if (!S.wardrobe[c.id]) {
-      if (!buyCheck(el, c.price, c.lvl)) return;
-      addCoins(-c.price);
-      S.wardrobe[c.id] = true; S.wear[c.slot] = c.id;
-      Sound.coin(); Haptic.tap(12); burstAt(el);
-      toast('Куплено: ' + c.name);
-    } else if (S.wear[c.slot] === c.id) { S.wear[c.slot] = null; Sound.boop(); }
+    if (!S.wardrobe[c.id]) { nope(el); toast('Продаётся в магазине'); Sound.error(); return; }
+    if (S.wear[c.slot] === c.id) { S.wear[c.slot] = null; Sound.boop(); }
     else { S.wear[c.slot] = c.id; Sound.boop(); Haptic.tap(6); }
     if (S.wear[c.slot]) setTimeout(() => emote('heart'), 400);
     save(); this.render(); Scene.kick();
@@ -4255,7 +4299,7 @@ if (PEOPLE) PEOPLE.watch((st) => {
   renderPeople();
   if (sheetMode === 'people' || sheetMode === 'person') renderSheet();
 });
-setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); }, 1000);
+setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); mkTick(); }, 1000);
 setInterval(saveNow, 10000);
 if (OWNERS && !IS_ADMIN && S.skin) { S.skin = ''; save(); }
 if (Sync) Sync.onRemote(applyRemote);
