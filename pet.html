@@ -2434,7 +2434,12 @@ function baseMood() {
   if (S.food < 20 || S.fun < 20 || S.clean < 15 || S.energy < 15) return 'sad';
   return 'idle';
 }
-function skyNow() { const h = new Date().getHours(); return h >= 21 || h < 5 ? 'night' : h >= 18 || h < 7 ? 'eve' : 'day'; }
+/* спит питомец — за окном ночь с луной, когда бы он ни лёг */
+function skyNow() {
+  if (S.sleeping) return 'night';
+  const h = new Date().getHours();
+  return h >= 21 || h < 5 ? 'night' : h >= 18 || h < 7 ? 'eve' : 'day';
+}
 const plantOf = (id) => PLANTS.find((p) => p.id === id) || PLANTS[0];
 function growLeft(pl) { return pl.t + plantOf(pl.p).min * 60e3 - Date.now(); }
 function stageOf(pl) { const k = (Date.now() - pl.t) / (plantOf(pl.p).min * 60e3); return k < 0.12 ? 'seed' : k < 0.45 ? 'sprout' : k < 1 ? 'young' : 'ripe'; }
@@ -2658,12 +2663,13 @@ const Scene = (() => {
     cx.imageSmoothingEnabled = false;
     cx.drawImage(buf, offX, offY, lw * N, lh * N);
   }
-  /* свет выключен только там, где спит питомец: по остальному дому можно ходить */
+  /* питомец спит — темно во всей квартире, ходить по ней это не мешает.
+     В саду своя ночь с луной, затемнять его сверху не нужно */
   function nightSync(instant) {
-    const on = S.sleeping && cur === 3;
+    const on = S.sleeping && cur <= HOUSE;
     nightOn = on;
     if (instant) nightA = on ? 1 : 0;
-    if (!on) parts = parts.filter((q) => q.k !== 'z');
+    if (!on || cur !== 3) parts = parts.filter((q) => q.k !== 'z');   /* «z» только там, где спит питомец */
     lastDraw = 0;
   }
   function busy() { return sliding || !!tw || !!Pet.action || parts.length > 0 || !!spongeAt || !!shower || !!flying || foam.some((b) => b.pop) || Math.abs(nightA - (nightOn ? 1 : 0)) > 0.001; }
