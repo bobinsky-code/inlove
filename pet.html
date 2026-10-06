@@ -315,7 +315,7 @@ input{-webkit-user-select:text;user-select:text}
       </div>
       <div class="pane" data-pane="3">
         <button class="btn pb press" id="lightBtn" type="button"><i data-ic="bulb"></i><span id="lightTx">Выключить свет</span></button>
-        <p class="hint" id="sleepHint">Полная энергия за 20 минут сна</p>
+        <p class="hint" id="sleepHint">Полная энергия за час сна</p>
       </div>
       <div class="pane" data-pane="4">
         <div class="games">
@@ -1823,7 +1823,7 @@ const ITEMS = [
   { id: 'lamp', name: 'Торшер', sec: 'Комната', price: 110, lvl: 4 },
   { id: 'garland', name: 'Гирлянда', sec: 'Комната', price: 130, lvl: 5 },
   { id: 'bigbowl', name: 'Большая миска', sec: 'Кухня', price: 120, lvl: 2, fx: 'Еда сытнее на 25%' },
-  { id: 'bed', name: 'Лежанка', sec: 'Спальня', price: 150, lvl: 3, fx: 'Сон быстрее: энергия за 15 минут' },
+  { id: 'bed', name: 'Лежанка', sec: 'Спальня', price: 150, lvl: 3, fx: 'Сон быстрее: энергия за 40 минут' },
 ];
 const WALLS = [
   { id: 'pink', name: 'Розовые', price: 0, lvl: 1 },
@@ -1879,7 +1879,7 @@ const DISHES = {
 const SICK = { cold: { need: ['daisy', 'mint'], cure: 'простуду' }, tummy: { need: ['carrot', 'mint'], cure: 'живот' } };
 const BUFF_TX = { xp2: 'Опыт ×2', coins2: 'Монеты ×2', nofun: 'Настроение не падает' };
 /* изменение показателей в час */
-const RATE = { awake: { food: -12, fun: -10, energy: -8, clean: -6 }, sleep: { food: -6, fun: 0, energy: 300, clean: -3 } };
+const RATE = { awake: { food: -12, fun: -10, energy: -8, clean: -6 }, sleep: { food: -6, fun: 0, energy: 100, clean: -3 } };
 const needXP = (l) => 60 + (l - 1) * 40;
 const GAME_COST = 10;
 /* комнаты дома — 0..4, дальше идут локации с карты */
@@ -1947,7 +1947,7 @@ function simulate(now) {
   if (!(h > 0)) return;
   h = Math.min(h, 72);
   const r = S.sleeping ? RATE.sleep : RATE.awake;
-  let fun = r.fun, energy = S.sleeping ? (S.owned.bed ? 400 : 300) : r.energy;
+  let fun = r.fun, energy = S.sleeping ? (S.owned.bed ? 150 : 100) : r.energy;
   if (!S.sleeping) {
     if (S.food < 25 || S.clean < 25) fun *= 1.5;
     if (S.owned.ball) fun *= 0.85;
@@ -2564,7 +2564,7 @@ window.addEventListener('keydown', (e) => {
 });
 function renderRooms() {
   Scene.refresh();
-  $('#sleepHint').textContent = 'Полная энергия за ' + (S.owned.bed ? 15 : 20) + ' минут сна';
+  $('#sleepHint').textContent = 'Полная энергия за ' + (S.owned.bed ? '40 минут' : 'час') + ' сна';
 }
 
 /* ---------- petting, washing, taps, swiping ---------- */
