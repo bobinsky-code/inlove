@@ -168,13 +168,17 @@ input{-webkit-user-select:text;user-select:text}
 .gcard .go i{display:inline-flex;align-items:center;gap:2px;font-style:normal}
 
 /* ---------- tabs ---------- */
-.tabs{flex:none;display:grid;grid-template-columns:repeat(6,1fr);margin:0 2px 4px}
+.tabs{flex:none;display:grid;grid-template-columns:repeat(2,1fr);margin:0 2px 4px}
 .tab{min-width:0;display:grid;grid-template-rows:20px auto;justify-items:center;align-items:center;gap:5px;padding:7px 0 7px;color:var(--ink2);font-size:10px;line-height:1;white-space:nowrap;box-shadow:inset var(--p) 0 0 0 var(--ink)}
 .tab:first-child{box-shadow:none}
 .tab:active{background:#fff0f5}
 .tab.is-on{background:var(--rose0);color:var(--rose2);box-shadow:inset var(--p) 0 0 0 var(--ink),inset 0 calc(var(--p) * 2) 0 0 rgba(90,42,60,.12)}
 .tab.is-on:first-child{box-shadow:inset 0 calc(var(--p) * 2) 0 0 rgba(90,42,60,.12)}
-.tabs--loc{grid-template-columns:repeat(2,1fr)}
+/* точки под сценой: сколько комнат и в какой ты сейчас */
+.dots{flex:none;display:flex;justify-content:center;align-items:center;gap:8px;height:10px;margin:-6px 0 -4px}
+.dots button{position:relative;width:8px;height:8px;padding:0;background:var(--rose1);transition:background .15s steps(2,end)}
+.dots button::after{content:'';position:absolute;inset:-11px -7px}
+.dots button.on{background:var(--rose2);box-shadow:0 0 0 var(--p) var(--rose0)}
 
 /* ---------- locations map ---------- */
 .map{position:absolute;inset:0;z-index:38;background:#aee09f;overflow:hidden;opacity:0;transition:opacity .24s steps(3,end);clip-path:polygon(var(--p) 0,calc(100% - var(--p)) 0,100% var(--p),100% calc(100% - var(--p)),calc(100% - var(--p)) 100%,var(--p) 100%,0 calc(100% - var(--p)),0 var(--p))}
@@ -302,6 +306,8 @@ input{-webkit-user-select:text;user-select:text}
       <canvas id="sceneCv" role="img" aria-label="Питомец"></canvas>
     </section>
 
+    <div class="dots" id="dots" aria-label="Комнаты"></div>
+
     <section class="panel" aria-live="polite">
       <div class="pane" data-pane="0">
         <button class="btn pb press" id="shopBtn" type="button"><i data-ic="cart"></i>Магазин</button>
@@ -338,18 +344,9 @@ input{-webkit-user-select:text;user-select:text}
       </div>
     </section>
 
-    <nav class="tabs pb" id="tabsHouse" aria-label="Комнаты">
-      <button class="tab" type="button" data-room="0"><i data-ic="sofa"></i>Комната</button>
-      <button class="tab" type="button" data-room="1"><i data-ic="bowl"></i>Кухня</button>
-      <button class="tab" type="button" data-room="2"><i data-ic="bath"></i>Ванная</button>
-      <button class="tab" type="button" data-room="3"><i data-ic="moon"></i>Спальня</button>
-      <button class="tab" type="button" data-room="4"><i data-ic="pad"></i>Игры</button>
-      <button class="tab" type="button" data-room="5" aria-haspopup="dialog"><i data-ic="pin"></i>Локации</button>
-    </nav>
-
-    <nav class="tabs tabs--loc pb" id="tabsLoc" aria-label="Локация" hidden>
-      <button class="tab" type="button" id="homeBtn"><i data-ic="home"></i>Домой</button>
-      <button class="tab is-on" type="button" id="locBtn" aria-haspopup="dialog"><i data-ic="pin"></i>Локации</button>
+    <nav class="tabs pb" aria-label="Разделы">
+      <button class="tab" type="button" id="homeBtn"><i data-ic="home"></i>Дом</button>
+      <button class="tab" type="button" id="locBtn" aria-haspopup="dialog"><i data-ic="pin"></i>Локации</button>
     </nav>
 
     <div class="sheet-bg" id="sheetBg"></div>
@@ -2573,8 +2570,10 @@ nameBtn.addEventListener('click', () => {
 
 /* ---------- rooms ---------- */
 let room = -1;
-const houseBar = $('#tabsHouse'), locBar = $('#tabsLoc');
-const tabs = $$('.tab', houseBar), panes = $$('.pane');
+const homeBtn = $('#homeBtn'), locBtn = $('#locBtn'), dotsEl = $('#dots'), panes = $$('.pane');
+const ROOM_NAMES = ['Комната', 'Кухня', 'Ванная', 'Спальня', 'Игры'];
+dotsEl.innerHTML = ROOM_NAMES.map((n) => '<button type="button" aria-label="' + n + '"></button>').join('');
+const dots = $$('button', dotsEl);
 function goRoom(i, instant) {
   i = clamp(i, 0, 5);
   if (i === room) return;
@@ -2584,18 +2583,24 @@ function goRoom(i, instant) {
   if (i <= HOUSE) S.home = i;
   if (instant || first) Scene.go(i, true);
   else { Scene.go(i); Sound.whoosh(); }
-  tabs.forEach((t, k) => { t.classList.toggle('is-on', k === i); t.setAttribute('aria-current', k === i ? 'page' : 'false'); });
   panes.forEach((p, k) => p.classList.toggle('is-on', k === i));
-  houseBar.hidden = i > HOUSE; locBar.hidden = i <= HOUSE;
+  const inHouse = i <= HOUSE;
+  homeBtn.classList.toggle('is-on', inHouse);
+  locBtn.classList.toggle('is-on', !inHouse);
+  homeBtn.setAttribute('aria-current', inHouse ? 'page' : 'false');
+  locBtn.setAttribute('aria-current', inHouse ? 'false' : 'page');
+  dotsEl.hidden = !inHouse;
+  dots.forEach((d, k) => d.classList.toggle('on', k === i));
   if (i !== 2) Scene.sponge(null);
   if (i === 1) renderKitchen();
   save();
 }
 /* swipes and arrows walk the house only: a location is entered through the map */
 function stepRoom(d) { if (room > HOUSE) return; goRoom(clamp(room + d, 0, HOUSE)); }
-tabs.forEach((t) => t.addEventListener('click', () => { const i = +t.dataset.room; if (i > HOUSE) MapView.open(); else goRoom(i); }));
-$('#homeBtn').addEventListener('click', () => goRoom(clamp(S.home, 0, HOUSE)));
-$('#locBtn').addEventListener('click', () => MapView.open());
+/* точки — не только указатель: по ним можно перейти сразу в нужную комнату */
+dotsEl.addEventListener('click', (e) => { const i = dots.indexOf(e.target.closest('button')); if (i >= 0) goRoom(i); });
+homeBtn.addEventListener('click', () => { if (room > HOUSE) goRoom(clamp(S.home, 0, HOUSE)); });
+locBtn.addEventListener('click', () => MapView.open());
 window.addEventListener('keydown', (e) => {
   if (!$('#game').hidden || MapView.on || sheetOpen || document.activeElement && document.activeElement.tagName === 'INPUT') return;
   if (e.key === 'ArrowRight') stepRoom(1);
