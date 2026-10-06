@@ -38,12 +38,18 @@ if (!CONFIGURED) {
     let started = false, remote = null, writeT = 0, retryT = 0, pending = null;
     /* комната у каждого устройства своя, её не делим */
     const SKIP = { room: 1, home: 1 };
-    /* монеты — счётчик: шлём, на сколько их стало больше или меньше, а не итог.
-       Тогда две траты в одну секунду с двух устройств складываются, а не затирают друг друга */
-    const COUNT = { coins: 1 };
+    /* монеты и опыт — счётчики: шлём, на сколько их стало больше или меньше, а не итог.
+       Тогда две траты (или два заработка) в одну секунду с двух устройств
+       складываются, а не затирают друг друга */
+    const COUNT = { coins: 1, xp: 1 };
     /* что, насколько мы знаем, лежит на сервере: ключ состояния → его JSON.
        отсюда видно, какие поля изменили мы, а какие — второй владелец */
     const base = {};
+    /* сад пишется целиком, поэтому две грядки в одну секунду затирают друг друга.
+       Пока наша запись не дошла до сервера, храним точку, от которой мы считали:
+       по ней видно, что именно изменил второй, и его правка складывается с нашей */
+    const DEEP = { garden: 1 };
+    const from = {};
     const jsonOf = (v) => { try { return JSON.stringify(v); } catch (e) { return undefined; } };
     function push() {
       const state = pending; pending = null;
@@ -62,9 +68,15 @@ if (!CONFIGURED) {
       });
       const keys = Object.keys(sent);
       if (!keys.length) return;                          /* ничего не поменялось — не пишем */
-      keys.forEach((k) => { base[k] = sent[k]; });
-      savePet(petId, patch, client).catch(() => {
-        keys.forEach((k) => { delete base[k]; });         /* отправим заново */
+      keys.forEach((k) => {
+        if (DEEP[k] && base[k] !== undefined) from[k] = { v: base[k], t: 0 };
+        base[k] = sent[k];
+      });
+      savePet(petId, patch, client).then(() => {
+        /* запись дошла: дальше чужие правки уже учитывают нашу, даём лишь полторы секунды форы */
+        keys.forEach((k) => { if (from[k]) from[k].t = Date.now(); });
+      }, () => {
+        keys.forEach((k) => { delete base[k]; delete from[k]; });   /* отправим заново */
         clearTimeout(retryT);
         retryT = setTimeout(() => { pending = state; push(); }, 5000);
       });
@@ -94,7 +106,7 @@ if (!CONFIGURED) {
         return;
       }
       if (!st || !remote) return;
-      const patch = {}, add = {};
+      const patch = {}, add = {}, was = {};
       let n = 0;
       Object.keys(st).forEach((k) => {
         if (SKIP[k]) return;
@@ -106,9 +118,14 @@ if (!CONFIGURED) {
           if (d) { add[k] = d; n++; }                     /* на столько изменил второй владелец */
           return;
         }
+        /* was — общая основа: с ней видно, что правил второй, а что мы */
+        let anc = base[k];
+        const f = from[k];
+        if (DEEP[k] && f && (!f.t || Date.now() - f.t < 1500)) anc = f.v;   /* наша запись ещё в пути */
+        if (anc !== undefined) was[k] = JSON.parse(anc);
         base[k] = j; patch[k] = JSON.parse(j); n++;
       });
-      if (n) remote(patch, add);
+      if (n) remote(patch, add, was);
     }, () => { if (!started) { started = true; clearTimeout(slow); window.__bootGo(sync); } });
     addEventListener('pagehide', () => sync.flush());
     document.addEventListener('visibilitychange', () => { if (document.hidden) sync.flush(); });
@@ -2015,9 +2032,30 @@ const LOCAL_KEYS = { room: 1, home: 1 };
 /* купленное только копится, поэтому списки вещей сливаем, а не замещаем:
    две покупки в одну секунду с разных устройств не теряются */
 const UNION_KEYS = { owned: 1, walls: 1, wardrobe: 1 };
+/* трёхсторонняя склейка: чужую правку берём, свою не теряем.
+   Так два одновременных действия в саду или в гардеробе не затирают друг друга */
+function merge3(base, theirs, mine) {
+  const sb = JSON.stringify(base), sa = JSON.stringify(theirs), sm = JSON.stringify(mine);
+  if (sa === sm || sa === sb) return mine;               /* второй это поле не трогал */
+  if (sm === sb) return theirs;                          /* мы это поле не трогали */
+  if (Array.isArray(theirs) && Array.isArray(mine)) {
+    const bb = Array.isArray(base) ? base : [], out = [], n = Math.max(theirs.length, mine.length);
+    for (let i = 0; i < n; i++) out[i] = merge3(bb[i], theirs[i], mine[i]);
+    return out;
+  }
+  if (theirs && mine && typeof theirs === 'object' && typeof mine === 'object') {
+    const bb = base && typeof base === 'object' ? base : {}, out = {};
+    Object.keys(Object.assign({}, bb, theirs, mine)).forEach((k) => { out[k] = merge3(bb[k], theirs[k], mine[k]); });
+    return out;
+  }
+  return theirs;                                         /* оба поменяли одно и то же — чужое новее */
+}
+/* рекорды и уровень только растут: чужая запись их не сбрасывает */
+const MAX_MAPS = { best: 1 };
+const MAX_NUMS = { lvl: 1 };
 /* поля, которые меняются сами по себе от хода времени */
 const TICK_KEYS = { t: 1, food: 1, fun: 1, energy: 1, clean: 1 };
-function applyRemote(st, add) {
+function applyRemote(st, add, was) {
   if (!st || typeof st !== 'object') return;
   const wasSleeping = S.sleeping;
   let sleeping = wasSleeping, merged = false;
@@ -2028,6 +2066,28 @@ function applyRemote(st, add) {
     if (UNION_KEYS[k] && st[k] && typeof st[k] === 'object') {
       const both = Object.assign({}, st[k], S[k]);
       if (Object.keys(both).length > Object.keys(st[k]).length) merged = true;   /* у нас есть то, чего нет у второго */
+      S[k] = both;
+      return;
+    }
+    if (MAX_MAPS[k] && st[k] && typeof st[k] === 'object') {
+      const top = {}, mine = S[k] || {};
+      Object.keys(Object.assign({}, st[k], mine)).forEach((n) => {
+        const a = +st[k][n] || 0, m = +mine[n] || 0;
+        top[n] = Math.max(a, m);
+        if (top[n] !== a) merged = true;                  /* наш рекорд выше — вернём его */
+      });
+      S[k] = top;
+      return;
+    }
+    if (MAX_NUMS[k] && typeof st[k] === 'number') {
+      const top = Math.max(st[k], +S[k] || 0);
+      if (top !== st[k]) merged = true;
+      S[k] = top;
+      return;
+    }
+    if (st[k] && typeof st[k] === 'object' && S[k] && typeof S[k] === 'object') {
+      const both = merge3((was || {})[k], st[k], S[k]);
+      if (JSON.stringify(both) !== JSON.stringify(st[k])) merged = true;   /* у нас есть своё — вернём */
       S[k] = both;
       return;
     }
