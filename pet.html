@@ -19,6 +19,11 @@ const client = Math.random().toString(36).slice(2) + Date.now().toString(36);
 if (!CONFIGURED) {
   document.documentElement.innerHTML = '<body style="font:16px system-ui;padding:24px">Сайт ещё не подключён к серверу.</body>';
 } else {
+  const slow = setTimeout(() => {
+    const tx = document.getElementById('bootTx'), btn = document.getElementById('bootRetry');
+    if (tx) tx.textContent = 'Сервер не отвечает';
+    if (btn) { btn.hidden = false; btn.addEventListener('click', () => location.reload()); }
+  }, 12000);
   onAuth(async (user) => {
     if (!user) { location.replace('index.html'); return; }
     if (window.__started) return;
@@ -46,12 +51,13 @@ if (!CONFIGURED) {
       if (!started) {
         started = true;
         if (d.state) { try { localStorage.setItem(KEY, JSON.stringify(d.state)); } catch (e) { /* играем без кэша */ } }
+        clearTimeout(slow);
         window.__bootGo(sync);
         return;
       }
       if (d.by === client || !d.state || !remote) return;
       remote(d.state);
-    }, () => { if (!started) { started = true; window.__bootGo(sync); } });
+    }, () => { if (!started) { started = true; clearTimeout(slow); window.__bootGo(sync); } });
     addEventListener('pagehide', () => sync.flush());
     document.addEventListener('visibilitychange', () => { if (document.hidden) sync.flush(); });
   });
@@ -245,6 +251,10 @@ input{-webkit-user-select:text;user-select:text}
 .g-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:14px}
 .g-actions .btn{min-height:42px;padding:0 16px 2px}
 
+/* ---------- boot screen: covers the stage until the game is built ---------- */
+.boot{position:absolute;inset:0;z-index:70;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;background:var(--paper);color:var(--ink2);font-size:var(--f2);line-height:1.4;text-align:center}
+.boot img{display:block;image-rendering:pixelated;width:96px;height:96px}
+
 /* ---------- one-time note ---------- */
 .note{position:absolute;inset:0;z-index:95;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(90,42,60,.34);opacity:0;transition:opacity .36s steps(4,end)}
 .note.is-on{opacity:1}
@@ -354,6 +364,12 @@ input{-webkit-user-select:text;user-select:text}
       <canvas id="mapCv" aria-hidden="true"></canvas>
       <div class="m-spots" id="mapSpots"></div>
       <div class="m-h"><h2 class="pb">Локации</h2><button class="x pb press" id="mapX" type="button" aria-label="Закрыть"><i data-ic="close"></i></button></div>
+    </div>
+
+    <div class="boot" id="boot">
+      <img src="icon-64.png" width="96" height="96" alt="">
+      <p id="bootTx">Загрузка…</p>
+      <button class="btn pb press" id="bootRetry" type="button" hidden>Повторить</button>
     </div>
 
     <div class="toast pb" id="toast" role="status"></div>
@@ -3555,6 +3571,7 @@ renderStats();
 setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); }, 1000);
 setInterval(saveNow, 10000);
 if (Sync) Sync.onRemote(applyRemote);
+$('#boot').hidden = true;
 if (location.hash === '#t') window.__t = { S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS, petFrame, PCOL, PET_BASE };
 
 /* разовое уведомление для favie */
