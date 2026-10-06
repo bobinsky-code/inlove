@@ -48,7 +48,7 @@ if (!CONFIGURED) {
     /* сад и письма пишутся целиком, поэтому два действия в одну секунду затирают друг друга.
        Пока наша запись не дошла до сервера, храним точку, от которой мы считали:
        по ней видно, что именно изменил второй, и его правка складывается с нашей */
-    const DEEP = { garden: 1, mail: 1, mailSeen: 1 };
+    const DEEP = { garden: 1, mail: 1, mailSeen: 1, who: 1 };
     const from = {};
     const jsonOf = (v) => { try { return JSON.stringify(v); } catch (e) { return undefined; } };
     function push() {
@@ -167,19 +167,34 @@ input{-webkit-user-select:text;user-select:text}
 .stage{--bc:#ef9cbb;--bg:var(--paper);--ds:rgba(230,79,126,.22);position:relative;width:100%;height:100%;max-width:440px;max-height:900px;display:flex;flex-direction:column;gap:12px;padding:12px 12px 14px;overflow:hidden;isolation:isolate}
 
 /* ---------- top bar ---------- */
-.top{flex:none;display:flex;align-items:center;gap:10px;height:36px;padding:0 2px}
-.name{flex:1 1 auto;min-width:0;height:100%;display:flex;align-items:center;gap:8px;padding:0 10px;text-align:left}
+.top{flex:none;display:flex;align-items:center;gap:6px;height:36px;padding:0 1px}
+.name{flex:1 1 auto;min-width:0;height:100%;display:flex;align-items:center;gap:4px;padding:0 4px;text-align:left}
 .name b{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:clip}
 .name .pi{color:var(--ink2)}
 .name input{width:100%;min-width:0;height:28px;border:0;border-radius:0;padding:0;background:transparent;font:var(--f2)/1 var(--font);color:var(--ink)}
-.lvl{flex:none;height:100%;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;padding:0 9px}
+.lvl{flex:none;height:100%;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;padding:0 6px}
 .lvl b{font-size:var(--f1);line-height:1;color:var(--rose2);white-space:nowrap}
-.xp{width:36px;height:6px;background:#ffe0ea;box-shadow:0 calc(var(--p) * -1) 0 0 var(--ink),0 var(--p) 0 0 var(--ink),calc(var(--p) * -1) 0 0 0 var(--ink),var(--p) 0 0 0 var(--ink)}
+.xp{width:28px;height:6px;background:#ffe0ea;box-shadow:0 calc(var(--p) * -1) 0 0 var(--ink),0 var(--p) 0 0 var(--ink),calc(var(--p) * -1) 0 0 0 var(--ink),var(--p) 0 0 0 var(--ink)}
 .xp i{display:block;width:0;height:100%;background:var(--rose);box-shadow:inset 0 var(--p) 0 0 rgba(255,255,255,.45)}
-.coins{flex:none;height:100%;display:flex;align-items:center;gap:6px;padding:0 9px 0 8px}
-.snd{flex:none;width:36px;height:100%;display:grid;place-items:center;color:var(--rose2)}
+.coins{flex:none;height:100%;display:flex;align-items:center;gap:4px;padding:0 6px 0 5px}
+.snd,.prof{flex:none;width:28px;height:100%;display:grid;place-items:center;color:var(--rose2)}
 .snd .ic-off,.snd[aria-pressed="false"] .ic-on{display:none}
 .snd[aria-pressed="false"] .ic-off{display:block}
+
+/* ---------- профиль ---------- */
+.pf{--bg:#fff;display:flex;flex-direction:column;gap:9px;padding:9px 11px 11px}
+.pf.is-me{--bg:var(--rose0)}
+.pf-h{display:flex;align-items:center;gap:11px}
+.pf-h div{min-width:0}
+.pf-h b{font-size:var(--f2);line-height:1;word-break:break-all}
+.pf-h small{display:block;margin-top:5px;font-size:var(--f1);line-height:1;color:var(--ink2)}
+.pf-ab{margin:0;font-size:var(--f1);line-height:1.25;color:var(--ink2);overflow-wrap:anywhere}
+.pf-st{display:grid;grid-template-columns:1fr 1fr;gap:7px 12px}
+.pf-st span{display:flex;align-items:baseline;gap:6px;min-width:0;font-size:var(--f1);line-height:1.1;color:var(--ink2)}
+.pf-st b{flex:none;font-size:var(--f2);line-height:1;color:var(--ink)}
+.pf-face{display:flex;flex-wrap:wrap;gap:8px}
+.pf-face button{--bg:#fff;padding:3px}
+.pf-face button.is-on{--bg:var(--rose1)}
 
 /* ---------- письма в мишке ---------- */
 .ml{display:flex;flex-direction:column;gap:10px}
@@ -370,9 +385,10 @@ input{-webkit-user-select:text;user-select:text}
 <div class="app">
   <main class="stage pb2" id="stage">
     <header class="top">
-      <button class="name pb press" id="nameBtn" type="button" aria-label="Имя питомца, нажми чтобы изменить"><b id="petName">Питомец</b><i data-ic="pencil"></i></button>
+      <button class="name pb press" id="nameBtn" type="button" aria-label="Имя питомца, нажми чтобы изменить"><b id="petName">Питомец</b><i data-ic="pencil" data-s="1.5"></i></button>
       <div class="lvl pb" id="lvlChip"><b id="lvlTx">Ур. 1</b><div class="xp"><i id="xpBar"></i></div></div>
       <div class="coins pb" id="coinsChip"><i data-ic="coin"></i><span id="coinsTx">0</span></div>
+      <button class="prof pb press" id="profBtn" type="button" aria-haspopup="dialog" aria-label="Профиль"><i data-ic="user"></i></button>
       <button class="snd pb press" id="snd" type="button" aria-pressed="true" aria-label="Выключить звук"><i class="ic-on" data-ic="sndOn"></i><i class="ic-off" data-ic="sndOff"></i></button>
     </header>
 
@@ -1496,6 +1512,7 @@ const IC = {
   bolt: ['....###', '...###.', '..###..', '.######', '######.', '..###..', '.###...', '.##....', '##.....'],
   drop: ['...#...', '...#...', '..###..', '.#####.', '#######', '#######', '#######', '.#####.', '..###..'],
   pencil: ['......##', '.....###', '....###.', '...###..', '..###...', '.###....', '##......', '#.......'],
+  user: ['..###..', '.#####.', '.#####.', '..###..', '.#####.', '#######', '#######', '#######'],
   sofa: ['..#######..', '.#.......#.', '.#.......#.', '###.....###', '#.#######.#', '#.........#', '###########', '.#.......#.'],
   bowl: ['...#.#.#...', '..#.#.#.#..', '###########', '#.........#', '.#.......#.', '..#######..'],
   bath: ['.##........', '#..#.......', '#..........', '#..........', '###########', '#.........#', '#.........#', '.#.......#.', '..#######..', '..#.....#..'],
@@ -2099,7 +2116,7 @@ function freshGarden() { return { plots: [null, null, null], seeds: {}, crops: {
 function fresh(now) {
   return { v: 1, name: 'Питомец', t: now, food: 80, fun: 75, energy: 90, clean: 85, sleeping: false, xp: 0, lvl: 1, coins: 50, owned: {}, walls: { pink: true }, wall: 'pink', best: { catch: 0, run: 0 }, petWin: { t: now, n: 0 }, room: 0, home: 0,
     wardrobe: {}, wear: {}, garden: freshGarden(), sick: null, healedAt: 0, buffs: {}, skin: '', created: now,
-    mail: {}, mailSeen: {} };
+    mail: {}, mailSeen: {}, who: {} };
 }
 function load() {
   const now = Date.now(), f = fresh(now);
@@ -2118,6 +2135,7 @@ function load() {
       m.buffs = Object.assign({}, s.buffs);
       m.mail = Object.assign({}, s.mail);
       m.mailSeen = Object.assign({}, s.mailSeen);
+      m.who = Object.assign({}, s.who);
       m.skin = BREEDS.some((b) => b.id === s.skin) ? s.skin : '';
       m.sick = s.sick && SICK[s.sick.k] ? s.sick : null;
       m.created = s.created || now;
@@ -2787,6 +2805,7 @@ function change(k, d) {
 }
 function addCoins(n) {
   S.coins = Math.max(0, S.coins + n);
+  if (n > 0) bump('earn', n);
   renderTop();
   const r = coinsChip.getBoundingClientRect();
   floatText(r.left + r.width / 2, r.top + r.height, (n > 0 ? '+' : '−') + Math.abs(n), '#d48a12');
@@ -2880,6 +2899,7 @@ function petOnce(x, y, tap) {
   if (t - S.petWin.t > 30 * 60e3) S.petWin = { t, n: 0 };
   FX.burst(x, y, { n: tap ? 7 : 3, speed: 150, g: -140, drag: 0.95, min: 8, max: 15, hearts: 1, colors: ['#ff7ea6', '#ff9dbb', '#e64f7e'], unit: Scene.px * 0.75 });
   Sound.boop();
+  bump('pet');
   Pet.act(tap ? 'happy' : 'pet', tap ? 1150 : 950);
   if (tap && !S.sick && Math.random() < 0.3) setTimeout(() => emote(Math.random() < 0.5 ? 'bark' : 'heart'), 1200);
   if (S.petWin.n < 12) {
@@ -2958,6 +2978,7 @@ $('#rinseBtn').addEventListener('click', () => {
     Scene.shower(false);
     Pet.act('shake', 700);
     if (n >= 8) { change('fun', 6); addXP(4); }
+    bump('wash');
     showering = false;
   }, 2000);
 });
@@ -3054,6 +3075,7 @@ function feedItem(it, el) {
     if (S.food >= 97) { Pet.act('no', 650); toast('Не голоден'); Sound.error(); return; }
     if (S.coins < f.price) { if (el) nope(el); toast('Не хватает монет'); Sound.error(); return; }
     eating = true;
+    bump('fed');
     if (f.price) addCoins(-f.price);
     Haptic.tap(8);
     eatAnim(foodArt(f.id), () => {
@@ -3065,6 +3087,7 @@ function feedItem(it, el) {
   } else {
     if (!((S.garden.dishes[it.id] || 0) > 0)) return;
     eating = true;
+    bump('fed');
     S.garden.dishes[it.id]--;
     Haptic.tap(8);
     save();
@@ -3252,6 +3275,90 @@ SHEETS.wardrobe = {
   },
 };
 
+/* ---------- профиль: личная карточка каждого владельца ---------- */
+const ABOUT_LEN = 60;
+const STAT_ROWS = [
+  ['fed', 'Кормлений'], ['pet', 'Поглаживаний'], ['wash', 'Купаний'], ['games', 'Игр'],
+  ['grown', 'Урожаев'], ['cook', 'Блюд'], ['msgs', 'Сообщений'], ['earn', 'Монет'],
+];
+const WHO_FRESH = { about: '', face: '', fed: 0, pet: 0, wash: 0, games: 0, grown: 0, cook: 0, msgs: 0, earn: 0 };
+function whoRec(login) {
+  const k = login || ME;
+  if (!k) return null;
+  if (!S.who[k]) S.who[k] = Object.assign({}, WHO_FRESH);
+  return S.who[k];
+}
+/* +1 в свой счётчик: вызывается из самих действий, чужие счётчики не трогаем */
+function bump(k, n) {
+  const r = whoRec();
+  if (!r) return;
+  r[k] = (+r[k] || 0) + (n == null ? 1 : n);
+  save();
+}
+const plural = (n, one, few, many) => { const d = n % 100, e = n % 10; return d > 10 && d < 20 ? many : e === 1 ? one : e >= 2 && e <= 4 ? few : many; };
+const dayTX = (t) => { const d = new Date(t), p2 = (v) => (v < 10 ? '0' : '') + v; return p2(d.getDate()) + '.' + p2(d.getMonth() + 1) + '.' + d.getFullYear(); };
+const faceList = () => [''].concat(breedsOpen().map((b) => b.id));
+const faceArt = (id) => imgTag('face:' + id, petFrame(Object.assign({}, PET_BASE, { skin: id })).cv, 1.1);
+let aboutDraft = null;
+SHEETS.prof = {
+  title: 'Профиль',
+  render() {
+    const days = Math.max(0, Math.floor((Date.now() - (S.created || Date.now())) / 86400e3));
+    const mates = (OWNERS || [ME]).filter((x) => x);
+    const order = [ME].concat(mates.filter((x) => x !== ME));
+    let html = '<p class="sec">Вместе: ' + days + ' ' + plural(days, 'день', 'дня', 'дней') + '</p>';
+    order.forEach((login) => {
+      if (!login) return;
+      const r = whoRec(login) || WHO_FRESH, me = login === ME;
+      html += '<div class="pf pb' + (me ? ' is-me' : '') + '">'
+        + '<div class="pf-h">' + faceArt(SKINS[r.face] ? r.face : '')
+        + '<div><b>' + esc(login) + '</b><small>с ' + dayTX(S.created || Date.now()) + '</small></div></div>';
+      if (!me) html += '<p class="pf-ab">' + (r.about ? esc(r.about) : '—') + '</p>';
+      if (me) {
+        html += '<div class="ml-send"><span class="ml-in pb"><input id="aboutTx" type="text" maxlength="' + ABOUT_LEN
+          + '" placeholder="О себе" autocomplete="off" spellcheck="false"></span>'
+          + '<button class="btn pb press" type="button" data-act="about">Сохранить</button></div>';
+        const faces = faceList();
+        if (faces.length > 1) html += '<div class="pf-face">' + faces.map((f) => '<button class="pb press'
+          + ((r.face || '') === f ? ' is-on' : '') + '" type="button" data-face="' + f + '">' + faceArt(f) + '</button>').join('') + '</div>';
+      }
+      html += '<div class="pf-st">' + STAT_ROWS.map((x) => '<span><b>' + (+r[x[0]] || 0) + '</b>' + x[1] + '</span>').join('') + '</div>';
+      html += '</div>';
+    });
+    html += '<p class="sec">Коллекция пород</p>';
+    const open = breedsOpen();
+    if (!open.length) html += '<p class="wd-empty">Пока пусто</p>';
+    else html += '<div class="wd-grid">' + open.map((b) => '<div class="wd-item is-breed pb">'
+      + imgTag('wdb:' + b.id, petFrame(Object.assign({}, PET_BASE, { skin: b.id })).cv, 1.5)
+      + '<b>' + b.name + '</b><small class="rare">' + b.rare + '</small></div>').join('') + '</div>';
+    html += '<p class="sec">Достижения</p><p class="wd-empty">Пока пусто</p>';
+    const focused = document.activeElement && document.activeElement.id === 'aboutTx';
+    sheetBody.innerHTML = html;
+    const inp = $('#aboutTx');
+    if (inp) {
+      const r = whoRec();
+      inp.value = aboutDraft == null ? (r ? r.about : '') : aboutDraft;
+      if (focused) inp.focus();
+    }
+  },
+  click(e) {
+    const f = e.target.closest('[data-face]');
+    if (f) {
+      const r = whoRec(); if (!r) return;
+      r.face = f.dataset.face;
+      Sound.boop(); Haptic.tap(6); save(); this.render();
+      return;
+    }
+    if (!e.target.closest('[data-act="about"]')) return;
+    const r = whoRec(), inp = $('#aboutTx');
+    if (!r || !inp) return;
+    r.about = String(inp.value || '').replace(/\s+/g, ' ').trim().slice(0, ABOUT_LEN);
+    aboutDraft = null;
+    Sound.boop(); Haptic.tap(8); save(); this.render();
+  },
+};
+$('#profBtn').addEventListener('click', () => { aboutDraft = null; openSheet('prof'); });
+
 /* ---------- сообщения через мишку ---------- */
 const MAIL_MAX = 30, MAIL_LEN = 140, MAIL_TIP = 7000;
 let mailTip = 0;                                       /* до какого момента показывать пузырь */
@@ -3281,6 +3388,7 @@ function mailSend(tx) {
   const list = mailList();
   for (let i = 0; i < list.length - MAIL_MAX; i++) delete S.mail[mailKey(list[i])];
   S.mailSeen[ME] = t;
+  bump('msgs');
   save(); renderMail(); Scene.kick();
   return true;
 }
@@ -3320,7 +3428,10 @@ SHEETS.mail = {
     this.render();
   },
 };
-sheetBody.addEventListener('input', (e) => { if (e.target.id === 'mailTx') mailDraft = e.target.value; });
+sheetBody.addEventListener('input', (e) => {
+  if (e.target.id === 'mailTx') mailDraft = e.target.value;
+  if (e.target.id === 'aboutTx') aboutDraft = e.target.value;
+});
 sheetBody.addEventListener('keydown', (e) => {
   if (e.target.id === 'mailTx' && e.key === 'Enter') { e.preventDefault(); SHEETS.mail.click({ target: $('[data-act="send"]') }); }
 });
@@ -3351,7 +3462,7 @@ function harvest(i, at) {
   Sound.harvest(); Haptic.tap(10);
   FX.burst(at.x, at.y, { n: 10, speed: 200, g: 300, hearts: 0.2, colors: [PLANT_C[id].fruit, PLANT_C[id].leaf, '#ffffff'], unit: Scene.px * 0.6 });
   floatText(at.x, at.y - 10, '+' + HARVEST, '#3f8f66');
-  addXP(2); save(); Scene.kick();
+  addXP(2); bump('grown'); save(); Scene.kick();
 }
 SHEETS.seeds = {
   title: 'Семена',
@@ -3437,7 +3548,7 @@ SHEETS.mix = {
       Sound.mix(); Haptic.tap(14);
       const r = $('.mx-res', sheetBody); if (r) burstAt(r, { n: fresh1 ? 24 : 12 });
       toast((fresh1 ? 'Новый рецепт: ' : '') + DISHES[id].name);
-      addXP(fresh1 ? 10 : 3); save(); renderKitchen();
+      addXP(fresh1 ? 10 : 3); bump('cook'); save(); renderKitchen();
     } else if (b.dataset.act === 'feed') {
       const id = mixLast; closeSheet();
       setTimeout(() => feedItem({ kind: 'dish', id, d: DISHES[id] }), 250);
@@ -3789,6 +3900,7 @@ const Game = (() => {
   function begin() {
     if (S.energy < GAME_COST) { toast('Мало энергии'); Sound.error(); return; }
     change('energy', -GAME_COST);
+    bump('games');
     startCard.hidden = true; endCard.hidden = true;
     reset(); state = 'play'; kick();
   }
