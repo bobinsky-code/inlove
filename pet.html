@@ -51,6 +51,7 @@ if (!CONFIGURED) {
       if (!started) {
         started = true;
         if (d.state) { try { localStorage.setItem(KEY, JSON.stringify(d.state)); } catch (e) { /* играем без кэша */ } }
+        sync.logins = Object.keys(d.names || {}).map((k) => String(d.names[k] || '').toLowerCase()).sort();
         clearTimeout(slow);
         window.__bootGo(sync);
         return;
@@ -217,7 +218,7 @@ input{-webkit-user-select:text;user-select:text}
 .tx .eff{margin-top:5px}
 .btn[disabled]{opacity:.45;pointer-events:none}
 .wd-top{display:grid;place-items:center;margin:2px 2px 16px;padding:10px 0 8px;background:conic-gradient(#ffe2eb 25%,#fff3f7 0 50%,#ffe2eb 0 75%,#fff3f7 0) 0 0/16px 16px;box-shadow:0 calc(var(--p) * -1) 0 0 var(--ink),0 var(--p) 0 0 var(--ink),calc(var(--p) * -1) 0 0 0 var(--ink),var(--p) 0 0 0 var(--ink)}
-.wd-tabs{display:grid;grid-template-columns:repeat(4,1fr);margin:0 2px 16px}
+.wd-tabs{display:grid;grid-template-columns:repeat(5,1fr);margin:0 2px 16px}
 .wd-tab{padding:8px 0 7px;color:var(--ink2);font-size:var(--f1);line-height:1;box-shadow:inset var(--p) 0 0 0 var(--ink)}
 .wd-tab:first-child{box-shadow:none}
 .wd-tab.is-on{background:var(--rose0);color:var(--rose2)}
@@ -225,6 +226,10 @@ input{-webkit-user-select:text;user-select:text}
 .wd-item{display:flex;flex-direction:column;align-items:center;gap:7px;padding:8px 6px 10px}
 .wd-item b{font-size:var(--f1);line-height:1.15;text-align:center}
 .wd-item.is-on{--bg:#fff1f6;--bc:var(--rose2)}
+.wd-item .rare{font-size:var(--f1);line-height:1.1;color:var(--ink2)}
+.wd-item.is-breed{--bc:#000}
+.wd-item.is-breed.is-on{--bg:#f3eef0;--bc:#000}
+.wd-empty{grid-column:1/-1;margin:10px 2px;font-size:var(--f1);line-height:1.4;color:var(--ink2);text-align:center}
 .mx{display:flex;flex-direction:column;align-items:center;gap:16px;padding:4px 2px 2px}
 .mx-row{display:flex;align-items:center;gap:8px}
 .mx-slot{--bg:#fff7fa;width:56px;height:56px;display:grid;place-items:center;color:var(--ink2);font-size:var(--f3);line-height:1}
@@ -1005,8 +1010,17 @@ const PCOL = {
   fur: '#f6dcbc', furSh: '#e8c39c', furHi: '#fff1de', cream: '#fff8ee', creamSh: '#f3dfc6',
   ear: '#b98058', earSh: '#9a6544', spot: '#e6bd92', nose: '#4a2b2b', noseHi: '#8a5a5a', eye: '#2d1b22',
   blush: '#ffadc0', tongue: '#ff8fa8', mouth: '#7a2e3e', collar: '#ff7ea6', collarSh: '#e64f7e', tag: '#ffc978', tagSh: '#f0a838',
-  dirt: '#a3775a', dirt2: '#b88a64',
+  dirt: '#a3775a', dirt2: '#b88a64', tail: '#f6dcbc', tailSh: '#e8c39c',
 };
+/* порода «Админ»: тёмная шерсть, рыжие подпалины, белая проточина и светлый хвост */
+const PCOL_ADMIN = {
+  fur: '#4a3a33', furSh: '#372a25', furHi: '#5d4a41', cream: '#fff6e8', creamSh: '#e7d4b8',
+  ear: '#332722', earSh: '#241a16', spot: '#4a3a33', nose: '#2a1b1a', noseHi: '#6b4a45', eye: '#241a1f',
+  blush: '#ffadc0', tongue: '#ff8fa8', mouth: '#7a2e3e', collar: '#ff7ea6', collarSh: '#e64f7e', tag: '#ffc978', tagSh: '#f0a838',
+  dirt: '#6b584a', dirt2: '#80695a', tail: '#f0dcbb', tailSh: '#d6ba90',
+  tan: '#c07a3c', tanHi: '#d99755',
+};
+const SKINS = { '': PCOL, admin: PCOL_ADMIN };
 const TAILS = { 0: [[30, 37], [38, 38], [38, 29]], 1: [[30, 37], [39, 37], [41, 32]], 2: [[30, 37], [37, 37], [35, 28]], down: [[30, 39], [36, 42], [41, 42]] };
 const DIRT = [[13, 9, 2], [30, 24, 2], [16, 33, 3], [28, 37, 2], [33, 30, 1], [25, 8, 1], [12, 38, 2], [20, 29, 1], [31, 14, 1], [26, 33, 1]];
 /* clothes: kind + colours [main, shade, light] */
@@ -1050,10 +1064,10 @@ const BOWROWS = ['##.....##', '###...###', '##hko####', '###...###', '##.....##'
 const petCache = new Map();
 function petFrame(o) {
   const wr = o.wear || {};
-  const key = [o.eyes, o.mouth, o.ears, o.tail, o.hx, o.hy, o.by, o.pose, o.brows ? 1 : 0, o.blush ? 1 : 0, o.dirt, wr.head || '', wr.eyes || '', wr.neck || '', wr.body || '', o.cape ? 1 : 0, o.flap || 0, o.sick || ''].join('|');
+  const key = [o.eyes, o.mouth, o.ears, o.tail, o.hx, o.hy, o.by, o.pose, o.brows ? 1 : 0, o.blush ? 1 : 0, o.dirt, wr.head || '', wr.eyes || '', wr.neck || '', wr.body || '', o.cape ? 1 : 0, o.flap || 0, o.sick || '', o.skin || ''].join('|');
   let f = petCache.get(key);
   if (f) return f;
-  const L = Lay(PW, PH), C = PCOL;
+  const L = Lay(PW, PH), C = SKINS[o.skin] || PCOL, adm = o.skin === 'admin';
   const lie = o.pose === 'lie', hx = o.hx, hy = o.hy + (lie ? 5 : 0), by = o.by;
   const X = (x) => x + hx, Y = (y) => y + hy;
   const shadeFn = (base, sh, hi) => (x, y, m) => (!L.has(m, x, y + 2) || !L.has(m, x + 2, y + 1) ? sh : hi && x < 23 && (!L.has(m, x, y - 2) || !L.has(m, x - 2, y - 1)) ? hi : base);
@@ -1063,7 +1077,7 @@ function petFrame(o) {
   const NY = (lie ? 31 : 27) + by;
   /* tail */
   const tp = TAILS[lie ? 'down' : o.tail] || TAILS[0];
-  L.part(L.clean(bez(L, L.M(), tp[0], tp[1], [tp[2][0], tp[2][1] + by], 1.9)), shadeFn(C.fur, C.furSh), INK);
+  L.part(L.clean(bez(L, L.M(), tp[0], tp[1], [tp[2][0], tp[2][1] + by], 1.9)), shadeFn(C.tail, C.tailSh), INK);
   /* cape behind the body */
   if (caped) {
     const cc = wBody && wBody.k === 'cape' ? wBody.c : WEAR.cape.c, fl = o.flap || 0;
@@ -1084,6 +1098,11 @@ function petFrame(o) {
   const bmc = L.clean(bm);
   L.part(bmc, shadeFn(C.fur, C.furSh), INK);
   if (!lie) L.part(L.ell(L.M(), 22.5, 35.5 + by, 5.5, 5.5), (x, y, m) => (!L.has(m, x, y + 2) ? C.creamSh : C.cream));
+  if (adm && !lie) {
+    const lg = L.M();
+    L.ell(lg, 14.5, 39.5, 4.4, 3.6); L.ell(lg, 30.5, 39.5, 4.4, 3.6);
+    for (let i = 0; i < lg.length; i++) if (lg[i] && bmc[i] && L.c[i] !== INK) L.c[i] = C.tan;
+  }
   /* body clothes */
   if (wBody && (wBody.k === 'tee' || wBody.k === 'sweater' || wBody.k === 'hoodie')) {
     const c = wBody.c, top = lie ? 33 + by : NY + 2, bot = wBody.k === 'tee' ? top + 6 : lie ? 42 + by : NY + 13;
@@ -1117,6 +1136,18 @@ function petFrame(o) {
   for (let i = 0; i < sm.length; i++) if (sm[i] && hm[i]) L.c[i] = C.spot;
   const mm = L.ell(L.M(), 22.5 + hx, 21.5 + hy, 6.6, 4.6);
   for (let y = 0; y < PH; y++) for (let x = 0; x < PW; x++) if (mm[y * PW + x] && hm[y * PW + x]) L.c[y * PW + x] = !L.has(mm, x, y + 1) ? C.creamSh : C.cream;
+  if (adm) {
+    const bz = L.poly(L.M(), [[X(21.3), Y(4)], [X(23.7), Y(4)], [X(25.2), Y(19)], [X(19.8), Y(19)]]);
+    for (let y = 0; y < PH; y++) for (let x = 0; x < PW; x++) {
+      const i = y * PW + x;
+      if (bz[i] && hm[i] && !mm[i] && L.c[i] !== INK) L.c[i] = !L.has(bz, x + 1, y) ? C.creamSh : C.cream;
+    }
+    const ch = L.M();
+    L.ell(ch, X(13.5), Y(20), 3.4, 3.6); L.ell(ch, X(31.5), Y(20), 3.4, 3.6);
+    for (let i = 0; i < ch.length; i++) if (ch[i] && hm[i] && !mm[i] && L.c[i] !== INK) L.c[i] = C.tan;
+    const brow = (bx) => { for (let dx = 0; dx < 4; dx++) for (let dy = 0; dy < 2; dy++) { const xx = X(bx + dx), yy = Y(10 + dy), i = yy * PW + xx; if (L.in(xx, yy) && hm[i] && L.c[i] !== INK) L.c[i] = dy ? C.tan : C.tanHi; } };
+    brow(13); brow(27);
+  }
   /* eyes */
   const eye = (ex, side) => {
     const f = (dx, dy, c) => L.px(X(ex + dx), Y(13 + dy), c);
@@ -1853,6 +1884,9 @@ const CLOTHES = [
   { id: 'cape', slot: 'body', name: 'Плащ', price: 120, lvl: 4 },
 ];
 const SLOTS = [['head', 'Голова'], ['eyes', 'Глаза'], ['neck', 'Шея'], ['body', 'Тело']];
+/* породы: пока одна, дальше будут обычные и редкие */
+const BREEDS = [{ id: 'admin', name: 'Админ', rare: 'Админ', admin: true }];
+const ADMIN_PAIR = 'bob,favie';
 const PLANTS = [
   { id: 'carrot', name: 'Морковь', price: 4, min: 3 },
   { id: 'mint', name: 'Мята', price: 5, min: 3 },
@@ -1881,6 +1915,10 @@ const BUFF_TX = { xp2: 'Опыт ×2', coins2: 'Монеты ×2', nofun: 'На�
 /* изменение показателей в час */
 const RATE = { awake: { food: -12, fun: -10, energy: -8, clean: -6 }, sleep: { food: -6, fun: 0, energy: 100, clean: -3 } };
 const needXP = (l) => 60 + (l - 1) * 40;
+/* порода «Админ» доступна только одной паре логинов */
+const OWNERS = (Sync && Sync.logins) || null;
+const IS_ADMIN = !!(OWNERS && OWNERS.length === 2 && OWNERS.join(',') === ADMIN_PAIR);
+const breedsOpen = () => BREEDS.filter((b) => !b.admin || IS_ADMIN);
 const GAME_COST = 10;
 /* комнаты дома — 0..4, дальше идут локации с карты */
 const HOUSE = 4;
@@ -1889,7 +1927,7 @@ const HOUSE = 4;
 function freshGarden() { return { plots: [null, null, null], seeds: {}, crops: {}, dishes: {}, known: {} }; }
 function fresh(now) {
   return { v: 1, name: 'Питомец', t: now, food: 80, fun: 75, energy: 90, clean: 85, sleeping: false, xp: 0, lvl: 1, coins: 50, owned: {}, walls: { pink: true }, wall: 'pink', best: { catch: 0, run: 0 }, petWin: { t: now, n: 0 }, room: 0, home: 0,
-    wardrobe: {}, wear: {}, garden: freshGarden(), sick: null, healedAt: 0, buffs: {}, created: now };
+    wardrobe: {}, wear: {}, garden: freshGarden(), sick: null, healedAt: 0, buffs: {}, skin: '', created: now };
 }
 function load() {
   const now = Date.now(), f = fresh(now);
@@ -1906,6 +1944,7 @@ function load() {
       const g = s.garden || {};
       m.garden = { plots: Array.isArray(g.plots) && g.plots.length >= 3 ? g.plots.slice(0, 6) : [null, null, null], seeds: Object.assign({}, g.seeds), crops: Object.assign({}, g.crops), dishes: Object.assign({}, g.dishes), known: Object.assign({}, g.known) };
       m.buffs = Object.assign({}, s.buffs);
+      m.skin = BREEDS.some((b) => b.id === s.skin) ? s.skin : '';
       m.sick = s.sick && SICK[s.sick.k] ? s.sick : null;
       m.created = s.created || now;
       if (m.room > 5) m.room = 0;
@@ -2224,7 +2263,7 @@ const Scene = (() => {
     let st = Pet.action || Pet.mood;
     if (tw) st = 'walk';
     const ta = t - Pet.t0;
-    const o = { eyes: 'open', mouth: 'w', ears: 'n', tail: 0, hx: 0, hy: 0, by: 0, pose: 'sit', brows: false, blush: true, dirt: dirtCount(), wear: S.wear, sick: S.sick ? S.sick.k : '' };
+    const o = { eyes: 'open', mouth: 'w', ears: 'n', tail: 0, hx: 0, hy: 0, by: 0, pose: 'sit', brows: false, blush: true, dirt: dirtCount(), wear: S.wear, sick: S.sick ? S.sick.k : '', skin: S.skin };
     let ox = 0, oy = 0;
     const blink = t % 4300 < 150;
     const wag = (ms) => [0, 1, 0, 2][Math.floor(t / ms) % 4];
@@ -2890,20 +2929,41 @@ const PET_BASE = { eyes: 'open', mouth: 'w', ears: 'n', tail: 0, hx: 0, hy: 0, b
 SHEETS.wardrobe = {
   title: 'Гардероб',
   render() {
-    const w = S.wear, wk = ['head', 'eyes', 'neck', 'body'].map((s) => w[s] || '-').join(',');
-    let html = '<div class="wd-top">' + imgTag('wdp:' + wk, petFrame(Object.assign({}, PET_BASE, { wear: w })).cv, 3) + '</div>';
-    html += '<div class="wd-tabs pb">' + SLOTS.map((s) => '<button class="wd-tab' + (s[0] === wdSlot ? ' is-on' : '') + '" type="button" data-slot="' + s[0] + '">' + s[1] + '</button>').join('') + '</div><div class="wd-grid">';
-    CLOTHES.filter((c) => c.slot === wdSlot).forEach((c) => {
-      const own = !!S.wardrobe[c.id], worn = w[c.slot] === c.id;
-      const tag = own ? '<span class="buy pb is-owned">' + (worn ? 'Снять' : 'Надеть') + '</span>' : priceTag(c.price, c.lvl, false, '');
-      html += '<button class="wd-item pb press' + (worn ? ' is-on' : '') + '" type="button" data-cloth="' + c.id + '">' + imgTag('wdi:' + c.id, petFrame(Object.assign({}, PET_BASE, { wear: { [c.slot]: c.id } })).cv, 1.5) + '<b>' + c.name + '</b>' + tag + '</button>';
-    });
+    const w = S.wear, wk = ['head', 'eyes', 'neck', 'body'].map((s) => w[s] || '-').join(',') + '|' + S.skin;
+    let html = '<div class="wd-top">' + imgTag('wdp:' + wk, petFrame(Object.assign({}, PET_BASE, { wear: w, skin: S.skin })).cv, 3) + '</div>';
+    const tabs = SLOTS.concat([['breed', 'Породы']]);
+    html += '<div class="wd-tabs pb">' + tabs.map((s) => '<button class="wd-tab' + (s[0] === wdSlot ? ' is-on' : '') + '" type="button" data-slot="' + s[0] + '">' + s[1] + '</button>').join('') + '</div><div class="wd-grid">';
+    if (wdSlot === 'breed') {
+      const list = breedsOpen();
+      if (!list.length) html += '<p class="wd-empty">Пока пусто</p>';
+      list.forEach((b) => {
+        const on = S.skin === b.id;
+        html += '<button class="wd-item is-breed pb press' + (on ? ' is-on' : '') + '" type="button" data-breed="' + b.id + '">'
+          + imgTag('wdb:' + b.id, petFrame(Object.assign({}, PET_BASE, { skin: b.id })).cv, 1.5)
+          + '<b>' + b.name + '</b><small class="rare">' + b.rare + '</small>'
+          + '<span class="buy pb is-owned">' + (on ? 'Снять' : 'Надеть') + '</span></button>';
+      });
+    } else {
+      CLOTHES.filter((c) => c.slot === wdSlot).forEach((c) => {
+        const own = !!S.wardrobe[c.id], worn = w[c.slot] === c.id;
+        const tag = own ? '<span class="buy pb is-owned">' + (worn ? 'Снять' : 'Надеть') + '</span>' : priceTag(c.price, c.lvl, false, '');
+        html += '<button class="wd-item pb press' + (worn ? ' is-on' : '') + '" type="button" data-cloth="' + c.id + '">' + imgTag('wdi:' + c.id, petFrame(Object.assign({}, PET_BASE, { wear: { [c.slot]: c.id }, skin: S.skin })).cv, 1.5) + '<b>' + c.name + '</b>' + tag + '</button>';
+      });
+    }
     sheetBody.innerHTML = html + '</div>';
   },
   click(e) {
     const tb = e.target.closest('.wd-tab');
     if (tb) { wdSlot = tb.dataset.slot; Sound.tick(); this.render(); return; }
     const el = e.target.closest('.wd-item'); if (!el) return;
+    if (el.dataset.breed) {
+      const b = breedsOpen().find((x) => x.id === el.dataset.breed); if (!b) return;
+      S.skin = S.skin === b.id ? '' : b.id;
+      Sound.boop(); Haptic.tap(8);
+      if (S.skin) { burstAt(el); setTimeout(() => emote('heart'), 400); }
+      save(); this.render(); renderRooms(); Scene.kick();
+      return;
+    }
     const c = CLOTHES.find((x) => x.id === el.dataset.cloth); if (!c) return;
     if (!S.wardrobe[c.id]) {
       if (!buyCheck(el, c.price, c.lvl)) return;
@@ -3570,6 +3630,7 @@ renderKitchen();
 renderStats();
 setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); }, 1000);
 setInterval(saveNow, 10000);
+if (OWNERS && !IS_ADMIN && S.skin) { S.skin = ''; save(); }
 if (Sync) Sync.onRemote(applyRemote);
 $('#boot').hidden = true;
 if (location.hash === '#t') window.__t = { S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS, petFrame, PCOL, PET_BASE };
