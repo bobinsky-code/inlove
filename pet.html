@@ -13,7 +13,7 @@
 window.__boot = new Promise(function (go) { window.__bootGo = go; });
 </script>
 <script type="module">
-import { CONFIGURED, onAuth, myPetId, watchPet, savePet } from './fb.js';
+import { CONFIGURED, onAuth, myPetId, watchPet, savePet, increment } from './fb.js';
 const KEY = 'nam2-pet-v1';
 const client = Math.random().toString(36).slice(2) + Date.now().toString(36);
 if (!CONFIGURED) {
@@ -35,34 +35,80 @@ if (!CONFIGURED) {
     if (!asked) return;                                  /* сервер молчит — остаёмся на экране загрузки */
     if (!petId) { location.replace('app.html'); return; }
     window.__started = true;
-    let started = false, remote = null, writeT = 0, lastWrite = 0, dirty = null;
-    const push = () => {
-      if (!dirty) return;
-      const state = dirty; dirty = null; lastWrite = Date.now();
-      savePet(petId, state, client).catch(() => { /* уйдёт, когда вернётся сеть */ });
-    };
+    let started = false, remote = null, writeT = 0, retryT = 0, pending = null;
+    /* комната у каждого устройства своя, её не делим */
+    const SKIP = { room: 1, home: 1 };
+    /* монеты — счётчик: шлём, на сколько их стало больше или меньше, а не итог.
+       Тогда две траты в одну секунду с двух устройств складываются, а не затирают друг друга */
+    const COUNT = { coins: 1 };
+    /* что, насколько мы знаем, лежит на сервере: ключ состояния → его JSON.
+       отсюда видно, какие поля изменили мы, а какие — второй владелец */
+    const base = {};
+    const jsonOf = (v) => { try { return JSON.stringify(v); } catch (e) { return undefined; } };
+    function push() {
+      const state = pending; pending = null;
+      if (!state) return;
+      const patch = {}, sent = {};
+      Object.keys(state).forEach((k) => {
+        if (SKIP[k]) return;
+        const j = jsonOf(state[k]);
+        if (j === undefined || j === base[k]) return;
+        if (COUNT[k] && base[k] !== undefined && typeof state[k] === 'number') {
+          const d = state[k] - JSON.parse(base[k]);
+          if (!d) return;
+          patch['state.' + k] = increment(d);
+        } else patch['state.' + k] = JSON.parse(j);
+        sent[k] = j;
+      });
+      const keys = Object.keys(sent);
+      if (!keys.length) return;                          /* ничего не поменялось — не пишем */
+      keys.forEach((k) => { base[k] = sent[k]; });
+      savePet(petId, patch, client).catch(() => {
+        keys.forEach((k) => { delete base[k]; });         /* отправим заново */
+        clearTimeout(retryT);
+        retryT = setTimeout(() => { pending = state; push(); }, 5000);
+      });
+    }
     const sync = {
-      /* в облако пишем не чаще раза в три секунды, чтобы не жечь лимиты */
-      save(state) {
-        dirty = state;
-        clearTimeout(writeT);
-        writeT = setTimeout(push, Math.max(1500, 3000 - (Date.now() - lastWrite)));
-      },
+      /* шлём сразу и только изменившиеся поля: покупка должна дойти до второго за один шаг */
+      save(state) { pending = state; clearTimeout(writeT); writeT = setTimeout(push, 250); },
       flush() { clearTimeout(writeT); push(); },
       onRemote(cb) { remote = cb; },
     };
     watchPet(petId, (d) => {
       if (!d) return;
+      const st = d.state && typeof d.state === 'object' ? d.state : null;
       if (!started) {
         started = true;
-        if (d.state) { try { localStorage.setItem(KEY, JSON.stringify(d.state)); } catch (e) { /* играем без кэша */ } }
+        if (st) {
+          Object.keys(st).forEach((k) => { if (!SKIP[k]) base[k] = jsonOf(st[k]); });
+          let keep = null;
+          try { keep = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { /* кэша нет */ }
+          const mix = Object.assign({}, st);
+          if (keep) Object.keys(SKIP).forEach((k) => { if (k in keep) mix[k] = keep[k]; });
+          try { localStorage.setItem(KEY, JSON.stringify(mix)); } catch (e) { /* играем без кэша */ }
+        }
         sync.logins = Object.keys(d.names || {}).map((k) => String(d.names[k] || '').toLowerCase()).sort();
         clearTimeout(slow);
         window.__bootGo(sync);
         return;
       }
-      if (d.by === client || !d.state || !remote) return;
-      remote(d.state);
+      if (!st || !remote) return;
+      const patch = {}, add = {};
+      let n = 0;
+      Object.keys(st).forEach((k) => {
+        if (SKIP[k]) return;
+        const j = jsonOf(st[k]);
+        if (j === undefined || j === base[k]) return;
+        if (COUNT[k] && base[k] !== undefined && typeof st[k] === 'number') {
+          const d = st[k] - JSON.parse(base[k]);
+          base[k] = j;
+          if (d) { add[k] = d; n++; }                     /* на столько изменил второй владелец */
+          return;
+        }
+        base[k] = j; patch[k] = JSON.parse(j); n++;
+      });
+      if (n) remote(patch, add);
     }, () => { if (!started) { started = true; clearTimeout(slow); window.__bootGo(sync); } });
     addEventListener('pagehide', () => sync.flush());
     document.addEventListener('visibilitychange', () => { if (document.hidden) sync.flush(); });
@@ -1963,20 +2009,39 @@ function saveNow() {
   if (Sync) Sync.save(S);
 }
 function save() { clearTimeout(saveT); saveT = setTimeout(saveNow, 400); }
-/* питомец общий: пришло состояние, записанное на другом устройстве.
+/* питомец общий: пришли поля, которые поменял второй владелец.
    Комната у каждого своя — её из чужого состояния не берём. */
 const LOCAL_KEYS = { room: 1, home: 1 };
-function applyRemote(st) {
+/* купленное только копится, поэтому списки вещей сливаем, а не замещаем:
+   две покупки в одну секунду с разных устройств не теряются */
+const UNION_KEYS = { owned: 1, walls: 1, wardrobe: 1 };
+/* поля, которые меняются сами по себе от хода времени */
+const TICK_KEYS = { t: 1, food: 1, fun: 1, energy: 1, clean: 1 };
+function applyRemote(st, add) {
   if (!st || typeof st !== 'object') return;
   const wasSleeping = S.sleeping;
-  Object.keys(st).forEach((k) => { if (!LOCAL_KEYS[k]) S[k] = st[k]; });
+  let sleeping = wasSleeping, merged = false;
+  if (add) Object.keys(add).forEach((k) => { S[k] = Math.max(0, (+S[k] || 0) + add[k]); });
+  Object.keys(st).forEach((k) => {
+    if (LOCAL_KEYS[k]) return;
+    if (k === 'sleeping') { sleeping = !!st[k]; return; }
+    if (UNION_KEYS[k] && st[k] && typeof st[k] === 'object') {
+      const both = Object.assign({}, st[k], S[k]);
+      if (Object.keys(both).length > Object.keys(st[k]).length) merged = true;   /* у нас есть то, чего нет у второго */
+      S[k] = both;
+      return;
+    }
+    S[k] = st[k];
+  });
   if (!(S.t > 0) || S.t > Date.now()) S.t = Date.now();
-  const sleeping = S.sleeping;
-  S.sleeping = wasSleeping;
   simulate(Date.now());
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* без кэша */ }
-  renderTop(); renderStats(); renderBest(); renderRooms(); renderKitchen();
+  renderTop(); renderStats();
+  /* раз в десять секунд приходят только утекающие полоски — ради них списки не перерисовываем */
+  const loud = Object.keys(st).some((k) => !TICK_KEYS[k]) || (add && Object.keys(add).length > 0);
+  if (loud) { renderBest(); renderRooms(); renderKitchen(); renderSheet(); }
   if (sleeping !== wasSleeping) setSleep(sleeping, true);
+  if (merged) save();                                   /* вернём второму то, чего у него нет */
   Scene.kick();
 }
 const buffOn = (k, now) => (S.buffs[k] || 0) > (now || Date.now());

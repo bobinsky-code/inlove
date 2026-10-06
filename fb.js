@@ -7,9 +7,10 @@ import {
   onAuthStateChanged, setPersistence, browserLocalPersistence, connectAuthEmulator,
 } from './vendor/firebase-auth.js';
 import {
-  getFirestore, connectFirestoreEmulator, doc, getDoc, setDoc, deleteDoc, writeBatch,
-  collection, query, where, onSnapshot, serverTimestamp,
+  getFirestore, connectFirestoreEmulator, doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch,
+  collection, query, where, onSnapshot, serverTimestamp, increment,
 } from './vendor/firebase-firestore.js';
+export { increment };
 
 /* локально поднимается эмулятор, на сайте — настоящий проект */
 const LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
@@ -148,8 +149,10 @@ async function docExists(coll, id) {
 /* ---------- состояние питомца ---------- */
 export function petRef(petId) { return doc(db, 'pets', petId); }
 export function watchPet(petId, cb, err) { return onSnapshot(doc(db, 'pets', petId), (s) => cb(s.exists() ? s.data() : null), err || (() => {})); }
-export function savePet(petId, state, me) {
-  return setDoc(doc(db, 'pets', petId), { state, updated: serverTimestamp(), by: me }, { merge: true });
+/* пишем только изменившиеся поля состояния: ключи приходят путями вида state.coins,
+   поэтому правка одного поля не затирает то, что в это же время поменял второй владелец */
+export function savePet(petId, patch, me) {
+  return updateDoc(doc(db, 'pets', petId), Object.assign({}, patch, { updated: serverTimestamp(), by: me }));
 }
 
 /* ---------- ошибки по-русски ---------- */
