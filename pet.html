@@ -1228,12 +1228,15 @@ function patMask(L, x0, y0, rows) {
 function patDraw(L, x0, y0, rows, map) { rows.forEach((r, y) => { for (let x = 0; x < r.length; x++) { const c = map[r[x]]; if (c) L.px(x0 + x, y0 + y, c); } }); }
 const BOWROWS = ['##.....##', '###...###', '##hko####', '###...###', '##.....##'];
 const petCache = new Map();
+/* порода, если её не назвали явно, — всегда выбранная.
+   Так любой рисунок питомца, нынешний и будущий, берёт её сам */
+const skinOf = (v) => (v == null ? S.skin : v);
 function petFrame(o) {
-  const wr = o.wear || {};
-  const key = [o.eyes, o.mouth, o.ears, o.tail, o.hx, o.hy, o.by, o.pose, o.brows ? 1 : 0, o.blush ? 1 : 0, o.dirt, wr.head || '', wr.eyes || '', wr.neck || '', wr.body || '', o.cape ? 1 : 0, o.flap || 0, o.sick || '', o.skin || ''].join('|');
+  const wr = o.wear || {}, skin = skinOf(o.skin);
+  const key = [o.eyes, o.mouth, o.ears, o.tail, o.hx, o.hy, o.by, o.pose, o.brows ? 1 : 0, o.blush ? 1 : 0, o.dirt, wr.head || '', wr.eyes || '', wr.neck || '', wr.body || '', o.cape ? 1 : 0, o.flap || 0, o.sick || '', skin].join('|');
   let f = petCache.get(key);
   if (f) return f;
-  const L = Lay(PW, PH), C = SKINS[o.skin] || PCOL, adm = o.skin === 'admin';
+  const L = Lay(PW, PH), C = SKINS[skin] || PCOL, adm = skin === 'admin';
   const lie = o.pose === 'lie', hx = o.hx, hy = o.hy + (lie ? 5 : 0), by = o.by;
   const X = (x) => x + hx, Y = (y) => y + hy;
   const shadeFn = (base, sh, hi) => (x, y, m) => (!L.has(m, x, y + 2) || !L.has(m, x + 2, y + 1) ? sh : hi && x < 23 && (!L.has(m, x, y - 2) || !L.has(m, x - 2, y - 1)) ? hi : base);
@@ -1972,11 +1975,12 @@ const EMO = {
 };
 /* tiny side-view dog for dreams */
 function miniDog(frame) {
-  return art('mini' + frame, () => {
+  const skin = skinOf(null), C = SKINS[skin] || PCOL;
+  return art('mini' + frame + ':' + skin, () => {
     const rows = ['........ee..', '.......efff.', 't......ffzfn', 'tfffffffffff', '.ffffffffff.', frame ? '..f.f..f.f..' : '.f.f....f.f.'];
     const L = Lay(14, 8), m = L.M();
     rows.forEach((r, y) => { for (let x = 0; x < r.length; x++) if (r[x] !== '.') m[(y + 1) * 14 + x + 1] = 1; });
-    L.part(m, (x, y) => { const ch = rows[y - 1][x - 1]; return ch === 'e' ? PCOL.ear : ch === 'z' ? PCOL.eye : ch === 'n' ? PCOL.nose : PCOL.fur; }, '#8a5a5a');
+    L.part(m, (x, y) => { const ch = rows[y - 1][x - 1]; return ch === 'e' ? C.ear : ch === 'z' ? C.eye : ch === 'n' ? C.nose : C.fur; }, '#8a5a5a');
     return L.canvas();
   });
 }
@@ -3217,7 +3221,7 @@ SHEETS.wardrobe = {
       CLOTHES.filter((c) => c.slot === wdSlot).forEach((c) => {
         const own = !!S.wardrobe[c.id], worn = w[c.slot] === c.id;
         const tag = own ? '<span class="buy pb is-owned">' + (worn ? 'Снять' : 'Надеть') + '</span>' : priceTag(c.price, c.lvl, false, '');
-        html += '<button class="wd-item pb press' + (worn ? ' is-on' : '') + '" type="button" data-cloth="' + c.id + '">' + imgTag('wdi:' + c.id, petFrame(Object.assign({}, PET_BASE, { wear: { [c.slot]: c.id }, skin: S.skin })).cv, 1.5) + '<b>' + c.name + '</b>' + tag + '</button>';
+        html += '<button class="wd-item pb press' + (worn ? ' is-on' : '') + '" type="button" data-cloth="' + c.id + '">' + imgTag('wdi:' + c.id + ':' + S.skin, petFrame(Object.assign({}, PET_BASE, { wear: { [c.slot]: c.id } })).cv, 1.5) + '<b>' + c.name + '</b>' + tag + '</button>';
       });
     }
     sheetBody.innerHTML = html + '</div>';
