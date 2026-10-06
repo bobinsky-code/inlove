@@ -65,7 +65,7 @@ button.go:disabled{opacity:.7}
 </main>
 
 <script type="module">
-import { CONFIGURED, LOGIN_RE, authReady, register, signIn, myPetId, errText } from './fb.js';
+import { CONFIGURED, LOGIN_RE, authReady, register, signIn, errText } from './fb.js';
 'use strict';
 const $ = (s) => document.querySelector(s);
 const form = $('#form'), msg = $('#msg'), btn = $('#btn'), card = $('#card'), title = $('#title');
@@ -88,16 +88,13 @@ function setMode(m) {
 $('#tabs').addEventListener('click', (e) => { const t = e.target.closest('.tg'); if (t) setMode(t.dataset.mode); });
 form.addEventListener('input', () => { msg.textContent = ''; form.classList.remove('err'); });
 
-async function go(user) {
-  const pet = await myPetId(user.uid).catch(() => null);
-  location.replace(pet ? 'pet.html' : 'app.html');
-}
+function go(fresh) { location.replace(fresh ? 'app.html' : 'pet.html'); }
 
 if (!CONFIGURED) {
   form.hidden = true; $('#tabs').hidden = true;
   msg.textContent = 'Сайт ещё не подключён к серверу';
 } else {
-  authReady().then((u) => { if (u) go(u); });
+  authReady().then((u) => { if (u) go(); });
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const login = $('#login').value.trim(), pass = $('#password').value;
@@ -109,8 +106,9 @@ if (!CONFIGURED) {
     }
     btn.disabled = true;
     try {
-      const user = mode === 'up' ? await register(login, pass) : await signIn(login, pass);
-      await go(user);
+      const fresh = mode === 'up';                     /* у нового аккаунта питомца ещё нет */
+      if (fresh) await register(login, pass); else await signIn(login, pass);
+      go(fresh);
     } catch (err) {
       fail(errText(err));
       btn.disabled = false;

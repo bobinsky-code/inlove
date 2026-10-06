@@ -27,7 +27,12 @@ if (!CONFIGURED) {
   onAuth(async (user) => {
     if (!user) { location.replace('index.html'); return; }
     if (window.__started) return;
-    const petId = await myPetId(user.uid).catch(() => null);
+    let petId = null, asked = false;
+    for (let i = 0; i < 3 && !asked; i++) {
+      try { petId = await myPetId(user.uid); asked = true; }
+      catch (e) { await new Promise((r) => setTimeout(r, 1200)); }
+    }
+    if (!asked) return;                                  /* сервер молчит — остаёмся на экране загрузки */
     if (!petId) { location.replace('app.html'); return; }
     window.__started = true;
     let started = false, remote = null, writeT = 0, lastWrite = 0, dirty = null;

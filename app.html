@@ -110,8 +110,7 @@ function render() {
 
   let h = '';
 
-  if (petId) h += '<button class="open pb press" type="button" id="toPet">Открыть питомца</button>';
-  else h += '<p class="lead">Добавьте в друзья человека и создайте с ним питомца, чтобы начать.</p>';
+  h += '<p class="lead">Добавьте в друзья человека и создайте с ним питомца, чтобы начать.</p>';
 
   h += '<h2>Добавить в друзья</h2>'
     + '<div class="add"><input class="pb" id="findLogin" placeholder="логин" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="16">'
@@ -229,7 +228,7 @@ if (!CONFIGURED) {
     if (me) return;
     me = user.uid; myLogin = loginOf(user);
     $('#me').textContent = myLogin;
-    watchMyPet(me, (id) => { petId = id; render(); });
+    watchMyPet(me, (id) => { if (id) { location.replace('pet.html'); return; } petId = id; render(); });
     watchLobby(me, (st) => {
       lobby = st;
       render();
