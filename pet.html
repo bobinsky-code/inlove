@@ -3477,14 +3477,20 @@ SHEETS.person = {
   title: 'Профиль',
   render() {
     const a = sheetArg || {}, card = personCard && personCard.uid === a.uid ? personCard : null;
-    const face = card && SKINS[card.face] ? card.face : '';
-    const st = (card && card.st) || null;
-    const days = card && card.since ? Math.max(0, Math.floor((Date.now() - card.since) / 86400e3)) : 0;
+    /* совладельца питомца знаем и без его карточки аккаунта — всё лежит в общем состоянии */
+    const key = String(a.login || '').toLowerCase();
+    const mate = OWNERS && OWNERS.indexOf(key) >= 0 ? S.who[key] : null;
+    const skin = (card && card.face) || (mate && mate.face) || '';
+    const face = SKINS[skin] ? skin : '';
+    const about = (card && card.about) || (mate && mate.about) || '';
+    const since = (card && card.since) || (mate ? S.created : 0);
+    const st = (card && card.st) || mate || null;
+    const days = since ? Math.max(0, Math.floor((Date.now() - since) / 86400e3)) : 0;
     let html = '<button class="pp-row row pb press" type="button" data-back="1"><span class="th">' + icon('left', 2) + '</span><span class="tx"><b>Люди</b></span></button>';
     html += '<div class="pf pb"><div class="pf-h">' + faceArt(face)
       + '<div><b>' + esc(a.login || '—') + '</b>'
-      + (card && card.since ? '<small>с ' + dayTX(card.since) + '</small>' : '') + '</div></div>';
-    if (card && card.about) html += '<p class="pf-ab">' + esc(card.about) + '</p>';
+      + (since ? '<small>с ' + dayTX(since) + '</small>' : '') + '</div></div>';
+    if (about) html += '<p class="pf-ab">' + esc(about) + '</p>';
     if (st) html += '<div class="pf-st">' + STAT_ROWS.map((x) => '<span><b>'
       + (x[0] === 'days' ? days : +st[x[0]] || 0) + '</b>' + x[1] + '</span>').join('') + '</div>';
     if (isFriend(a.uid)) html += '<p class="pp-empty">Уже в друзьях</p>';
