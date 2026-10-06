@@ -45,10 +45,10 @@ if (!CONFIGURED) {
     /* что, насколько мы знаем, лежит на сервере: ключ состояния → его JSON.
        отсюда видно, какие поля изменили мы, а какие — второй владелец */
     const base = {};
-    /* сад пишется целиком, поэтому две грядки в одну секунду затирают друг друга.
+    /* сад и письма пишутся целиком, поэтому два действия в одну секунду затирают друг друга.
        Пока наша запись не дошла до сервера, храним точку, от которой мы считали:
        по ней видно, что именно изменил второй, и его правка складывается с нашей */
-    const DEEP = { garden: 1 };
+    const DEEP = { garden: 1, mail: 1, mailSeen: 1 };
     const from = {};
     const jsonOf = (v) => { try { return JSON.stringify(v); } catch (e) { return undefined; } };
     function push() {
@@ -82,6 +82,7 @@ if (!CONFIGURED) {
       });
     }
     const sync = {
+      me: String(user.email || '').split('@')[0].toLowerCase(),
       /* шлём сразу и только изменившиеся поля: покупка должна дойти до второго за один шаг */
       save(state) { pending = state; clearTimeout(writeT); writeT = setTimeout(push, 250); },
       flush() { clearTimeout(writeT); push(); },
@@ -180,6 +181,17 @@ input{-webkit-user-select:text;user-select:text}
 .snd .ic-off,.snd[aria-pressed="false"] .ic-on{display:none}
 .snd[aria-pressed="false"] .ic-off{display:block}
 
+/* ---------- письма в мишке ---------- */
+.ml{display:flex;flex-direction:column;gap:10px}
+.ml-m{--bg:#fff;align-self:flex-start;max-width:86%;display:flex;flex-direction:column;gap:3px;padding:7px 10px 9px}
+.ml-m.is-me{--bg:var(--rose0);align-self:flex-end}
+.ml-m small{font-size:var(--f1);line-height:1;color:var(--ink2)}
+.ml-m b{font-size:var(--f2);line-height:1.15;overflow-wrap:anywhere}
+.ml-send{flex:none;display:flex;align-items:center;gap:10px;padding-top:2px}
+.ml-in{--bg:#fff;flex:1 1 auto;min-width:0;height:34px;display:flex;align-items:center;padding:0 8px}
+.ml-in input{width:100%;min-width:0;height:100%;border:0;border-radius:0;padding:0;background:transparent;font:var(--f2)/1 var(--font);color:var(--ink)}
+.ml-in input::placeholder{color:#c9a8b7}
+
 /* ---------- meters ---------- */
 .stats{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;padding:2px 4px 0}
 .stat{display:flex;align-items:center;gap:10px;min-width:0}
@@ -247,6 +259,7 @@ input{-webkit-user-select:text;user-select:text}
 .dots button{position:relative;width:8px;height:8px;padding:0;background:var(--rose1);transition:background .15s steps(2,end)}
 .dots button::after{content:'';position:absolute;inset:-11px -7px}
 .dots button.on{background:var(--rose2);box-shadow:0 0 0 var(--p) var(--rose0)}
+.dots button.has::before{content:'';position:absolute;left:1px;top:-8px;width:6px;height:6px;background:#ff4d6d;animation:blink 1.2s steps(1,end) infinite}
 
 /* ---------- locations map ---------- */
 .map{position:absolute;inset:0;z-index:38;background:#aee09f;overflow:hidden;opacity:0;transition:opacity .24s steps(3,end);clip-path:polygon(var(--p) 0,calc(100% - var(--p)) 0,100% var(--p),100% calc(100% - var(--p)),calc(100% - var(--p)) 100%,var(--p) 100%,0 calc(100% - var(--p)),0 var(--p))}
@@ -640,6 +653,55 @@ OBJ.rug = () => {
   return L.canvas();
 };
 OBJ.ball = () => spr(['..kkk..', '.k555k.', 'kw5555k', 'kwwwwwk', 'k55554k', '.k444k.', '..kkk..'], { k: '#d4507c', 5: '#ff7ea6', 4: '#f0618e', w: WHITE });
+/* плюшевый мишка: через его сердце владельцы передают друг другу сообщения */
+OBJ.bear = () => {
+  const W = 17, H = 19, L = Lay(W, H), K = '#8a5c38';
+  const ear = L.M();
+  L.ell(ear, 3, 2.6, 2.7, 2.7); L.ell(ear, 14, 2.6, 2.7, 2.7);
+  L.part(ear, '#c99166', K);
+  L.part(L.ell(L.M(), 3, 2.9, 1.2, 1.2), '#f0b7c6');
+  L.part(L.ell(L.M(), 14, 2.9, 1.2, 1.2), '#f0b7c6');
+  const body = L.M();
+  L.ell(body, 8.5, 13.4, 6, 5.2);
+  L.ell(body, 2.4, 12.4, 2.2, 3.1); L.ell(body, 14.6, 12.4, 2.2, 3.1);
+  L.ell(body, 5.4, 17.4, 2.7, 2.2); L.ell(body, 11.6, 17.4, 2.7, 2.2);
+  L.part(body, (x, y) => (y <= 10 ? '#d7a079' : '#c99166'), K);
+  L.part(L.ell(L.M(), 8.5, 13.8, 4.2, 3.6), '#f3dcc0');
+  L.part(L.ell(L.M(), 2.4, 12.6, 1.2, 1.6), '#f3dcc0');
+  L.part(L.ell(L.M(), 14.6, 12.6, 1.2, 1.6), '#f3dcc0');
+  L.part(L.ell(L.M(), 5.4, 17.6, 1.5, 1.2), '#f3dcc0');
+  L.part(L.ell(L.M(), 11.6, 17.6, 1.5, 1.2), '#f3dcc0');
+  const head = L.M();
+  L.ell(head, 8.5, 6.2, 5.4, 4.6);
+  L.part(head, (x, y) => (y <= 4 ? '#d7a079' : '#c99166'), K);
+  L.part(L.ell(L.M(), 8.5, 8.2, 3.2, 2.2), '#f3dcc0');
+  L.pts([[6, 6], [11, 6]], '#4a2f1e');
+  L.pts([[8, 7], [9, 7], [8, 8]], '#4a2f1e');
+  L.pts([[5, 8], [12, 8]], '#f0b7c6');
+  return L.canvas();
+};
+/* сердце мишки: два размера — на них держится стук */
+const HEART_C = { k: '#a32343', r: '#ff4d6d', 5: '#ff8099', w: '#ffc2cf' };
+OBJ.heartS = () => spr([
+  '.kk.kk.',
+  'kw5rrrk',
+  'k5rrrrk',
+  'krrrrrk',
+  '.krrrk.',
+  '..krk..',
+  '...k...',
+], HEART_C);
+OBJ.heartB = () => spr([
+  '..kk.kk..',
+  '.kw55rrk.',
+  'kw55rrrrk',
+  'k5rrrrrrk',
+  'krrrrrrrk',
+  '.krrrrrk.',
+  '..krrrk..',
+  '...krk...',
+  '....k....',
+], HEART_C);
 OBJ.plant = () => {
   const W = 17, H = 28, L = Lay(W, H);
   const lv = L.M();
@@ -902,6 +964,7 @@ function roomLayout(i, lw, lh) {
   if (i === 0) {
     P.wardrobe = [2, fy + 2 - 49]; P.window = [Math.round(lw * 0.42) - 13, 6]; P.picture = [lw - 26, 9];
     P.plant = [lw - 34, fy + 5 - 28]; P.lamp = [lw - 16, fy + 3 - 46]; P.rug = [cx - 26, lh - 13]; P.ball = [Math.round(lw * 0.64), lh - 10];
+    P.bear = [1, lh - 23]; P.heart = [P.bear[0] + 5, P.bear[1] + 10];
   } else if (i === 1) {
     P.fridge = [2, fy + 3 - 46]; P.counter = [lw - 41, fy + 2 - 30]; P.clock = [cx - 8, 5];
     const tw = tableW(lw); P.table = [cx - (tw >> 1), lh - 20]; P.tw = tw;
@@ -956,6 +1019,7 @@ function drawRoom(ctx, i, lw, lh, o) {
       put(obj('lamp'), P.lamp);
     }
     if (owned.rug) put(obj('rug'), P.rug);
+    put(obj('bear'), P.bear);
     if (owned.ball) put(obj('ball'), P.ball);
   } else if (i === 1) {
     const split = Math.round(fy * 0.42);
@@ -1030,6 +1094,18 @@ function drawRoomLive(ctx, i, lw, lh, ox, o, t) {
       ctx.fillStyle = WHITE;
       ctx.fillRect(x, y - k, 1, k * 2 + 1); ctx.fillRect(x - k, y, k * 2 + 1, 1);
     }
+    /* сердце мишки стучит всегда, а на непрочитанное письмо отзывается ярче и с подсветкой */
+    const news = o.mail, cyc = news ? 900 : 1700, hp = t % cyc;
+    const hx = ox + P.heart[0], hy = P.heart[1];
+    if (news) {
+      ctx.fillStyle = 'rgba(255,77,109,.28)';
+      for (let y = -5; y < 12; y++) for (let x = -5; x < 12; x++) {
+        const dx = (x - 3) / 8, dy = (y - 3) / 8, d = dx * dx + dy * dy;
+        if (d <= 1 && ((x + y) % 2 === 0 || d < 0.3)) ctx.fillRect(hx + x, hy + y, 1, 1);
+      }
+    }
+    if (hp < 180 || (hp > 300 && hp < 470)) ctx.drawImage(obj('heartB'), hx - 1, hy - 1);
+    else ctx.drawImage(obj('heartS'), hx, hy);
     if (o.owned && o.owned.garland) {
       const C = ['#ffc978', '#ff9fbd', '#9fd2ff', '#b2e8c6'];
       const sag = (x) => 1 + Math.round(4 * Math.sin(((x % (lw / 3)) / (lw / 3)) * Math.PI));
@@ -1051,9 +1127,34 @@ function drawRoomLive(ctx, i, lw, lh, ox, o, t) {
     gardenBeds(ctx, lw, lh, ox, o, t);
   }
 }
+/* строка по ширине пузыря: режем по пробелам, хвост помечаем многоточием */
+function wrapPx(ctx, tx, max, lines) {
+  const out = [];
+  let line = '';
+  for (let i = 0; i < tx.length; i++) {
+    if (ctx.measureText(line + tx[i]).width <= max) { line += tx[i]; continue; }
+    if (out.length === lines - 1) { while (line && ctx.measureText(line + '…').width > max) line = line.slice(0, -1); line += '…'; break; }
+    const cut = line.lastIndexOf(' ');
+    if (cut > 0 && cut > line.length - 10) { out.push(line.slice(0, cut)); line = line.slice(cut + 1) + tx[i]; }
+    else { out.push(line); line = tx[i]; }
+  }
+  if (line) out.push(line);
+  return out;
+}
 /* parts in front of the pet: the kitchen table with the chosen food, the bathtub */
 function drawRoomFront(ctx, i, lw, lh, ox, o) {
   const P = roomLayout(i, lw, lh);
+  if (i === 0 && o.mail && o.mailTip) {
+    /* сообщение выходит из сердца мишки и через несколько секунд прячется — сердце остаётся гореть */
+    ctx.font = '10px Px';
+    const max = lw - 16, rows = wrapPx(ctx, String(o.mail.tx), max, 2);
+    let bw = 5; rows.forEach((r) => { bw = Math.max(bw, Math.ceil(ctx.measureText(r).width) + 5); });
+    const bh = 3 + rows.length * 10;
+    const bx2 = clamp(ox + P.heart[0] - 3, 3, lw - bw - 3), by2 = P.bear[1] - bh - 4;
+    speech(ctx, bx2, by2, bw, bh, -1);
+    ctx.font = '10px Px'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = INK;
+    rows.forEach((r, k) => ctx.fillText(r, bx2 + 3, by2 + 10 + k * 10));
+  }
   if (i === 1) {
     ctx.drawImage(obj('table', P.tw), ox + P.table[0], P.table[1]);
     const dx = ox + P.dish[0], dy = P.dish[1];
@@ -1981,6 +2082,7 @@ const BUFF_TX = { xp2: 'Опыт ×2', coins2: 'Монеты ×2', nofun: 'На�
 const RATE = { awake: { food: -12, fun: -10, energy: -8, clean: -6 }, sleep: { food: -6, fun: 0, energy: 100, clean: -3 } };
 const needXP = (l) => 60 + (l - 1) * 40;
 /* порода «Админ» доступна только одной паре логинов */
+const ME = ((Sync && Sync.me) || '').toLowerCase();
 const OWNERS = (Sync && Sync.logins) || null;
 const IS_ADMIN = !!(OWNERS && OWNERS.length === 2 && OWNERS.join(',') === ADMIN_PAIR);
 const breedsOpen = () => BREEDS.filter((b) => !b.admin || IS_ADMIN);
@@ -1992,7 +2094,8 @@ const HOUSE = 4;
 function freshGarden() { return { plots: [null, null, null], seeds: {}, crops: {}, dishes: {}, known: {} }; }
 function fresh(now) {
   return { v: 1, name: 'Питомец', t: now, food: 80, fun: 75, energy: 90, clean: 85, sleeping: false, xp: 0, lvl: 1, coins: 50, owned: {}, walls: { pink: true }, wall: 'pink', best: { catch: 0, run: 0 }, petWin: { t: now, n: 0 }, room: 0, home: 0,
-    wardrobe: {}, wear: {}, garden: freshGarden(), sick: null, healedAt: 0, buffs: {}, skin: '', created: now };
+    wardrobe: {}, wear: {}, garden: freshGarden(), sick: null, healedAt: 0, buffs: {}, skin: '', created: now,
+    mail: {}, mailSeen: {} };
 }
 function load() {
   const now = Date.now(), f = fresh(now);
@@ -2009,6 +2112,8 @@ function load() {
       const g = s.garden || {};
       m.garden = { plots: Array.isArray(g.plots) && g.plots.length >= 3 ? g.plots.slice(0, 6) : [null, null, null], seeds: Object.assign({}, g.seeds), crops: Object.assign({}, g.crops), dishes: Object.assign({}, g.dishes), known: Object.assign({}, g.known) };
       m.buffs = Object.assign({}, s.buffs);
+      m.mail = Object.assign({}, s.mail);
+      m.mailSeen = Object.assign({}, s.mailSeen);
       m.skin = BREEDS.some((b) => b.id === s.skin) ? s.skin : '';
       m.sick = s.sick && SICK[s.sick.k] ? s.sick : null;
       m.created = s.created || now;
@@ -2099,8 +2204,9 @@ function applyRemote(st, add, was) {
   renderTop(); renderStats();
   /* раз в десять секунд приходят только утекающие полоски — ради них списки не перерисовываем */
   const loud = Object.keys(st).some((k) => !TICK_KEYS[k]) || (add && Object.keys(add).length > 0);
-  if (loud) { renderBest(); renderRooms(); renderKitchen(); renderSheet(); }
+  if (loud) { renderBest(); renderRooms(); renderKitchen(); renderMail(); renderSheet(); }
   if (sleeping !== wasSleeping) setSleep(sleeping, true);
+  if (st.mail && mailNew()) mailTip = Date.now() + MAIL_TIP;   /* письмо пришло — покажем его */
   if (merged) save();                                   /* вернём второму то, чего у него нет */
   Scene.kick();
 }
@@ -2439,7 +2545,7 @@ const Scene = (() => {
   function draw(t) {
     if (!lw) return;
     const dt = Math.max(0, Math.min(0.1, (t - lastT) / 1000)); lastT = t;
-    const opts = { owned: S.owned, night: nightOn, garden: S.garden, stageOf, food: foodCv, foodAway, sky: skyNow() };
+    const opts = { owned: S.owned, night: nightOn, garden: S.garden, stageOf, food: foodCv, foodAway, sky: skyNow(), mail: mailNew(), mailTip: Date.now() < mailTip };
     bx.clearRect(0, 0, lw, lh);
     let ra = cur, rb = -1, oa = 0, ob = 0;
     if (sliding) {
@@ -2597,6 +2703,7 @@ const Scene = (() => {
     tapAt(e) {
       if (sliding) return null;
       const p = local(e), P = roomLayout(cur, lw, lh);
+      if (cur === 0 && inRect(p, P.bear[0] - 2, P.bear[1] - 2, 21, 23)) return { kind: 'bear' };
       if (cur === 0 && inRect(p, P.wardrobe[0], P.wardrobe[1], 27, 49)) return { kind: 'wardrobe' };
       if (cur === 1 && inRect(p, P.dish[0] - 11, P.dish[1] - 22, 22, 25)) return { kind: 'dish' };
       if (cur === 5) {
@@ -2735,6 +2842,7 @@ function goRoom(i, instant) {
   dotsEl.hidden = !inHouse;
   dots.forEach((d, k) => d.classList.toggle('on', k === i));
   if (i !== 2) Scene.sponge(null);
+  if (i === 0 && mailNew()) mailTip = Date.now() + MAIL_TIP;   /* зашли в комнату — покажем письмо */
   if (i === 1) renderKitchen();
   save();
 }
@@ -2818,7 +2926,8 @@ sceneCv.addEventListener('pointerup', (e) => {
   if (Math.hypot(dx, dy) > 12) return;
   const hit = Scene.tapAt(e);
   if (!hit) return;
-  if (hit.kind === 'wardrobe') { Sound.boop(); openSheet('wardrobe'); }
+  if (hit.kind === 'bear') { Sound.boop(); openSheet('mail'); }
+  else if (hit.kind === 'wardrobe') { Sound.boop(); openSheet('wardrobe'); }
   else if (hit.kind === 'dish') feedCurrent();
   else if (hit.kind === 'plot') tapPlot(hit.i, hit.at);
 });
@@ -3010,8 +3119,13 @@ function openSheet(mode, arg) {
   SHEETS[mode].render();
   sheetBody.scrollTop = 0;
   sheetOpen = true; sheet.classList.add('is-on'); sheetBg.classList.add('is-on');
+  if (mode === 'mail') mailRead();
 }
-function renderSheet() { if (sheetOpen && SHEETS[sheetMode]) SHEETS[sheetMode].render(); }
+function renderSheet() {
+  if (!sheetOpen || !SHEETS[sheetMode]) return;
+  SHEETS[sheetMode].render();
+  if (sheetMode === 'mail') mailRead();              /* письмо пришло при открытой шторке */
+}
 function closeSheet() { sheetOpen = false; sheet.classList.remove('is-on'); sheetBg.classList.remove('is-on'); }
 sheetBody.addEventListener('click', (e) => { if (sheetOpen && SHEETS[sheetMode]) SHEETS[sheetMode].click(e); });
 $('#sheetX').addEventListener('click', closeSheet);
@@ -3127,6 +3241,79 @@ SHEETS.wardrobe = {
     save(); this.render(); Scene.kick();
   },
 };
+
+/* ---------- сообщения через мишку ---------- */
+const MAIL_MAX = 30, MAIL_LEN = 140, MAIL_TIP = 7000;
+let mailTip = 0;                                       /* до какого момента показывать пузырь */
+const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const mailKey = (m) => m.t + ':' + m.by;
+const mailList = () => Object.keys(S.mail).map((k) => S.mail[k])
+  .filter((m) => m && m.tx && m.t > 0).sort((a, b) => a.t - b.t);
+/* последнее непрочитанное письмо от второго владельца */
+function mailNew() {
+  if (!ME) return null;
+  const seen = +S.mailSeen[ME] || 0;
+  let out = null;
+  mailList().forEach((m) => { if (m.by !== ME && m.t > seen) out = m; });
+  return out;
+}
+function mailRead() {
+  const list = mailList(), last = list.length ? list[list.length - 1].t : 0;
+  if (!ME || !last || (+S.mailSeen[ME] || 0) >= last) return;
+  S.mailSeen[ME] = last;
+  save(); renderMail();
+}
+function mailSend(tx) {
+  tx = String(tx || '').replace(/\s+/g, ' ').trim().slice(0, MAIL_LEN);
+  if (!tx || !ME) return false;
+  const t = Date.now(), m = { t, by: ME, tx };
+  S.mail[mailKey(m)] = m;
+  const list = mailList();
+  for (let i = 0; i < list.length - MAIL_MAX; i++) delete S.mail[mailKey(list[i])];
+  S.mailSeen[ME] = t;
+  save(); renderMail(); Scene.kick();
+  return true;
+}
+function mailTime(t) {
+  const d = new Date(t), n = new Date(), p2 = (v) => (v < 10 ? '0' : '') + v;
+  const hm = p2(d.getHours()) + ':' + p2(d.getMinutes());
+  return d.toDateString() === n.toDateString() ? hm : p2(d.getDate()) + '.' + p2(d.getMonth() + 1) + ' ' + hm;
+}
+/* метка на точке комнаты, чтобы письмо было видно из любой комнаты */
+function renderMail() { if (dots[0]) dots[0].classList.toggle('has', !!mailNew()); }
+let mailDraft = '';
+SHEETS.mail = {
+  title: 'Мишка',
+  render() {
+    const list = mailList();
+    let html = '<div class="ml">';
+    if (!list.length) html += '<p class="sec">Сообщений нет</p>';
+    list.forEach((m) => {
+      html += '<div class="ml-m pb' + (m.by === ME ? ' is-me' : '') + '"><small>' + esc(m.by) + ' · ' + mailTime(m.t)
+        + '</small><b>' + esc(m.tx) + '</b></div>';
+    });
+    html += '</div><div class="ml-send"><span class="ml-in pb"><input id="mailTx" type="text" maxlength="' + MAIL_LEN
+      + '" placeholder="Сообщение" autocomplete="off" autocapitalize="sentences" spellcheck="false"></span>'
+      + '<button class="btn pb press" type="button" data-act="send">Отправить</button></div>';
+    const focused = document.activeElement && document.activeElement.id === 'mailTx';
+    sheetBody.innerHTML = html;
+    const inp = $('#mailTx');
+    if (inp) { inp.value = mailDraft; if (focused) inp.focus(); }
+    sheetBody.scrollTop = sheetBody.scrollHeight;
+  },
+  click(e) {
+    if (!e.target.closest('[data-act="send"]')) return;
+    const inp = $('#mailTx');
+    if (!mailSend(inp ? inp.value : '')) { if (inp) nope(inp); Sound.error(); return; }
+    mailDraft = '';
+    Sound.boop(); Haptic.tap(8);
+    this.render();
+  },
+};
+sheetBody.addEventListener('input', (e) => { if (e.target.id === 'mailTx') mailDraft = e.target.value; });
+sheetBody.addEventListener('keydown', (e) => {
+  if (e.target.id === 'mailTx' && e.key === 'Enter') { e.preventDefault(); SHEETS.mail.click({ target: $('[data-act="send"]') }); }
+});
 
 /* garden */
 const seedTotal = () => PLANTS.reduce((s, p) => s + (S.garden.seeds[p.id] || 0), 0);
@@ -3779,6 +3966,7 @@ goRoom(S.room || 0, true);
 if (wasAsleep) setSleep(true, true);
 renderKitchen();
 renderStats();
+renderMail();
 setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); }, 1000);
 setInterval(saveNow, 10000);
 if (OWNERS && !IS_ADMIN && S.skin) { S.skin = ''; save(); }
