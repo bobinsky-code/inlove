@@ -267,7 +267,7 @@ input{-webkit-user-select:text;user-select:text}
 .fcard{flex:0 1 250px;min-width:0;min-height:84px;display:flex;align-items:center;gap:10px;padding:8px 10px;text-align:left}
 .fcard.is-locked{opacity:.55}
 .fc-ic{flex:none;display:grid;place-items:center;width:48px}
-.fc-ic img,.th img,.wd-top img,.wd-item img,.mx img{display:block;image-rendering:pixelated}
+.fc-ic img,.th img,.wd-top img,.wd-item img,.mx img,.mk-case img{display:block;image-rendering:pixelated}
 .fc-tx{min-width:0;display:flex;flex-direction:column;gap:6px}
 .fc-tx b{line-height:1}
 .fcard .eff,.row .eff,.mx-out .eff{justify-content:flex-start;flex-wrap:wrap}
@@ -356,10 +356,30 @@ input{-webkit-user-select:text;user-select:text}
 .wd-item.is-breed{--bc:#000}
 .wd-item.is-breed.is-on{--bg:#f3eef0;--bc:#000}
 .wd-empty{grid-column:1/-1;margin:10px 2px;font-size:var(--f1);line-height:1.4;color:var(--ink2);text-align:center}
-.mk-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:6px 2px -2px}
+.wd-item.is-soon{opacity:.55}
+
+/* ---------- магазин: витрина с полками, листается вбок ---------- */
+.sheet-list.mk-on{gap:10px;padding-top:0;overflow-x:hidden;overscroll-behavior-x:contain;touch-action:pan-x pan-y}
+.mk-awn{flex:none;height:28px;margin:0 -14px;background-repeat:repeat-x;background-position:50% 0;image-rendering:pixelated}
+.mk-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:4px 2px -6px}
 .mk-h p{margin:0;font-size:var(--f1);color:var(--ink2)}
 .mk-h b{font-size:var(--f1);line-height:1;color:var(--rose2);white-space:nowrap}
-.wd-item.is-soon{opacity:.55}
+.mk-shelf{flex:none;margin:0 -14px;padding-bottom:10px;background-repeat:repeat-x;background-position:0 100%;image-rendering:pixelated}
+.mk-row{display:flex;gap:12px;padding:4px 14px 6px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;scroll-padding-left:14px;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.mk-row::-webkit-scrollbar{display:none}
+.mk-row.is-drag{scroll-snap-type:none}
+.mk-card{flex:none;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;gap:6px;padding:7px 7px 9px}
+.mk-card b{margin-top:auto;font-size:var(--f1);line-height:1.15;text-align:center}
+.mk-card small{font-size:var(--f1);line-height:1.1;text-align:center;color:var(--ink2)}
+.mk-card .buy{margin-top:auto}
+.mk-card.is-own{--bg:#fff1f6;--bc:var(--rose2)}
+.mk-card.is-soon{opacity:.6}
+.mk-big{width:158px}
+.mk-min{width:132px}
+.mk-case{position:relative;display:block;background-size:100% 100%;background-repeat:no-repeat;image-rendering:pixelated}
+.mk-case img{position:absolute;left:50%;transform:translateX(-50%)}
+.mk-big .mk-case img{bottom:15px}
+.mk-min .mk-case img{bottom:13px}
 .mx{display:flex;flex-direction:column;align-items:center;gap:16px;padding:4px 2px 2px}
 .mx-row{display:flex;align-items:center;gap:8px}
 .mx-slot{--bg:#fff7fa;width:56px;height:56px;display:grid;place-items:center;color:var(--ink2);font-size:var(--f3);line-height:1}
@@ -3182,6 +3202,7 @@ const SHEETS = {};
 function openSheet(mode, arg) {
   sheetMode = mode; sheetArg = arg == null ? null : arg;
   sheetTitle.textContent = SHEETS[mode].title;
+  sheetBody.classList.toggle('mk-on', mode === 'shop');   /* витрина листается вбок */
   SHEETS[mode].render();
   sheetBody.scrollTop = 0;
   sheetOpen = true; sheet.classList.add('is-on'); sheetBg.classList.add('is-on');
@@ -3226,6 +3247,75 @@ function burstAt(el, o) { const b = el.getBoundingClientRect(); FX.burst(b.right
 
 /* shop */
 const THUMB = { rug: () => obj('rug'), ball: () => obj('ball'), plant: () => obj('plant'), picture: () => obj('picture'), lamp: () => obj('lamp'), garland: () => obj('garlandThumb'), bigbowl: () => obj('bowl', 1), bed: () => obj('bed') };
+/* ---------- витрина: навес, полка, ниша ---------- */
+OBJ.awning = () => {
+  const W = 16, H = 14, L = Lay(W, H);
+  const deep = [0, 1, 2, 3, 3, 2, 1, 0];
+  L.fill(0, 0, W, 1, '#d2466f'); L.fill(0, 1, W, 1, '#e64f7e');
+  for (let x = 0; x < W; x++) {
+    const pink = x < 8, d = deep[x % 8];
+    for (let y = 2; y <= 10 + d; y++) L.px(x, y, pink ? '#ff6f9c' : '#fff6f9');
+    L.px(x, 10 + d, pink ? '#ef5c8b' : '#ffdbe6');
+    if (!pink) L.px(x, 2, '#fffdfe');
+  }
+  return L.canvas();
+};
+OBJ.plank = () => {
+  const L = Lay(8, 8);
+  L.fill(0, 0, 8, 1, '#fff0e2'); L.fill(0, 1, 8, 2, '#ecd0b6'); L.fill(0, 3, 8, 2, '#dcb496');
+  L.fill(0, 5, 8, 1, '#c99a7e'); L.fill(0, 6, 8, 1, '#b8876c'); L.fill(0, 7, 8, 1, '#f4e3ea');
+  L.pts([[2, 2], [6, 1]], '#e3c2a6'); L.pts([[5, 3], [1, 4]], '#d3a98c');
+  return L.canvas();
+};
+/* ниша витрины: задняя стенка, свет сверху и деревянный пол */
+OBJ.niche = (W, H) => {
+  const L = Lay(W, H), fl = H - 9, lit = '#fff2f7';
+  L.fill(0, 0, W, fl, '#ffdfeb');
+  L.fill(0, 0, 2, fl, '#f7c3d5'); L.fill(W - 2, 0, 2, fl, '#f7c3d5');
+  for (let y = 1; y < fl; y += 2) { L.px(2, y, '#fad2e0'); L.px(W - 3, y, '#fad2e0'); }
+  for (let y = 0; y < fl; y++) {
+    const r = W * 0.14 + y * 0.42;
+    for (let x = 3; x < W - 3; x++) {
+      const d = Math.abs(x + 0.5 - W / 2);
+      if (d < r - 1 || (d < r + 1 && (x + y) % 2 === 0)) L.px(x, y, lit);
+    }
+  }
+  for (let y = 3; y < fl - 2; y += 6) for (let x = 3 + ((y / 6) | 0) % 2 * 3; x < W - 3; x += 6) L.px(x, y, L.c[y * W + x] === lit ? '#ffe3ee' : '#ffc8da');
+  L.fill(0, fl, W, 2, '#f1d7bf'); L.fill(0, fl + 2, W, 2, '#e3bb9e');
+  L.fill(0, fl + 4, W, 2, '#d0a183'); L.fill(0, fl + 6, W, H - fl - 6, '#b8876c');
+  L.part(L.clean(L.ell(L.M(), W / 2, fl + 1.5, W * 0.21, 1.7)), '#dcb496');
+  L.fill(0, 0, W, 1, '#f0aec5'); L.fill(0, 0, 1, H, '#f0aec5'); L.fill(W - 1, 0, 1, H, '#f0aec5');
+  L.fill(0, H - 1, W, 1, '#b8876c');
+  return L.canvas();
+};
+/* ниша с обоями вместо задней стенки */
+function nicheWall(id, W, H) {
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d'), fl = H - 9;
+  wallpaper(x, 0, 0, W, fl, id);
+  x.fillStyle = '#f1d7bf'; x.fillRect(0, fl, W, 2);
+  x.fillStyle = '#e3bb9e'; x.fillRect(0, fl + 2, W, 2);
+  x.fillStyle = '#d0a183'; x.fillRect(0, fl + 4, W, 2);
+  x.fillStyle = '#b8876c'; x.fillRect(0, fl + 6, W, H - fl - 6); x.fillRect(0, H - 1, W, 1);
+  x.fillStyle = '#f0aec5'; x.fillRect(0, 0, W, 1); x.fillRect(0, 0, 1, H); x.fillRect(W - 1, 0, 1, H);
+  return c;
+}
+/* спрайт как фон: повтор по горизонтали */
+function mkBG(key, cv, s) {
+  const u = spriteURL(key, cv, s);
+  return 'background-image:url(' + u.src + ');background-size:' + u.w.toFixed(2) + 'px ' + u.h.toFixed(2) + 'px';
+}
+function mkCase(key, cv, s, inner) {
+  const u = spriteURL(key, cv, s);
+  return '<span class="mk-case" style="width:' + u.w.toFixed(2) + 'px;height:' + u.h.toFixed(2) + 'px;background-image:url(' + u.src + ')">' + (inner || '') + '</span>';
+}
+function mkCard(attrs, box, name, sub, tag, cls) {
+  return '<button class="mk-card pb press ' + cls + '" type="button" ' + attrs + '>' + box
+    + '<b>' + name + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + tag + '</button>';
+}
+function mkShelf(cards) {
+  return '<div class="mk-shelf" style="' + mkBG('mkPlank', art('mkPlank', OBJ.plank), 2) + '"><div class="mk-row">' + cards.join('') + '</div></div>';
+}
 /* ---------- витрина дня: случайная одежда, одна и та же у обоих ---------- */
 const MK_DAY = 5;                                   /* сколько вещей в витрине */
 const mkDay = () => Math.floor(Date.now() / 86400e3);
@@ -3249,29 +3339,37 @@ function mkTick() {
   const el = $('#mkLeft');
   if (el) el.textContent = mkLeftTX();
 }
+const SLOTN = {};
+SLOTS.forEach((s) => { SLOTN[s[0]] = s[1]; });
 
 SHEETS.shop = {
   title: 'Магазин',
   render() {
-    let html = '<div class="mk-h"><p>Сегодня в продаже</p><b id="mkLeft">' + mkLeftTX() + '</b></div><div class="wd-grid">';
-    mkToday().forEach((c) => {
-      const own = !!S.wardrobe[c.id], low = S.lvl < c.lvl;
-      html += '<button class="wd-item pb press' + (own ? ' is-on' : low ? ' is-soon' : '') + '" type="button" data-cloth="' + c.id + '">'
-        + imgTag('wdi:' + c.id + ':' + S.skin, petFrame(Object.assign({}, PET_BASE, { wear: { [c.slot]: c.id } })).cv, 1.5)
-        + '<b>' + c.name + '</b>' + priceTag(c.price, c.lvl, own, 'Куплено') + '</button>';
-    });
-    html += '</div><div class="mk-h"><p>Всегда в продаже</p></div>';
-    let sec = '';
-    ITEMS.forEach((it) => {
-      if (it.sec !== sec) { sec = it.sec; html += '<p class="sec">' + sec + '</p>'; }
-      html += rowHTML('data-kind="item" data-id="' + it.id + '"', thumb('it-' + it.id, THUMB[it.id]()), it.name, it.fx || 'Украшение', priceTag(it.price, it.lvl, !!S.owned[it.id], 'Куплено'));
-    });
-    html += '<p class="sec">Обои</p>';
-    WALLS.forEach((w) => {
-      const own = !!S.walls[w.id];
-      html += rowHTML('data-kind="wall" data-id="' + w.id + '"', imgTag('wp-' + w.id, art('wp-' + w.id, () => swatch(w.id)), 2.5), w.name, 'Для комнаты', priceTag(w.price, w.lvl, own, S.wall === w.id ? 'Выбрано' : 'Выбрать'));
-    });
+    const keep = $$('.mk-row', sheetBody).map((r) => r.scrollLeft), top = sheetBody.scrollTop;
+    const nb = art('niche:72x56', () => OBJ.niche(72, 56)), ns = art('niche:52x44', () => OBJ.niche(52, 44));
+    let html = '<div class="mk-awn" style="' + mkBG('mkAwn', art('mkAwn', OBJ.awning), 2) + '"></div>';
+    html += '<div class="mk-h"><p>Сегодня в продаже</p><b id="mkLeft">' + mkLeftTX() + '</b></div>';
+    html += mkShelf(mkToday().map((c) => {
+      const own = !!S.wardrobe[c.id], pet = imgTag('wdi:' + c.id + ':' + S.skin, petFrame(Object.assign({}, PET_BASE, { wear: { [c.slot]: c.id } })).cv, 2);
+      return mkCard('data-cloth="' + c.id + '"', mkCase('nb', nb, 2, pet), c.name, SLOTN[c.slot],
+        priceTag(c.price, c.lvl, own, 'Куплено'), 'mk-big' + (own ? ' is-own' : S.lvl < c.lvl ? ' is-soon' : ''));
+    }));
+    html += '<div class="mk-h"><p>Мебель</p></div>';
+    html += mkShelf(ITEMS.map((it) => {
+      const own = !!S.owned[it.id];
+      return mkCard('data-kind="item" data-id="' + it.id + '"', mkCase('ns', ns, 2, thumb('it-' + it.id, THUMB[it.id](), 48)), it.name, it.fx || it.sec,
+        priceTag(it.price, it.lvl, own, 'Куплено'), 'mk-min' + (own ? ' is-own' : S.lvl < it.lvl ? ' is-soon' : ''));
+    }));
+    html += '<div class="mk-h"><p>Обои</p></div>';
+    html += mkShelf(WALLS.map((w) => {
+      const own = !!S.walls[w.id], on = S.wall === w.id;
+      return mkCard('data-kind="wall" data-id="' + w.id + '"', mkCase('nw:' + w.id, art('nw:' + w.id, () => nicheWall(w.id, 52, 44)), 2, ''), w.name, '',
+        priceTag(w.price, w.lvl, own, on ? 'Выбрано' : 'Выбрать'), 'mk-min' + (on ? ' is-own' : S.lvl < w.lvl ? ' is-soon' : ''));
+    }));
     sheetBody.innerHTML = html;
+    /* после покупки витрина не должна перематываться в начало */
+    $$('.mk-row', sheetBody).forEach((r, i) => { if (keep[i]) r.scrollLeft = keep[i]; });
+    sheetBody.scrollTop = top;
   },
   click(e) {
     const cl = e.target.closest('[data-cloth]');
@@ -3286,7 +3384,7 @@ SHEETS.shop = {
       this.render(); Scene.kick(); save();
       return;
     }
-    const r = e.target.closest('.row'); if (!r) return;
+    const r = e.target.closest('[data-kind]'); if (!r) return;
     const kind = r.dataset.kind, id = r.dataset.id;
     const it = (kind === 'item' ? ITEMS : WALLS).find((x) => x.id === id); if (!it) return;
     const owned = kind === 'item' ? S.owned[id] : S.walls[id];
@@ -3303,6 +3401,25 @@ SHEETS.shop = {
     this.render(); renderRooms(); renderKitchen(); save();
   },
 };
+/* полку можно тащить мышью: на телефоне листается пальцем */
+let mkDrag = null, mkX = 0, mkL = 0, mkMoved = 0;
+sheetBody.addEventListener('pointerdown', (e) => {
+  mkMoved = 0; mkDrag = null;
+  if (e.pointerType !== 'mouse' || !e.target.closest) return;
+  const row = e.target.closest('.mk-row');
+  if (!row || row.scrollWidth <= row.clientWidth) return;
+  mkDrag = row; mkX = e.clientX; mkL = row.scrollLeft;   /* без setPointerCapture: он уводит click с карточки */
+});
+window.addEventListener('pointermove', (e) => {
+  if (!mkDrag) return;
+  const d = e.clientX - mkX;
+  if (Math.abs(d) > 3) { mkMoved = 1; mkDrag.classList.add('is-drag'); }
+  if (mkMoved) { mkDrag.scrollLeft = mkL - d; e.preventDefault(); }
+});
+function mkDrop() { if (mkDrag) mkDrag.classList.remove('is-drag'); mkDrag = null; }
+window.addEventListener('pointerup', mkDrop);
+window.addEventListener('pointercancel', mkDrop);
+sheetBody.addEventListener('click', (e) => { if (mkMoved) { mkMoved = 0; e.stopPropagation(); } }, true);
 
 /* wardrobe */
 let wdSlot = 'head';
