@@ -385,10 +385,10 @@ input{-webkit-user-select:text;user-select:text}
 <div class="app">
   <main class="stage pb2" id="stage">
     <header class="top">
+      <button class="prof pb press" id="profBtn" type="button" aria-haspopup="dialog" aria-label="Профиль"><i data-ic="user"></i></button>
       <button class="name pb press" id="nameBtn" type="button" aria-label="Имя питомца, нажми чтобы изменить"><b id="petName">Питомец</b><i data-ic="pencil" data-s="1.5"></i></button>
       <div class="lvl pb" id="lvlChip"><b id="lvlTx">Ур. 1</b><div class="xp"><i id="xpBar"></i></div></div>
       <div class="coins pb" id="coinsChip"><i data-ic="coin"></i><span id="coinsTx">0</span></div>
-      <button class="prof pb press" id="profBtn" type="button" aria-haspopup="dialog" aria-label="Профиль"><i data-ic="user"></i></button>
       <button class="snd pb press" id="snd" type="button" aria-pressed="true" aria-label="Выключить звук"><i class="ic-on" data-ic="sndOn"></i><i class="ic-off" data-ic="sndOff"></i></button>
     </header>
 
@@ -3278,8 +3278,8 @@ SHEETS.wardrobe = {
 /* ---------- профиль: личная карточка каждого владельца ---------- */
 const ABOUT_LEN = 60;
 const STAT_ROWS = [
-  ['fed', 'Кормлений'], ['pet', 'Поглаживаний'], ['wash', 'Купаний'], ['games', 'Игр'],
-  ['grown', 'Урожаев'], ['cook', 'Блюд'], ['msgs', 'Сообщений'], ['earn', 'Монет'],
+  ['days', 'Дней'], ['fed', 'Кормлений'], ['pet', 'Поглаживаний'], ['wash', 'Купаний'],
+  ['games', 'Игр'], ['grown', 'Урожаев'], ['cook', 'Блюд'], ['msgs', 'Сообщений'], ['earn', 'Монет'],
 ];
 const WHO_FRESH = { about: '', face: '', fed: 0, pet: 0, wash: 0, games: 0, grown: 0, cook: 0, msgs: 0, earn: 0 };
 function whoRec(login) {
@@ -3295,7 +3295,6 @@ function bump(k, n) {
   r[k] = (+r[k] || 0) + (n == null ? 1 : n);
   save();
 }
-const plural = (n, one, few, many) => { const d = n % 100, e = n % 10; return d > 10 && d < 20 ? many : e === 1 ? one : e >= 2 && e <= 4 ? few : many; };
 const dayTX = (t) => { const d = new Date(t), p2 = (v) => (v < 10 ? '0' : '') + v; return p2(d.getDate()) + '.' + p2(d.getMonth() + 1) + '.' + d.getFullYear(); };
 const faceList = () => [''].concat(breedsOpen().map((b) => b.id));
 const faceArt = (id) => imgTag('face:' + id, petFrame(Object.assign({}, PET_BASE, { skin: id })).cv, 1.1);
@@ -3304,27 +3303,17 @@ SHEETS.prof = {
   title: 'Профиль',
   render() {
     const days = Math.max(0, Math.floor((Date.now() - (S.created || Date.now())) / 86400e3));
-    const mates = (OWNERS || [ME]).filter((x) => x);
-    const order = [ME].concat(mates.filter((x) => x !== ME));
-    let html = '<p class="sec">Вместе: ' + days + ' ' + plural(days, 'день', 'дня', 'дней') + '</p>';
-    order.forEach((login) => {
-      if (!login) return;
-      const r = whoRec(login) || WHO_FRESH, me = login === ME;
-      html += '<div class="pf pb' + (me ? ' is-me' : '') + '">'
-        + '<div class="pf-h">' + faceArt(SKINS[r.face] ? r.face : '')
-        + '<div><b>' + esc(login) + '</b><small>с ' + dayTX(S.created || Date.now()) + '</small></div></div>';
-      if (!me) html += '<p class="pf-ab">' + (r.about ? esc(r.about) : '—') + '</p>';
-      if (me) {
-        html += '<div class="ml-send"><span class="ml-in pb"><input id="aboutTx" type="text" maxlength="' + ABOUT_LEN
-          + '" placeholder="О себе" autocomplete="off" spellcheck="false"></span>'
-          + '<button class="btn pb press" type="button" data-act="about">Сохранить</button></div>';
-        const faces = faceList();
-        if (faces.length > 1) html += '<div class="pf-face">' + faces.map((f) => '<button class="pb press'
-          + ((r.face || '') === f ? ' is-on' : '') + '" type="button" data-face="' + f + '">' + faceArt(f) + '</button>').join('') + '</div>';
-      }
-      html += '<div class="pf-st">' + STAT_ROWS.map((x) => '<span><b>' + (+r[x[0]] || 0) + '</b>' + x[1] + '</span>').join('') + '</div>';
-      html += '</div>';
-    });
+    const r = whoRec() || WHO_FRESH, num = (k) => (k === 'days' ? days : +r[k] || 0);
+    let html = '<div class="pf pb is-me">'
+      + '<div class="pf-h">' + faceArt(SKINS[r.face] ? r.face : '')
+      + '<div><b>' + esc(ME || '—') + '</b><small>с ' + dayTX(S.created || Date.now()) + '</small></div></div>'
+      + '<div class="ml-send"><span class="ml-in pb"><input id="aboutTx" type="text" maxlength="' + ABOUT_LEN
+      + '" placeholder="О себе" autocomplete="off" spellcheck="false"></span>'
+      + '<button class="btn pb press" type="button" data-act="about">Сохранить</button></div>';
+    const faces = faceList();
+    if (faces.length > 1) html += '<div class="pf-face">' + faces.map((f) => '<button class="pb press'
+      + ((r.face || '') === f ? ' is-on' : '') + '" type="button" data-face="' + f + '">' + faceArt(f) + '</button>').join('') + '</div>';
+    html += '<div class="pf-st">' + STAT_ROWS.map((x) => '<span><b>' + num(x[0]) + '</b>' + x[1] + '</span>').join('') + '</div></div>';
     html += '<p class="sec">Коллекция пород</p>';
     const open = breedsOpen();
     if (!open.length) html += '<p class="wd-empty">Пока пусто</p>';
@@ -3336,8 +3325,7 @@ SHEETS.prof = {
     sheetBody.innerHTML = html;
     const inp = $('#aboutTx');
     if (inp) {
-      const r = whoRec();
-      inp.value = aboutDraft == null ? (r ? r.about : '') : aboutDraft;
+      inp.value = aboutDraft == null ? r.about || '' : aboutDraft;
       if (focused) inp.focus();
     }
   },
