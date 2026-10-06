@@ -198,7 +198,6 @@ $('#noteOk').addEventListener('click', async () => {
 });
 
 body.addEventListener('click', async (e) => {
-  if (e.target.closest('#toPet')) { location.href = 'pet.html'; return; }
   if (e.target.closest('#findBtn')) { addFriend(); return; }
   const b = e.target.closest('button[data-act]');
   if (!b || busy) return;
