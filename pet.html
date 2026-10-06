@@ -2228,6 +2228,8 @@ const Scene = (() => {
   let foodCv = null, foodAway = false, flying = null, bubble = null;
 
   const home = (i) => petHome(i, lw, lh, S.sleeping, S.owned);
+  /* спящий питомец остаётся на лежанке в спальне, по дому за игроком не идёт */
+  const petShown = () => !S.sleeping || (cur === 3 && !sliding);
   function walkTo(p, dur) { tw = { fx: pos.x, fy: pos.y, tx: p.x, ty: p.y, t0: performance.now(), dur: Math.max(1, dur) }; lastDraw = 0; }
   function settle(instant, dur) {
     if (!lw) return;
@@ -2330,9 +2332,11 @@ const Scene = (() => {
       if (k >= 1) { pos = { x: tw.tx, y: tw.ty }; tw = null; Pet.apply(); }
     }
     const pp = petParams(t), f = petFrame(pp.o);
-    now = { f, x: Math.round(pos.x) + pp.ox, y: Math.round(pos.y) + pp.oy };
-    bx.drawImage(f.cv, now.x, now.y);
-    if (pp.st === 'shake' && Math.random() < 0.6) parts.push({ k: 'drop', x: now.x + rand(6, 39), y: now.y + rand(8, 22), vx: rand(-40, 40), vy: rand(-50, -10), t: 0, life: 0.45 });
+    if (petShown()) {
+      now = { f, x: Math.round(pos.x) + pp.ox, y: Math.round(pos.y) + pp.oy };
+      bx.drawImage(f.cv, now.x, now.y);
+      if (pp.st === 'shake' && Math.random() < 0.6) parts.push({ k: 'drop', x: now.x + rand(6, 39), y: now.y + rand(8, 22), vx: rand(-40, 40), vy: rand(-50, -10), t: 0, life: 0.45 });
+    } else now = null;
     /* fronts: table, bathtub */
     drawRoomFront(bx, ra, lw, lh, oa, opts);
     if (rb >= 0) drawRoomFront(bx, rb, lw, lh, ob, opts);
@@ -2344,7 +2348,7 @@ const Scene = (() => {
       if (k >= 1) { const cb = flying.done; flying = null; if (cb) cb(); }
     }
     /* foam */
-    foam.forEach((b) => {
+    if (now) foam.forEach((b) => {
       const x = now.x + b.x, y = now.y + b.y;
       if (b.pop) {
         const a = t - b.pop;
@@ -2423,6 +2427,14 @@ const Scene = (() => {
     cx.imageSmoothingEnabled = false;
     cx.drawImage(buf, offX, offY, lw * N, lh * N);
   }
+  /* свет выключен только там, где спит питомец: по остальному дому можно ходить */
+  function nightSync(instant) {
+    const on = S.sleeping && cur === 3;
+    nightOn = on;
+    if (instant) nightA = on ? 1 : 0;
+    if (!on) parts = parts.filter((q) => q.k !== 'z');
+    lastDraw = 0;
+  }
   function busy() { return sliding || !!tw || !!Pet.action || parts.length > 0 || !!spongeAt || !!shower || !!flying || foam.some((b) => b.pop) || Math.abs(nightA - (nightOn ? 1 : 0)) > 0.001; }
   function loop(t) {
     raf = requestAnimationFrame(loop);
@@ -2443,11 +2455,13 @@ const Scene = (() => {
     get room() { return cur; },
     go(i, instant) {
       if (instant) { cur = i; from = i; sliding = false; settle(true); }
-      else { from = cur; cur = i; slideT0 = performance.now(); sliding = from !== cur; settle(false, SLIDE); }
+      else { from = cur; cur = i; slideT0 = performance.now(); sliding = from !== cur; settle(S.sleeping, SLIDE); }
+      nightSync(instant);
       bubble = null;
       lastDraw = 0;
     },
     settle(instant) { settle(instant); },
+    get petHere() { return petShown(); },
     refresh() { cache.length = 0; lastDraw = 0; },
     onPet(e) {
       if (!now || sliding) return false;
@@ -2481,7 +2495,7 @@ const Scene = (() => {
     popAll(at) { const t = performance.now(); foam.forEach((b, i) => { b.pop = t + at + i * 22; }); },
     clearBubbles() { foam = []; },
     shower(on) { const t = performance.now(); if (on) shower = { t0: t, off: 0 }; else if (shower) shower.off = t; lastDraw = 0; },
-    night(on, instant) { nightOn = on; if (instant) nightA = on ? 1 : 0; if (!on) parts = parts.filter((q) => q.k !== 'z'); settle(!!instant); lastDraw = 0; },
+    night(instant) { nightSync(instant); settle(!!instant); lastDraw = 0; },
     spawnZ() { if (!lying()) return; parts.push({ k: 'z', x: pos.x + 30, y: pos.y + 14, t: 0, life: 2.8, big: Math.random() < 0.5 }); lastDraw = 0; },
     crumbs() { for (let i = 0; i < 4; i++) parts.push({ k: 'c', c: pick(['#d6a06f', '#c98a5a', '#fff6ea']), x: pos.x + 22 + rand(-3, 3), y: pos.y + 22, vx: rand(-30, 30), vy: rand(-40, -10), t: 0, life: 0.6 }); lastDraw = 0; },
     sneezeDrops() { for (let i = 0; i < 6; i++) parts.push({ k: 'drop', x: pos.x + 22 + rand(-2, 2), y: pos.y + 19, vx: rand(-60, 60), vy: rand(-60, -20), t: 0, life: 0.5 }); lastDraw = 0; },
@@ -2582,7 +2596,6 @@ const dots = $$('button', dotsEl);
 function goRoom(i, instant) {
   i = clamp(i, 0, 5);
   if (i === room) return;
-  if (S.sleeping && i !== 3) setSleep(false);
   const first = room === -1;
   room = i; S.room = i;
   if (i <= HOUSE) S.home = i;
@@ -2690,7 +2703,8 @@ sceneCv.addEventListener('contextmenu', (e) => e.preventDefault());
 
 let showering = false;
 $('#rinseBtn').addEventListener('click', () => {
-  if (showering || S.sleeping) return;
+  if (showering) return;
+  if (S.sleeping) { toast('Питомец спит'); Sound.error(); return; }
   showering = true;
   Scene.shower(true); Sound.splash(); Haptic.tap(10);
   Scene.popAll(600);
@@ -2711,7 +2725,7 @@ function setSleep(on, instant) {
   simulate(Date.now());
   S.sleeping = on;
   Pet.action = ''; clearTimeout(Pet.timer);
-  Scene.night(on, instant);
+  Scene.night(instant);
   $('#lightTx').textContent = on ? 'Включить свет' : 'Выключить свет';
   clearInterval(zTimer);
   if (on) { if (!instant) Sound.lightOff(); zTimer = setInterval(() => Scene.spawnZ(), 1300); }
@@ -2788,7 +2802,8 @@ function eatAnim(cv, after) {
   });
 }
 function feedItem(it, el) {
-  if (!it || S.sleeping || eating) return;
+  if (!it || eating) return;
+  if (S.sleeping) { toast('Питомец спит'); Sound.error(); return; }
   if (it.kind === 'food') {
     const f = it.f;
     if (S.lvl < f.lvl) { if (el) nope(el); toast('Нужен уровень ' + f.lvl); Sound.error(); return; }
@@ -3475,7 +3490,7 @@ const Game = (() => {
     kick();
   }
   function open(m) {
-    if (S.sleeping) return;
+    if (S.sleeping) { toast('Питомец спит'); Sound.error(); return; }
     if (S.energy < GAME_COST) { toast('Мало энергии'); Sound.error(); return; }
     mode = m;
     wrap.hidden = false; size();
@@ -3634,8 +3649,9 @@ if (document.fonts && document.fonts.load) document.fonts.load('10px Px').catch(
 /* ---------- start ---------- */
 renderTop(); renderRooms(); renderBest();
 Scene.size(); Scene.start();
-if (S.sleeping) { S.sleeping = false; goRoom(3, true); setSleep(true, true); }
-else goRoom(S.room || 0, true);
+const wasAsleep = S.sleeping; S.sleeping = false;
+goRoom(S.room || 0, true);
+if (wasAsleep) setSleep(true, true);
 renderKitchen();
 renderStats();
 setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); }, 1000);
