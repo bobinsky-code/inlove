@@ -9,6 +9,7 @@ import {
 import {
   getFirestore, connectFirestoreEmulator, doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch,
   collection, query, where, onSnapshot, serverTimestamp, increment,
+  getDocs, orderBy, startAt, endAt, limit,
 } from './vendor/firebase-firestore.js';
 export { increment };
 
@@ -120,6 +121,24 @@ export async function myPetId(me) {
   const s = await getDoc(doc(db, 'userPet', me));
   return s.exists() ? s.data().petId : null;
 }
+
+/* ---------- поиск людей и открытые карточки аккаунтов ---------- */
+/* ищем по началу ника; если правила ещё не разрешают перебор, остаётся точное совпадение */
+export async function findLogins(q, max) {
+  const low = String(q || '').toLowerCase();
+  if (!low) return [];
+  try {
+    const snap = await getDocs(query(collection(db, 'logins'), orderBy('__name__'), startAt(low), endAt(low + '\uf8ff'), limit(max || 8)));
+    return snap.docs.map((d) => d.data()).filter((x) => x && x.uid);
+  } catch (e) {
+    const one = await getDoc(doc(db, 'logins', low));
+    return one.exists() ? [one.data()] : [];
+  }
+}
+export async function userCard(uid) {
+  try { const s = await getDoc(doc(db, 'users', uid)); return s.exists() ? s.data() : null; } catch (e) { return null; }
+}
+export function saveCard(uid, data) { return setDoc(doc(db, 'users', uid), data, { merge: true }); }
 
 /* ---------- живые списки лобби ---------- */
 export function watchLobby(me, cb) {

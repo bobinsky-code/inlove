@@ -13,7 +13,10 @@
 window.__boot = new Promise(function (go) { window.__bootGo = go; });
 </script>
 <script type="module">
-import { CONFIGURED, onAuth, myPetId, watchPet, savePet, increment } from './fb.js';
+import {
+  CONFIGURED, onAuth, myPetId, watchPet, savePet, increment,
+  findLogins, userCard, saveCard, watchLobby, sendFriendRequest, acceptFriend, dropFriendRequest, errText,
+} from './fb.js';
 const KEY = 'nam2-pet-v1';
 const client = Math.random().toString(36).slice(2) + Date.now().toString(36);
 if (!CONFIGURED) {
@@ -83,6 +86,18 @@ if (!CONFIGURED) {
     }
     const sync = {
       me: String(user.email || '').split('@')[0].toLowerCase(),
+      uid: user.uid,
+      /* раздел «Люди»: поиск, заявки, друзья */
+      people: {
+        find: findLogins,
+        card: userCard,
+        save: (data) => saveCard(user.uid, data),
+        watch: (cb) => watchLobby(user.uid, cb),
+        add: (login) => sendFriendRequest(user.uid, String(user.email || '').split('@')[0], login),
+        accept: acceptFriend,
+        drop: dropFriendRequest,
+        err: errText,
+      },
       /* шлём сразу и только изменившиеся поля: покупка должна дойти до второго за один шаг */
       save(state) { pending = state; clearTimeout(writeT); writeT = setTimeout(push, 250); },
       flush() { clearTimeout(writeT); push(); },
@@ -178,6 +193,8 @@ input{-webkit-user-select:text;user-select:text}
 .xp i{display:block;width:0;height:100%;background:var(--rose);box-shadow:inset 0 var(--p) 0 0 rgba(255,255,255,.45)}
 .coins{flex:none;height:100%;display:flex;align-items:center;gap:4px;padding:0 6px 0 5px}
 .snd,.prof{flex:none;width:28px;height:100%;display:grid;place-items:center;color:var(--rose2)}
+.prof{position:relative}
+.prof.has::after{content:'';position:absolute;right:-3px;top:-3px;width:6px;height:6px;background:#ff4d6d;animation:blink 1.2s steps(1,end) infinite}
 .snd .ic-off,.snd[aria-pressed="false"] .ic-on{display:none}
 .snd[aria-pressed="false"] .ic-off{display:block}
 
@@ -195,6 +212,15 @@ input{-webkit-user-select:text;user-select:text}
 .pf-face{display:flex;flex-wrap:wrap;gap:8px}
 .pf-face button{--bg:#fff;padding:3px}
 .pf-face button.is-on{--bg:var(--rose1)}
+.pf-go{--bg:var(--rose);--hi:rgba(255,255,255,.42);--sh:rgba(170,30,85,.28);width:100%;display:flex;align-items:center;justify-content:center;gap:9px;min-height:38px;padding:0 12px 2px;color:#fff;font-size:var(--f2);line-height:1}
+.pf-go i{font-style:normal;display:inline-flex;align-items:center;justify-content:center;min-width:20px;padding:0 5px 1px;background:#fff;color:var(--rose2);font-size:var(--f1)}
+.pp-row{display:flex;align-items:center;gap:10px;padding:8px 10px}
+.pp-row .tx{flex:1 1 auto;min-width:0}
+.pp-row .tx b{display:block;font-size:var(--f2);line-height:1;word-break:break-all}
+.pp-row .tx small{display:block;margin-top:4px;font-size:var(--f1);line-height:1;color:var(--ink2)}
+.pp-act{display:flex;gap:7px;flex:none}
+.pp-empty{margin:2px 0 0;font-size:var(--f1);color:var(--ink2)}
+.pp-found{display:flex;flex-direction:column;gap:14px}
 
 /* ---------- письма в мишке ---------- */
 .ml{display:flex;flex-direction:column;gap:10px}
@@ -3153,6 +3179,14 @@ function openSheet(mode, arg) {
   sheetBody.scrollTop = 0;
   sheetOpen = true; sheet.classList.add('is-on'); sheetBg.classList.add('is-on');
   if (mode === 'mail') mailRead();
+  if (mode === 'person' && PEOPLE && sheetArg && sheetArg.uid) {
+    const uid = sheetArg.uid;
+    personCard = null;
+    PEOPLE.card(uid).then((c) => {
+      personCard = Object.assign({ uid }, c || {});
+      if (sheetOpen && sheetMode === 'person') renderSheet();
+    });
+  }
 }
 function renderSheet() {
   if (!sheetOpen || !SHEETS[sheetMode]) return;
@@ -3298,7 +3332,13 @@ function bump(k, n) {
 const dayTX = (t) => { const d = new Date(t), p2 = (v) => (v < 10 ? '0' : '') + v; return p2(d.getDate()) + '.' + p2(d.getMonth() + 1) + '.' + d.getFullYear(); };
 const faceList = () => [''].concat(breedsOpen().map((b) => b.id));
 const faceArt = (id) => imgTag('face:' + id, petFrame(Object.assign({}, PET_BASE, { skin: id })).cv, 1.1);
+/* подпись и мордочку кладём и в открытую карточку аккаунта — её видят другие */
+function pushCard() {
+  const r = whoRec();
+  if (r && Sync && Sync.people) Sync.people.save({ login: ME, about: r.about || '', face: r.face || '' }).catch(() => {});
+}
 let aboutDraft = null;
+const profBtn = $('#profBtn');
 SHEETS.prof = {
   title: 'Профиль',
   render() {
@@ -3314,6 +3354,8 @@ SHEETS.prof = {
     if (faces.length > 1) html += '<div class="pf-face">' + faces.map((f) => '<button class="pb press'
       + ((r.face || '') === f ? ' is-on' : '') + '" type="button" data-face="' + f + '">' + faceArt(f) + '</button>').join('') + '</div>';
     html += '<div class="pf-st">' + STAT_ROWS.map((x) => '<span><b>' + num(x[0]) + '</b>' + x[1] + '</span>').join('') + '</div></div>';
+    html += '<button class="pf-go pb press" type="button" data-act="people">' + icon('user', 2) + 'Люди'
+      + (inbox() ? '<i>' + inbox() + '</i>' : '') + '</button>';
     html += '<p class="sec">Коллекция пород</p>';
     const open = breedsOpen();
     if (!open.length) html += '<p class="wd-empty">Пока пусто</p>';
@@ -3330,10 +3372,12 @@ SHEETS.prof = {
     }
   },
   click(e) {
+    if (e.target.closest('[data-act="people"]')) { foundList = null; openSheet('people'); return; }
     const f = e.target.closest('[data-face]');
     if (f) {
       const r = whoRec(); if (!r) return;
       r.face = f.dataset.face;
+      pushCard();
       Sound.boop(); Haptic.tap(6); save(); this.render();
       return;
     }
@@ -3341,11 +3385,112 @@ SHEETS.prof = {
     const r = whoRec(), inp = $('#aboutTx');
     if (!r || !inp) return;
     r.about = String(inp.value || '').replace(/\s+/g, ' ').trim().slice(0, ABOUT_LEN);
+    pushCard();
     aboutDraft = null;
     Sound.boop(); Haptic.tap(8); save(); this.render();
   },
 };
 $('#profBtn').addEventListener('click', () => { aboutDraft = null; openSheet('prof'); });
+
+/* ---------- люди: поиск, заявки, друзья ---------- */
+const PEOPLE = (Sync && Sync.people) || null;
+let lobby = { friends: [], incoming: [], outgoing: [] };
+let foundList = null, findDraft = '', personCard = null, personBusy = false;
+const inbox = () => (lobby.incoming || []).length;
+function renderPeople() { if (profBtn) profBtn.classList.toggle('has', inbox() > 0); }
+const otherUid = (f) => (f.uids && f.uids[0] === (PEOPLE && Sync.uid) ? f.uids[1] : f.uids && f.uids[0]);
+const isFriend = (uid) => (lobby.friends || []).some((f) => (f.uids || []).indexOf(uid) >= 0);
+const sentTo = (uid) => (lobby.outgoing || []).some((r) => r.to === uid);
+const gotFrom = (uid) => (lobby.incoming || []).find((r) => r.from === uid);
+const personRow = (uid, login, sub, open) => '<' + (open ? 'button class="pp-row row pb press" type="button" data-open="' + uid + '|' + esc(login) + '"' : 'div class="pp-row row pb"')
+  + '><span class="th">' + icon('user', 2) + '</span><span class="tx"><b>' + esc(login) + '</b>'
+  + (sub ? '<small>' + sub + '</small>' : '') + '</span>';
+async function doFind() {
+  const q = String(findDraft || '').trim();
+  if (!PEOPLE || q.length < 2) { toast('Ник от двух знаков'); Sound.error(); return; }
+  foundList = 'wait'; renderSheet();
+  try { foundList = (await PEOPLE.find(q, 8)).filter((x) => x.uid !== Sync.uid); }
+  catch (e) { foundList = []; toast('Не получилось найти'); }
+  renderSheet();
+}
+SHEETS.people = {
+  title: 'Люди',
+  render() {
+    let html = '<div class="ml-send"><span class="ml-in pb"><input id="findTx" type="text" maxlength="16" placeholder="Ник"'
+      + ' autocomplete="off" autocapitalize="none" spellcheck="false"></span>'
+      + '<button class="btn pb press" type="button" data-act="find">Найти</button></div>';
+    if (foundList === 'wait') html += '<p class="pp-empty">Ищем…</p>';
+    else if (foundList) {
+      html += '<p class="sec">Найдено</p><div class="pp-found">';
+      if (!foundList.length) html += '<p class="pp-empty">Никого с таким ником</p>';
+      foundList.forEach((u) => { html += personRow(u.uid, u.login, isFriend(u.uid) ? 'В друзьях' : sentTo(u.uid) ? 'Заявка отправлена' : '', true) + '</button>'; });
+      html += '</div>';
+    }
+    if (inbox()) {
+      html += '<p class="sec">Заявки</p>';
+      (lobby.incoming || []).forEach((r) => {
+        html += personRow(r.from, r.fromLogin || '—', 'Хочет добавить в друзья', false)
+          + '<span class="pp-act"><button class="buy pb press" type="button" data-ok="' + r.from + '">Принять</button>'
+          + '<button class="buy is-owned pb press" type="button" data-no="' + r.from + '">Скрыть</button></span></div>';
+      });
+    }
+    html += '<p class="sec">Друзья</p>';
+    const fr = lobby.friends || [];
+    if (!fr.length) html += '<p class="pp-empty">Пока никого</p>';
+    fr.forEach((f) => { const u = otherUid(f); html += personRow(u, (f.names && f.names[u]) || '—', '', true) + '</button>'; });
+    const out = (lobby.outgoing || []);
+    if (out.length) {
+      html += '<p class="sec">Отправленные заявки</p>';
+      out.forEach((r) => { html += personRow(r.to, r.toLogin || '—', 'Ждём ответа', false)
+        + '<span class="pp-act"><button class="buy is-owned pb press" type="button" data-cancel="' + r.to + '">Отменить</button></span></div>'; });
+    }
+    const focused = document.activeElement && document.activeElement.id === 'findTx';
+    sheetBody.innerHTML = html;
+    const inp = $('#findTx');
+    if (inp) { inp.value = findDraft; if (focused) inp.focus(); }
+  },
+  click(e) {
+    const open = e.target.closest('[data-open]');
+    if (open) { const v = open.dataset.open.split('|'); openSheet('person', { uid: v[0], login: v.slice(1).join('|') }); return; }
+    const ok = e.target.closest('[data-ok]');
+    if (ok) { const r = (lobby.incoming || []).find((x) => x.from === ok.dataset.ok); if (r) { PEOPLE.accept(r).catch(() => toast('Не получилось')); Sound.coin(); } return; }
+    const no = e.target.closest('[data-no]');
+    if (no) { const r = (lobby.incoming || []).find((x) => x.from === no.dataset.no); if (r) PEOPLE.drop(r).catch(() => {}); Sound.tick(); return; }
+    const cn = e.target.closest('[data-cancel]');
+    if (cn) { const r = (lobby.outgoing || []).find((x) => x.to === cn.dataset.cancel); if (r) PEOPLE.drop(r).catch(() => {}); Sound.tick(); return; }
+    if (e.target.closest('[data-act="find"]')) doFind();
+  },
+};
+SHEETS.person = {
+  title: 'Профиль',
+  render() {
+    const a = sheetArg || {}, card = personCard && personCard.uid === a.uid ? personCard : null;
+    const face = card && SKINS[card.face] ? card.face : '';
+    let html = '<button class="pp-row row pb press" type="button" data-back="1"><span class="th">' + icon('left', 2) + '</span><span class="tx"><b>Люди</b></span></button>';
+    html += '<div class="pf pb"><div class="pf-h">' + faceArt(face)
+      + '<div><b>' + esc(a.login || '—') + '</b>' + (card && card.about ? '<small>' + esc(card.about) + '</small>' : '') + '</div></div>';
+    if (isFriend(a.uid)) html += '<p class="pp-empty">Уже в друзьях</p>';
+    else if (gotFrom(a.uid)) html += '<button class="pf-go pb press" type="button" data-act="accept">Принять заявку</button>';
+    else if (sentTo(a.uid)) html += '<p class="pp-empty">Заявка отправлена</p>';
+    else html += '<button class="pf-go pb press" type="button" data-act="add"' + (personBusy ? ' disabled' : '') + '>Добавить в друзья</button>';
+    sheetBody.innerHTML = html + '</div>';
+  },
+  click(e) {
+    const a = sheetArg || {};
+    if (e.target.closest('[data-back]')) { openSheet('people'); return; }
+    if (e.target.closest('[data-act="accept"]')) {
+      const r = gotFrom(a.uid); if (r) { PEOPLE.accept(r).catch(() => toast('Не получилось')); Sound.coin(); }
+      return;
+    }
+    if (!e.target.closest('[data-act="add"]') || personBusy) return;
+    personBusy = true; this.render();
+    PEOPLE.add(a.login).then((res) => {
+      toast(res === 'friends' ? 'Теперь вы друзья' : 'Заявка отправлена');
+      Sound.coin(); Haptic.tap(10);
+    }).catch((err) => { toast(PEOPLE.err(err)); Sound.error(); })
+      .then(() => { personBusy = false; this.render(); });
+  },
+};
 
 /* ---------- сообщения через мишку ---------- */
 const MAIL_MAX = 30, MAIL_LEN = 140, MAIL_TIP = 7000;
@@ -3419,9 +3564,11 @@ SHEETS.mail = {
 sheetBody.addEventListener('input', (e) => {
   if (e.target.id === 'mailTx') mailDraft = e.target.value;
   if (e.target.id === 'aboutTx') aboutDraft = e.target.value;
+  if (e.target.id === 'findTx') findDraft = e.target.value;
 });
 sheetBody.addEventListener('keydown', (e) => {
   if (e.target.id === 'mailTx' && e.key === 'Enter') { e.preventDefault(); SHEETS.mail.click({ target: $('[data-act="send"]') }); }
+  if (e.target.id === 'findTx' && e.key === 'Enter') { e.preventDefault(); e.target.blur(); doFind(); }
 });
 
 /* garden */
@@ -4077,6 +4224,12 @@ if (wasAsleep) setSleep(true, true);
 renderKitchen();
 renderStats();
 renderMail();
+renderPeople();
+if (PEOPLE) PEOPLE.watch((st) => {
+  lobby = st;
+  renderPeople();
+  if (sheetMode === 'people' || sheetMode === 'person') renderSheet();
+});
 setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); }, 1000);
 setInterval(saveNow, 10000);
 if (OWNERS && !IS_ADMIN && S.skin) { S.skin = ''; save(); }

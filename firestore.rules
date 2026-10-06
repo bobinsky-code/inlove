@@ -14,11 +14,13 @@ service cloud.firestore {
           || exists(/databases/$(database)/documents/petInvites/$(b + '__' + a));
     }
 
-    /* Справочник логинов: найти человека по логину может кто угодно,
-       занять логин — только владелец соответствующей почты. Перебирать список нельзя. */
+    /* Справочник логинов: найти человека по нику может кто угодно,
+       занять логин — только владелец соответствующей почты.
+       Поиск отдаёт не больше десяти совпадений за раз. */
     match /logins/{login} {
       allow get: if true;
-      allow list: if false;
+      /* поиск людей по началу ника: отдаём не больше десяти за запрос */
+      allow list: if authed() && request.query.limit <= 10;
       allow create: if authed()
                     && request.resource.data.uid == me()
                     && request.auth.token.email == login + '@inlove.app';
