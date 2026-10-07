@@ -2272,8 +2272,8 @@ const RARE = {
   epic: { t: 'Эпический', c: '#8a4fd0' },
   mythic: { t: 'Мифический', c: '#e64f7e' },
   legend: { t: 'Легендарный', c: '#d99118' },
+  admin: { t: 'Админ', c: '#2a2026' },               /* не выпадает ниоткуда */
 };
-const RARE_ORDER = ['common', 'uncommon', 'rare', 'epic', 'mythic', 'legend'];
 const BREEDS = [
   /* обычные: беспородных и этих пород в мире больше всего */
   { id: '', name: 'Дворняжка', rare: 'common' },
@@ -2311,7 +2311,7 @@ const BREEDS = [
   { id: 'lundehund', name: 'Норвежский лундехунд', rare: 'legend' },
   { id: 'otterhound', name: 'Оттерхаунд', rare: 'legend' },
   { id: 'singer', name: 'Новогвинейская поющая', rare: 'legend' },
-  { id: 'admin', name: 'Админ', rare: 'legend', admin: true },
+  { id: 'admin', name: 'Админ', rare: 'admin', admin: true },
 ];
 const ADMIN_PAIR = 'bob,favie';
 const PLANTS = [
@@ -2355,6 +2355,8 @@ const hasBreed = (b) => (b.admin ? IS_ADMIN : b.id === '' || !!S.breeds[b.id]);
 const breedsOpen = () => BREEDS.filter(hasBreed);
 /* породы, которые вообще показываем в коллекции */
 const breedsAll = () => BREEDS.filter((b) => !b.admin || IS_ADMIN);
+/* из чего может выпасть порода: админская сюда не попадает никогда */
+const breedsDrop = () => BREEDS.filter((b) => !b.admin && b.id);
 const GAME_COST = 10;
 /* комнаты дома — 0..4, дальше идут локации с карты */
 const HOUSE = 4;
@@ -4845,7 +4847,7 @@ setInterval(saveNow, 10000);
 (() => { const b = BREEDS.find((x) => x.id === S.skin); if (S.skin && (!b || !hasBreed(b))) { S.skin = ''; save(); } })();
 if (Sync) Sync.onRemote(applyRemote);
 $('#boot').hidden = true;
-if (location.hash === '#t') window.__t = { S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS, petFrame, PCOL, PET_BASE, BREEDS, SKINS, RARE };
+if (location.hash === '#t') window.__t = { S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS, petFrame, PCOL, PET_BASE, BREEDS, SKINS, RARE, breedsDrop };
 
 /* разовое уведомление для favie */
 (() => {
