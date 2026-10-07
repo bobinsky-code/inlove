@@ -51,7 +51,7 @@ if (!CONFIGURED) {
     /* сад и письма пишутся целиком, поэтому два действия в одну секунду затирают друг друга.
        Пока наша запись не дошла до сервера, храним точку, от которой мы считали:
        по ней видно, что именно изменил второй, и его правка складывается с нашей */
-    const DEEP = { garden: 1, mail: 1, mailSeen: 1, who: 1 };
+    const DEEP = { garden: 1, mail: 1, mailSeen: 1, who: 1, q: 1 };
     const from = {};
     const jsonOf = (v) => { try { return JSON.stringify(v); } catch (e) { return undefined; } };
     function push() {
@@ -296,7 +296,12 @@ input{-webkit-user-select:text;user-select:text}
 .tab{position:relative}
 .tab.has::after{content:'';position:absolute;right:calc(50% - 22px);top:6px;width:6px;height:6px;background:#ff4d6d;animation:blink 1.2s steps(1,end) infinite}
 /* точки под сценой: сколько комнат и в какой ты сейчас */
-.dots{flex:none;display:flex;justify-content:center;align-items:center;gap:8px;height:10px;margin:-6px 0 -4px}
+.dot-row{flex:none;position:relative;display:flex;align-items:center;justify-content:center;min-height:20px;margin:-6px 0 -4px}
+.dots{display:flex;justify-content:center;align-items:center;gap:8px;height:10px}
+.qchip{position:absolute;right:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:5px;height:20px;padding:0 6px;color:var(--ink2)}
+.qchip b{font-size:var(--f1);line-height:1}
+.qchip.is-on{--bg:#fff1f6;--bc:var(--rose2);color:var(--rose2)}
+.qchip.press:active{transform:translateY(calc(-50% + var(--p)))}
 .dots button{position:relative;width:8px;height:8px;padding:0;background:var(--rose1);transition:background .15s steps(2,end)}
 .dots button::after{content:'';position:absolute;inset:-11px -7px}
 .dots button.on{background:var(--rose2);box-shadow:0 0 0 var(--p) var(--rose0)}
@@ -465,7 +470,10 @@ input{-webkit-user-select:text;user-select:text}
       <canvas id="sceneCv" role="img" aria-label="Питомец"></canvas>
     </section>
 
-    <div class="dots" id="dots" aria-label="Комнаты"></div>
+    <div class="dot-row">
+      <div class="dots" id="dots" aria-label="Комнаты"></div>
+      <button class="qchip pb press" id="qBtn" type="button" aria-haspopup="dialog" aria-label="Задания дня"><i data-ic="star" data-s="1.5"></i><b id="qTx">0 / 3</b></button>
+    </div>
 
     <section class="panel" aria-live="polite">
       <div class="pane" data-pane="0">
@@ -2170,7 +2178,7 @@ function freshGarden() { return { plots: [null, null, null], seeds: {}, crops: {
 function fresh(now) {
   return { v: 1, name: 'Питомец', t: now, food: 80, fun: 75, energy: 90, clean: 85, sleeping: false, xp: 0, lvl: 1, coins: 50, owned: {}, walls: { pink: true }, wall: 'pink', best: { catch: 0, run: 0 }, petWin: { t: now, n: 0 }, room: 0, home: 0,
     wardrobe: {}, wear: {}, garden: freshGarden(), sick: null, healedAt: 0, buffs: {}, skin: '', created: now,
-    mail: {}, mailSeen: {}, who: {}, mk: '', ach: {} };
+    mail: {}, mailSeen: {}, who: {}, mk: '', ach: {}, q: null };
 }
 function load() {
   const now = Date.now(), f = fresh(now);
@@ -3200,6 +3208,7 @@ function emoteTick() {
 
 /* ---------- sheets (shop, wardrobe, garden) ---------- */
 const sheet = $('#sheet'), sheetBg = $('#sheetBg'), sheetBody = $('#sheetBody'), sheetTitle = $('#sheetTitle');
+const qBtn = $('#qBtn'), qTx = $('#qTx');
 let sheetOpen = false, sheetMode = '', sheetArg = null;
 const SHEETS = {};
 function openSheet(mode, arg) {
@@ -3356,9 +3365,9 @@ function mkToday() {
 }
 let mkShown = -1;
 function mkTick() {
-  if (!sheetOpen || sheetMode !== 'shop') return;
-  if (mkShown !== mkDay()) { renderSheet(); return; }   /* наступил новый день — витрина меняется прямо так */
-  const el = $('#mkLeft');
+  if (!sheetOpen) return;
+  if (sheetMode === 'shop' && mkShown !== mkDay()) { renderSheet(); return; }   /* наступил новый день — витрина меняется прямо так */
+  const el = $('#mkLeft') || $('#qLeft');
   if (el) el.textContent = mkLeftTX();
 }
 const SLOTN = {};
@@ -3607,6 +3616,84 @@ function achHTML() {
   });
   return html + '</div>';
 }
+/* ---------- задания дня: три штуки, общие на двоих, меняются в полночь ----------
+   прогресс считаем от слепка счётчиков на начало дня, поэтому отдельных
+   счётчиков заводить не нужно и задания видят действия обоих владельцев. */
+const Q_BONUS = 50;
+const QUESTS = [
+  { id: 'fed', k: 'fed', n: 3, c: 30, t: 'Покормить 3 раза' },
+  { id: 'pet', k: 'pet', n: 5, c: 25, t: 'Погладить 5 раз' },
+  { id: 'wash', k: 'wash', n: 1, c: 25, t: 'Искупать питомца' },
+  { id: 'games', k: 'games', n: 2, c: 35, t: 'Сыграть 2 раза' },
+  { id: 'grown', k: 'grown', n: 2, c: 30, t: 'Собрать 2 урожая' },
+  { id: 'cook', k: 'cook', n: 1, c: 35, t: 'Приготовить блюдо' },
+  { id: 'msgs', k: 'msgs', n: 1, c: 20, t: 'Написать сообщение' },
+  { id: 'earn', k: 'earn', n: 120, c: 30, t: 'Заработать 120 монет' },
+];
+const qDef = (id) => QUESTS.find((x) => x.id === id);
+const qSum = (k) => Object.keys(S.who || {}).reduce((n, l) => n + (+(S.who[l] || {})[k] || 0), 0);
+/* набор берём от номера дня, как витрину: у обоих он одинаковый */
+function qToday() {
+  const d = mkDay(), q = S.q, cur = q && +q.d;
+  if (!q || !(cur >= d && cur <= d + 1) || !Array.isArray(q.q) || !q.q.length) {
+    S.q = { d, q: mkPick(d + 7919, QUESTS, 3).map((x) => ({ i: x.id, b: qSum(x.k) })), done: {} };
+    save();
+  }
+  return S.q;
+}
+const qHave = (e) => { const def = qDef(e.i); return def ? Math.max(0, qSum(def.k) - (+e.b || 0)) : 0; };
+const qLeftN = () => { const q = qToday(); return q.q.filter((e) => q.done[e.i]).length; };
+function qTick() {
+  const q = qToday();
+  renderQ();                                           /* задание мог закрыть и второй владелец */
+  let got = 0, coins = 0, last = '';
+  q.q.forEach((e) => {
+    const def = qDef(e.i);
+    if (!def || q.done[e.i] || qHave(e) < def.n) return;
+    q.done[e.i] = 1; got++; coins += def.c; last = def.t;
+  });
+  const all = q.q.every((e) => q.done[e.i]);
+  if (all && !q.done.all) { q.done.all = 1; coins += Q_BONUS; got++; }
+  if (!got) return;
+  addCoins(coins);
+  toast(all ? 'Задания дня выполнены' : last);
+  Sound.levelUp(); Haptic.tap(16);
+  save(); renderQ();
+  if (sheetOpen && sheetMode === 'quest') renderSheet();
+}
+function renderQ() {
+  const q = S.q;
+  if (!q || !q.q) return;
+  const n = qLeftN(), tx = n + ' / ' + q.q.length;
+  if (qTx.textContent !== tx) qTx.textContent = tx;
+  qBtn.classList.toggle('is-on', n >= q.q.length);
+}
+SHEETS.quest = {
+  title: 'Задания дня',
+  render() {
+    const q = qToday();
+    let html = '<div class="mk-h"><p>Сменятся через</p><b id="qLeft">' + mkLeftTX() + '</b></div><div class="ach">';
+    q.q.forEach((e) => {
+      const def = qDef(e.i);
+      if (!def) return;
+      const have = Math.min(qHave(e), def.n), done = !!q.done[e.i];
+      html += '<div class="ach-r pb' + (done ? ' is-on' : '') + '">'
+        + '<span class="ach-ic">' + icon('star', 2) + '</span>'
+        + '<span class="ach-tx"><b>' + def.t + '</b><span class="ach-bar"><i style="width:'
+        + Math.round((have / def.n) * 100) + '%"></i></span></span>'
+        + '<span class="ach-n">' + (done ? '+' + def.c : have + ' / ' + def.n) + '</span></div>';
+    });
+    const n = qLeftN(), all = n >= q.q.length;
+    html += '<div class="ach-r pb' + (all ? ' is-on' : '') + '">'
+      + '<span class="ach-ic">' + icon('star', 2) + '</span>'
+      + '<span class="ach-tx"><b>Все три задания</b><span class="ach-bar"><i style="width:'
+      + Math.round((n / q.q.length) * 100) + '%"></i></span></span>'
+      + '<span class="ach-n">' + (all ? '+' + Q_BONUS : n + ' / ' + q.q.length) + '</span></div>';
+    sheetBody.innerHTML = html + '</div>';
+  },
+  click() {},
+};
+qBtn.addEventListener('click', () => { Sound.tick(); openSheet('quest'); });
 let aboutDraft = null;
 const profBtn = $('#profBtn');
 SHEETS.prof = {
@@ -4510,7 +4597,7 @@ if (PEOPLE) PEOPLE.watch((st) => {
   renderPeople();
   if (sheetMode === 'people' || sheetMode === 'person') renderSheet();
 });
-setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); mkTick(); achTick(); }, 1000);
+setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); mkTick(); achTick(); qTick(); }, 1000);
 setInterval(saveNow, 10000);
 if (OWNERS && !IS_ADMIN && S.skin) { S.skin = ''; save(); }
 if (Sync) Sync.onRemote(applyRemote);
