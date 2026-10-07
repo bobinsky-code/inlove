@@ -359,16 +359,23 @@ input{-webkit-user-select:text;user-select:text}
 .tx .eff{margin-top:5px}
 .btn[disabled]{opacity:.45;pointer-events:none}
 .wd-top{display:grid;place-items:center;margin:2px 2px 16px;padding:10px 0 8px;background:conic-gradient(#ffe2eb 25%,#fff3f7 0 50%,#ffe2eb 0 75%,#fff3f7 0) 0 0/16px 16px;box-shadow:0 calc(var(--p) * -1) 0 0 var(--ink),0 var(--p) 0 0 var(--ink),calc(var(--p) * -1) 0 0 0 var(--ink),var(--p) 0 0 0 var(--ink)}
-.wd-tabs{display:grid;grid-template-columns:repeat(5,1fr);margin:0 2px 16px}
-.wd-tab{padding:8px 0 7px;color:var(--ink2);font-size:var(--f1);line-height:1;box-shadow:inset var(--p) 0 0 0 var(--ink)}
-.wd-tab:first-child{box-shadow:none}
+.wd-tabs{display:grid;grid-template-columns:repeat(3,1fr);margin:0 2px 16px}
+.wd-tab{padding:8px 2px 7px;color:var(--ink2);font-size:var(--f1);line-height:1;white-space:nowrap;box-shadow:inset var(--p) 0 0 0 var(--ink)}
+.wd-tab:nth-child(3n+1){box-shadow:none}
+.wd-tab:nth-child(n+4){box-shadow:inset var(--p) 0 0 0 var(--ink),inset 0 var(--p) 0 0 var(--ink)}
+.wd-tab:nth-child(3n+1):nth-child(n+4){box-shadow:inset 0 var(--p) 0 0 var(--ink)}
 .wd-tab.is-on{background:var(--rose0);color:var(--rose2)}
 .wd-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 14px;padding:0 2px 6px}
 .wd-item{display:flex;flex-direction:column;align-items:center;gap:7px;padding:8px 6px 10px}
 .wd-item b{font-size:var(--f1);line-height:1.15;text-align:center}
 .wd-item.is-on{--bg:#fff1f6;--bc:var(--rose2)}
 .wd-item .rare{font-size:var(--f1);line-height:1.1;color:var(--ink2)}
+/* карточки вещей и пород: редкость и свечение легендарного */
 .wd-item .rare{line-height:1.1}
+.wd-item.is-dark{--bg:#f6eef2}
+.wd-item.is-legend{--bc:#d99118;animation:legend 1.4s steps(1,end) infinite}
+.wd-item.is-legend.is-on{--bc:#c07a10}
+@keyframes legend{0%{background:#fffaf0}50%{background:#ffeec6}}
 .wd-empty{grid-column:1/-1;margin:10px 2px;font-size:var(--f1);line-height:1.4;color:var(--ink2);text-align:center}
 .wd-item.is-soon{opacity:.55}
 
@@ -1347,6 +1354,17 @@ const SKINS = {
   lundehund: skin({ fur: '#c98a4a', ear: '#b07638', cream: '#fff6e8', m: { earUp: 1, patch: '#9a6a30' } }),
   otterhound: skin({ fur: '#9a8468', ear: '#6a5a48', cream: '#e8ddc8', creamSh: '#d4c6ab', m: { cords: 1 } }),
   singer: skin({ fur: '#ef9a28', ear: '#d2821a', cream: '#fff2dc', m: { earUp: 1, blaze: 1 } }),
+  /* добавленные позже */
+  golden: skin({ fur: '#eccb92', ear: '#dcb77a', cream: '#fff8ea' }),
+  poodle: skin({ fur: '#f0e2d2', ear: '#dccab4', cream: '#fff8f0', nose: '#3a2e2e', m: { cords: 1, earUp: 2 } }),
+  rott: skin({ fur: '#241e1c', ear: '#171312', cream: '#8a4a22', creamSh: '#6e3a18', nose: '#171212', m: { tan: '#8a4a22' } }),
+  spitz: skin({ fur: '#e89a44', ear: '#d2842f', cream: '#ffdfae', creamSh: '#eec894', m: { earUp: 2, cords: 1 } }),
+  malamute: skin({ fur: '#6e6a6a', ear: '#3e3a3c', cream: '#fdfbf8', creamSh: '#e8e2dc', m: { mask: '#343032', blaze: 1, earUp: 1 } }),
+  dane: skin({ fur: '#d2b07a', ear: '#b8945e', cream: '#f6e8d2', m: { mask: '#4a3c2e', earUp: 2 } }),
+  bull: skin({ fur: '#fdf6ec', ear: '#a86a3a', cream: '#ffffff', creamSh: '#eee4d6', m: { patch: '#a86a3a', mask: '#c08a52', earUp: 2 } }),
+  papillon: skin({ fur: '#fdf8f0', ear: '#3a2e2a', cream: '#ffffff', creamSh: '#ebe4da', nose: '#2a2220', m: { blaze: 1, earUp: 1, patch: '#3a2e2a' } }),
+  puli: skin({ fur: '#2e2a2e', ear: '#1f1c20', cream: '#4a444a', creamSh: '#3a353a', nose: '#171517', eye: '#141216', m: { cords: 1 } }),
+  chinook: skin({ fur: '#c9955a', ear: '#ae7a40', cream: '#f8ecd8', m: { mask: '#8a6238', patch: '#a87a44' } }),
 };
 const TAILS = { 0: [[30, 37], [38, 38], [38, 29]], 1: [[30, 37], [39, 37], [41, 32]], 2: [[30, 37], [37, 37], [35, 28]], down: [[30, 39], [36, 42], [41, 42]] };
 const DIRT = [[13, 9, 2], [30, 24, 2], [16, 33, 3], [28, 37, 2], [33, 30, 1], [25, 8, 1], [12, 38, 2], [20, 29, 1], [31, 14, 1], [26, 33, 1]];
@@ -1371,6 +1389,20 @@ const WEAR = {
   sweaterL: { k: 'sweater', c: ['#c9b2ee', '#9b7fd0', '#ebe1ff'] },
   hoodie: { k: 'hoodie', c: ['#ffb27a', '#e5894f', '#ffd8bc'] },
   cape: { k: 'cape', c: ['#e8475f', '#b8324a', '#ff8a9a'] },
+  horns: { k: 'horns', c: ['#e8475f', '#b8324a', '#ffb0a0'] },
+  chef: { k: 'chef', c: ['#ffffff', '#e4dcd2', '#f6f0e8'] },
+  halo: { k: 'halo', c: ['#ffd25a', '#e0a830', '#fff6c8'] },
+  mono: { k: 'mono', c: ['#e0b84a', '#8a6a1a'] },
+  tie: { k: 'tie', c: ['#4f74db', '#2f4fa8', '#9fb6f5'] },
+  vest: { k: 'vest', c: ['#8a6ad0', '#6a4ab0', '#c0a8f0'] },
+  /* костюмы: своя вкладка в гардеробе, рисуются поверх обычных вещей */
+  rasta: { k: 'rasta', c: ['#e8c23a', '#2e8f52', '#d4453e'] },
+  kigu: { k: 'kigu', c: ['#9fd8ef', '#6fb4d4', '#eafaff'] },
+  mj: { k: 'mj', c: ['#2a2430', '#15121a', '#f2eef6'] },
+  tyler: { k: 'tyler', c: ['#b4342c', '#7e201a', '#e06a56'] },
+  cheat: { k: 'cheat', c: ['#1d2a1f', '#43f08a'] },
+  fire: { k: 'fire', c: ['#ff8a2a', '#ffd34a', '#ff4d2a'] },
+  tophat: { k: 'tophat', c: ['#2a2430', '#15121a', '#c9b4e0'] },
 };
 function bez(L, m, p0, p1, p2, r) {
   for (let t = 0; t <= 1.0001; t += 0.04) {
@@ -1392,9 +1424,12 @@ const petCache = new Map();
 /* порода, если её не назвали явно, — всегда выбранная.
    Так любой рисунок питомца, нынешний и будущий, берёт её сам */
 const skinOf = (v) => (v == null ? S.skin : v);
+/* огонь на голове гаснет от воды и через несколько секунд разгорается снова */
+let fireWet = 0;
+const fireFrame = (t) => (Date.now() < fireWet ? 0 : 1 + (Math.floor(t / 170) % 3));
 function petFrame(o) {
   const wr = o.wear || {}, skin = skinOf(o.skin);
-  const key = [o.eyes, o.mouth, o.ears, o.tail, o.hx, o.hy, o.by, o.pose, o.brows ? 1 : 0, o.blush ? 1 : 0, o.dirt, wr.head || '', wr.eyes || '', wr.neck || '', wr.body || '', o.cape ? 1 : 0, o.flap || 0, o.sick || '', skin].join('|');
+  const key = [o.eyes, o.mouth, o.ears, o.tail, o.hx, o.hy, o.by, o.pose, o.brows ? 1 : 0, o.blush ? 1 : 0, o.dirt, wr.head || '', wr.eyes || '', wr.neck || '', wr.body || '', o.cape ? 1 : 0, o.flap || 0, o.sick || '', skin, wr.suit || '', o.fire || 0].join('|');
   let f = petCache.get(key);
   if (f) return f;
   const L = Lay(PW, PH), C = SKINS[skin] || PCOL, M = C.m || {};
@@ -1404,7 +1439,10 @@ function petFrame(o) {
   const X = (x) => x + hx, Y = (y) => y + hy;
   const shadeFn = (base, sh, hi) => (x, y, m) => (!L.has(m, x, y + 2) || !L.has(m, x + 2, y + 1) ? sh : hi && x < 23 && (!L.has(m, x, y - 2) || !L.has(m, x - 2, y - 1)) ? hi : base);
   const W = (s) => (wr[s] && WEAR[wr[s]] ? WEAR[wr[s]] : null);
-  const wBody = W('body'), wNeck = W('neck'), wHead = W('head'), wEyes = W('eyes');
+  const wSuit = W('suit'), hide = (wSuit && wSuit.hide) || {};
+  const wBody = hide.body ? null : W('body'), wNeck = hide.neck ? null : W('neck');
+  const wHead = hide.head ? null : W('head'), wEyes = hide.eyes ? null : W('eyes');
+  const suitK = wSuit ? wSuit.k : '';
   const caped = o.cape || (wBody && wBody.k === 'cape');
   const NY = (lie ? 31 : 27) + by;
   /* tail */
@@ -1426,7 +1464,8 @@ function petFrame(o) {
     const ea = o.ears === 'up' ? [8.2, 16.5, 4.6, 8.6] : o.ears === 'down' ? [10.2, 21, 4.2, 8.6] : [9, 18.5, 4.5, 8.8];
     L.ell(em, ea[0] + hx, ea[1] + hy, ea[2], ea[3]); L.ell(em, 45 - ea[0] + hx, ea[1] + hy, ea[2], ea[3]);
   }
-  L.part(L.clean(em), (x, y, m) => (!L.has(m, x, y + 2) || !L.has(m, x + 1, y + 2) ? C.earSh : C.ear), INK);
+  const drawEars = () => L.part(L.clean(em), (x, y, m) => (!L.has(m, x, y + 2) || !L.has(m, x + 1, y + 2) ? C.earSh : C.ear), INK);
+  drawEars();
   if (upEar) {
     const im = L.M(), inC = shade(C.ear, 0.4);
     const et2 = M.earUp === 2 ? 11 : 7;
@@ -1449,10 +1488,27 @@ function petFrame(o) {
     for (let i = 0; i < lg.length; i++) if (lg[i] && bmc[i] && L.c[i] !== INK) L.c[i] = M.tan;
   }
   /* body clothes */
+  /* любая одежда на теле: маска тела между двумя строками */
+  const bodyMask = (top, bot) => { const cm = L.M(); for (let y = top; y <= bot; y++) for (let x = 0; x < PW; x++) if (L.has(bmc, x, y)) cm[y * PW + x] = 1; return cm; };
+  if (wBody && wBody.k === 'vest') {
+    const c = wBody.c, top = lie ? 33 + by : NY + 2, bot = lie ? 41 + by : NY + 11, cm = bodyMask(top, bot);
+    for (let y = top; y <= bot; y++) for (let x = 20; x <= 25; x++) cm[y * PW + x] = 0;   /* распашонка */
+    L.part(cm, (x, y, m) => (!L.has(m, x, y + 1) || !L.has(m, x + 1, y) ? c[1] : !L.has(m, x - 2, y) ? c[2] : c[0]));
+  }
+  if (suitK === 'kigu' || suitK === 'mj' || suitK === 'tyler') {
+    const c = wSuit.c, top = lie ? 32 + by : NY + 1, bot = lie ? 42 + by : NY + 14, cm = bodyMask(top, bot);
+    L.part(cm, (x, y, m) => (y === bot || !L.has(m, x, y + 1) ? c[1] : !L.has(m, x - 2, y) ? c[2] : !L.has(m, x + 2, y) ? c[1] : c[0]));
+    if (suitK === 'kigu') {
+      L.part(L.ell(L.M(), 22.5, (lie ? 37 : NY + 8) + by, 5.6, 4.2), (x, y, m) => (!L.has(m, x, y + 1) ? c[1] : c[2]));
+    } else if (suitK === 'mj') {
+      for (let d = 0; d < 6; d++) for (let x = 21 - d; x <= 24 + d; x++) { const y = top + 1 + d; if (cm[y * PW + x]) L.px(x, y, d > 3 ? c[2] : WHITE); }
+    } else {
+      for (let d = 0; d < 5; d++) { const y = top + 1 + d; if (cm[y * PW + (19 - d)]) L.px(19 - d, y, c[2]); if (cm[y * PW + (26 + d)]) L.px(26 + d, y, c[2]); }
+    }
+  }
   if (wBody && (wBody.k === 'tee' || wBody.k === 'sweater' || wBody.k === 'hoodie')) {
     const c = wBody.c, top = lie ? 33 + by : NY + 2, bot = wBody.k === 'tee' ? top + 6 : lie ? 42 + by : NY + 13;
-    const cm = L.M();
-    for (let y = top; y <= bot; y++) for (let x = 0; x < PW; x++) if (L.has(bmc, x, y)) cm[y * PW + x] = 1;
+    const cm = bodyMask(top, bot);
     L.part(cm, (x, y, m) => (y === bot || !L.has(m, x, y + 1) ? c[1] : wBody.k === 'sweater' && (y - top) % 3 === 2 ? c[2] : !L.has(m, x - 2, y) ? c[2] : !L.has(m, x + 2, y) ? c[1] : c[0]));
     if (wBody.k === 'hoodie' && !lie) {
       for (let x = 18; x <= 27; x++) L.px(x, NY + 8, c[1]);
@@ -1466,6 +1522,12 @@ function petFrame(o) {
   else { L.ell(pm, 19, 41.2, 3, 2.4); L.ell(pm, 26, 41.2, 3, 2.4); }
   L.part(L.clean(pm), (x, y, m) => (!L.has(m, x, y + 1) ? C.creamSh : C.cream), INK);
   if (!lie) L.pts([[18, 42], [20, 42], [25, 42], [27, 42]], C.creamSh);
+  if (suitK === 'mj') {                                  /* белая перчатка на одной лапе */
+    const gx = lie ? 15.5 : 19, gm = L.ell(L.M(), gx, lie ? 41.5 : 41.2, lie ? 3.6 : 3, 2.4);
+    for (let i = 0; i < gm.length; i++) if (gm[i] && L.c[i] && L.c[i] !== INK) L.c[i] = WHITE;
+    for (let x = Math.round(gx) - 3; x <= Math.round(gx) + 3; x++) { const y = 39; if (L.c[y * PW + x] && L.c[y * PW + x] !== INK) L.c[y * PW + x] = wSuit.c[1]; }
+    L.pts([[Math.round(gx) - 1, 41], [Math.round(gx) + 1, 42]], '#cfd6e4');
+  }
   /* collar + tag */
   if (!lie) {
     for (let y = 27; y <= 28; y++) for (let x = 13; x <= 31; x++) if (L.has(bmc, x, y + by) && L.c[(y + by) * PW + x] !== INK) L.px(x, y + by, y === 28 ? C.collarSh : C.collar);
@@ -1555,10 +1617,27 @@ function petFrame(o) {
       });
       for (let x = 18; x <= 26; x++) L.px(X(x), Y(13), c[0]);
       L.pts([[X(11), Y(14)], [X(12), Y(14)], [X(32), Y(14)], [X(33), Y(14)]], c[0]);
+    } else if (wEyes.k === 'mono') {
+      const ro = L.ell(L.M(), X(29.5), Y(14.5), 4.4, 4.2), ri = L.ell(L.M(), X(29.5), Y(14.5), 3, 2.9);
+      for (let i = 0; i < ro.length; i++) if (ro[i] && !ri[i]) L.c[i] = c[0];
+      L.pts([[X(33), Y(17)], [X(33), Y(18)], [X(32), Y(19)], [X(32), Y(20)]], c[1]);
+      L.px(X(28), Y(12), WHITE);
     } else if (wEyes.k === 'hearts') {
       const HR = ['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...'];
       [12, 26].forEach((x0) => { patDraw(L, X(x0), Y(12), HR, { '#': c[0] }); L.px(X(x0 + 1), Y(13), c[1]); L.px(X(x0 + 2), Y(13), c[1]); });
       for (let x = 19; x <= 25; x++) L.px(X(x), Y(13), c[2]);
+    }
+  }
+  if (suitK === 'cheat' || suitK === 'tyler') {
+    const c = wSuit.c;
+    if (suitK === 'cheat') {                             /* визор с зелёными стёклами */
+      for (let y = 12; y <= 16; y++) for (let x = 11; x <= 34; x++) L.px(X(x), Y(y), y === 12 || y === 16 ? c[0] : '#121a14');
+      [13, 27].forEach((x0) => { for (let y = 13; y <= 15; y++) for (let x = x0; x <= x0 + 5; x++) L.px(X(x), Y(y), y === 14 ? c[1] : '#2aa05e'); });
+      L.pts([[X(14), Y(13)], [X(28), Y(13)]], '#c8ffe0');
+    } else {                                             /* тёмные очки Дёрдена */
+      [12, 26].forEach((x0) => { for (let y = 12; y <= 16; y++) for (let x = x0; x <= x0 + 6; x++) if (!(y === 16 && (x === x0 || x === x0 + 6))) L.px(X(x), Y(y), '#241c28'); });
+      [12, 26].forEach((x0) => { L.px(X(x0 + 1), Y(13), c[2]); L.px(X(x0 + 2), Y(13), '#6a5a68'); });
+      for (let x = 19; x <= 25; x++) L.px(X(x), Y(13), '#241c28');
     }
   }
   /* neck */
@@ -1569,6 +1648,9 @@ function petFrame(o) {
       L.part(m, (x, y) => ((x + y) % 4 === 0 && y > NY ? c[2] : !L.has(m, x, y + 1) ? c[1] : c[0]), INK);
     } else if (wNeck.k === 'bowtie') {
       patDraw(L, 18, NY, BOWROWS, { '#': c[0], h: c[2], k: c[1], o: c[1] });
+    } else if (wNeck.k === 'tie') {
+      patDraw(L, 21, NY, ['###', '.#.'], { '#': c[1] });
+      for (let d = 0; d < 7; d++) { const y = NY + 2 + d, w = d < 2 ? 1 : 2; for (let x = 22 - (w >> 1); x <= 22 + (w >> 1) + (w % 2 === 0 ? 0 : 0); x++) L.px(x, y, x === 22 ? c[0] : c[2]); if (d >= 2) { L.px(21, y, c[0]); L.px(23, y, c[1]); } }
     } else if (wNeck.k === 'scarf') {
       const m = L.M();
       for (let y = NY - 1; y <= NY + 1; y++) for (let x = 12; x <= 32; x++) if (L.has(bmc, x, y) || L.has(hm, x, y) || y === NY) m[y * PW + x] = 1;
@@ -1598,10 +1680,67 @@ function petFrame(o) {
       const band = L.M(); L.rrect(band, X(11), Y(8), 23, 3, 1);
       L.part(band, (x) => ((x - hx) % 2 ? c[1] : c[0]), INK);
       L.part(L.clean(L.ell(L.M(), 22.5 + hx, 2.6 + hy, 2.6, 2.4)), (x, y) => (y <= Y(2) ? WHITE : c[2]), INK);
+    } else if (wHead.k === 'horns') {
+      patDraw(L, X(12), Y(-2), ['...##', '..###', '.####', '#####', '.####', '..###'], { '#': c[0] });
+      patDraw(L, X(28), Y(-2), ['##...', '###..', '####.', '#####', '####.', '###..'], { '#': c[0] });
+      L.pts([[X(13), Y(3)], [X(14), Y(3)], [X(15), Y(3)], [X(30), Y(3)], [X(31), Y(3)], [X(32), Y(3)]], c[1]);
+      L.pts([[X(15), Y(-1)], [X(16), Y(0)], [X(29), Y(-1)], [X(28), Y(0)]], c[2]);
+    } else if (wHead.k === 'chef') {
+      const puff = L.M();
+      L.ell(puff, X(17), Y(2), 4.6, 3.6); L.ell(puff, X(22.5), Y(1), 5.2, 4); L.ell(puff, X(28), Y(2), 4.6, 3.6);
+      L.part(L.clean(puff), (x, y, m) => (!L.has(m, x, y + 1) ? c[1] : !L.has(m, x - 2, y) ? c[0] : c[2]), INK);
+      L.part(L.rrect(L.M(), X(14), Y(5), 18, 3, 1), (x, y) => (y === Y(7) ? c[1] : c[0]), INK);
+    } else if (wHead.k === 'halo') {
+      const ho = L.ell(L.M(), X(22.5), Y(1), 7.2, 2.4), hi = L.ell(L.M(), X(22.5), Y(1), 4.8, 1.2);
+      for (let i = 0; i < ho.length; i++) if (ho[i] && !hi[i]) L.c[i] = c[0];
+      for (let x = 17; x <= 28; x++) L.px(X(x), Y(0), c[2]);
+      L.pts([[X(16), Y(1)], [X(29), Y(1)], [X(22), Y(2)], [X(23), Y(2)]], c[1]);
     } else if (wHead.k === 'crown') {
       const CR = ['#....#....#', '##..###..##', '###########', '###########', '###########'];
       L.part(patMask(L, X(17), Y(0), CR), (x, y) => (y === Y(4) ? c[1] : x <= X(18) ? c[2] : c[0]), '#b07818');
       L.pts([[X(19), Y(3)], [X(25), Y(3)]], '#ff6f9c'); L.px(X(22), Y(2), '#6fa8ff');
+    }
+  }
+  /* костюмы на голове */
+  if (suitK === 'rasta' || suitK === 'tophat' || suitK === 'mj' || suitK === 'kigu' || suitK === 'fire') {
+    const c = wSuit.c;
+    if (suitK === 'rasta') {                             /* вязаная шапка и дреды */
+      const dome = L.M(); L.ell(dome, X(22.5), Y(7), 12.4, 8.6);
+      for (let y = Y(9); y < PH; y++) for (let x = 0; x < PW; x++) dome[y * PW + x] = 0;
+      L.part(dome, (x, y) => { const k = (y - hy + 9) % 6; return k < 2 ? c[2] : k < 4 ? c[0] : c[1]; }, INK);
+      L.part(L.rrect(L.M(), X(10), Y(8), 25, 3, 1), (x) => ((x - hx) % 6 < 3 ? c[1] : c[2]), INK);
+      drawEars();                                        /* уши торчат из-под шапки */
+      [[6, 10, 0], [8, 14, 1], [37, 10, 2], [35, 14, 0]].forEach((d, i) => {       /* дреды поверх ушей */
+        const col = [c[2], c[0], c[1]][d[2]];
+        for (let k = 0; k < 13; k++) {
+          const x = d[0] + (k > 5 ? (d[0] < 22 ? -1 : 1) : 0), y = d[1] + k;
+          const cc = k % 4 === 3 ? INK : col;
+          L.px(X(x), Y(y), cc); L.px(X(x + 1), Y(y), cc);
+        }
+        L.px(X(d[0]), Y(d[1] + 13), INK); L.px(X(d[0] + 1), Y(d[1] + 13), INK);
+      });
+    } else if (suitK === 'tophat') {
+      L.part(L.rect(L.M(), X(15), Y(-4), 15, 9), (x, y, m) => (!L.has(m, x - 2, y) ? c[2] : !L.has(m, x + 2, y) ? c[1] : c[0]), INK);
+      L.part(L.rect(L.M(), X(15), Y(3), 15, 2), () => c[2], INK);
+      L.part(L.ell(L.M(), X(22.5), Y(6), 13, 1.8), (x, y) => (y >= Y(6) ? c[1] : c[0]), INK);
+    } else if (suitK === 'mj') {                         /* федора набекрень */
+      L.part(L.ell(L.M(), X(21.5), Y(7), 13.5, 2.2), (x, y) => (y >= Y(7) ? c[1] : c[0]), INK);
+      const dome = L.M(); L.rrect(dome, X(14), Y(-1), 15, 8, 2);
+      L.part(dome, (x, y, m) => (!L.has(m, x - 2, y) ? c[2] : c[0]), INK);
+      L.part(L.rect(L.M(), X(14), Y(4), 15, 2), () => c[1], INK);
+      L.pts([[X(16), Y(1)], [X(16), Y(2)]], c[2]);
+    } else if (suitK === 'kigu') {                       /* капюшон кругом мордочки */
+      const ho = L.ell(L.M(), X(22.5), Y(15), 14.6, 13.4), hi = L.ell(L.M(), X(22.5), Y(17.5), 11, 10.4);
+      for (let i = 0; i < ho.length; i++) if (ho[i] && !hi[i]) L.c[i] = c[0];
+      for (let i = 0; i < ho.length; i++) if (ho[i] && !hi[i] && (!ho[i + PW] || !ho[i + 1])) L.c[i] = c[1];
+      [[13, 4], [32, 4]].forEach((p) => L.part(L.clean(L.ell(L.M(), X(p[0]), Y(p[1]), 3.6, 3.4)), (x, y, m) => (!L.has(m, x, y + 1) ? c[1] : c[0]), INK));
+      [[13, 4], [32, 4]].forEach((p) => L.part(L.clean(L.ell(L.M(), X(p[0]), Y(p[1] + 0.5), 1.8, 1.6)), c[2]));
+    } else if (o.fire) {                                 /* огонь: горит, пока не окатят водой */
+      for (let x = 11; x <= 34; x++) {
+        const d = Math.abs(x - 22.5) / 12;
+        const h = Math.max(0, Math.round(6 * (1 - d * d) + 1.7 * Math.sin(x * 1.7 + o.fire * 2.1)));
+        for (let k = 0; k < h; k++) { const t = k / Math.max(1, h - 1); L.px(X(x), Y(5) - k, t > 0.72 ? c[2] : t > 0.34 ? c[0] : c[1]); }
+      }
     }
   }
   /* dirt */
@@ -2242,26 +2381,44 @@ const WALLS = [
   { id: 'peach', name: 'Персиковые', price: 80, lvl: 4 },
 ];
 const CLOTHES = [
-  { id: 'bow', slot: 'head', name: 'Бантик', price: 30, lvl: 1 },
-  { id: 'flower', slot: 'head', name: 'Цветок', price: 35, lvl: 1 },
-  { id: 'capR', slot: 'head', name: 'Красная кепка', price: 45, lvl: 1 },
-  { id: 'capB', slot: 'head', name: 'Синяя кепка', price: 45, lvl: 2 },
-  { id: 'beanieY', slot: 'head', name: 'Жёлтая шапка', price: 55, lvl: 2 },
-  { id: 'beanieP', slot: 'head', name: 'Розовая шапка', price: 55, lvl: 3 },
-  { id: 'crown', slot: 'head', name: 'Корона', price: 160, lvl: 5 },
-  { id: 'round', slot: 'eyes', name: 'Очки', price: 40, lvl: 1 },
-  { id: 'shades', slot: 'eyes', name: 'Тёмные очки', price: 60, lvl: 2 },
-  { id: 'hearts', slot: 'eyes', name: 'Очки-сердечки', price: 80, lvl: 3 },
-  { id: 'bandana', slot: 'neck', name: 'Бандана', price: 35, lvl: 1 },
-  { id: 'bowtie', slot: 'neck', name: 'Бабочка', price: 45, lvl: 1 },
-  { id: 'scarf', slot: 'neck', name: 'Шарф', price: 60, lvl: 2 },
-  { id: 'teeP', slot: 'body', name: 'Розовая футболка', price: 50, lvl: 1 },
-  { id: 'teeB', slot: 'body', name: 'Голубая футболка', price: 50, lvl: 1 },
-  { id: 'sweaterM', slot: 'body', name: 'Мятный свитер', price: 70, lvl: 2 },
-  { id: 'sweaterL', slot: 'body', name: 'Сиреневый свитер', price: 70, lvl: 3 },
-  { id: 'hoodie', slot: 'body', name: 'Худи', price: 90, lvl: 3 },
-  { id: 'cape', slot: 'body', name: 'Плащ', price: 120, lvl: 4 },
+  { id: 'bow', slot: 'head', name: 'Бантик', price: 30, lvl: 1, rare: 'common' },
+  { id: 'flower', slot: 'head', name: 'Цветок', price: 35, lvl: 1, rare: 'common' },
+  { id: 'capR', slot: 'head', name: 'Красная кепка', price: 45, lvl: 1, rare: 'common' },
+  { id: 'capB', slot: 'head', name: 'Синяя кепка', price: 45, lvl: 2, rare: 'common' },
+  { id: 'chef', slot: 'head', name: 'Колпак повара', price: 70, lvl: 2, rare: 'uncommon' },
+  { id: 'beanieY', slot: 'head', name: 'Жёлтая шапка', price: 55, lvl: 2, rare: 'uncommon' },
+  { id: 'beanieP', slot: 'head', name: 'Розовая шапка', price: 55, lvl: 3, rare: 'uncommon' },
+  { id: 'horns', slot: 'head', name: 'Рожки', price: 130, lvl: 3, rare: 'rare' },
+  { id: 'crown', slot: 'head', name: 'Корона', price: 240, lvl: 5, rare: 'epic' },
+  { id: 'halo', slot: 'head', name: 'Нимб', price: 0, lvl: 5, rare: 'mythic' },
+  { id: 'round', slot: 'eyes', name: 'Очки', price: 40, lvl: 1, rare: 'common' },
+  { id: 'shades', slot: 'eyes', name: 'Тёмные очки', price: 60, lvl: 2, rare: 'uncommon' },
+  { id: 'hearts', slot: 'eyes', name: 'Очки-сердечки', price: 110, lvl: 3, rare: 'rare' },
+  { id: 'mono', slot: 'eyes', name: 'Монокль', price: 140, lvl: 4, rare: 'rare' },
+  { id: 'bandana', slot: 'neck', name: 'Бандана', price: 35, lvl: 1, rare: 'common' },
+  { id: 'bowtie', slot: 'neck', name: 'Бабочка', price: 45, lvl: 1, rare: 'common' },
+  { id: 'tie', slot: 'neck', name: 'Галстук', price: 50, lvl: 1, rare: 'common' },
+  { id: 'scarf', slot: 'neck', name: 'Шарф', price: 70, lvl: 2, rare: 'uncommon' },
+  { id: 'teeP', slot: 'body', name: 'Розовая футболка', price: 50, lvl: 1, rare: 'common' },
+  { id: 'teeB', slot: 'body', name: 'Голубая футболка', price: 50, lvl: 1, rare: 'common' },
+  { id: 'sweaterM', slot: 'body', name: 'Мятный свитер', price: 70, lvl: 2, rare: 'uncommon' },
+  { id: 'sweaterL', slot: 'body', name: 'Сиреневый свитер', price: 70, lvl: 3, rare: 'uncommon' },
+  { id: 'vest', slot: 'body', name: 'Жилетка', price: 90, lvl: 3, rare: 'uncommon' },
+  { id: 'hoodie', slot: 'body', name: 'Худи', price: 130, lvl: 3, rare: 'rare' },
+  { id: 'cape', slot: 'body', name: 'Плащ', price: 220, lvl: 4, rare: 'epic' },
 ];
+/* костюмы: отдельная вкладка, закрывают сразу несколько мест */
+const SUITS = [
+  { id: 'tophat', slot: 'suit', name: 'Цилиндр', price: 80, lvl: 2, rare: 'uncommon', hide: { head: 1 } },
+  { id: 'rasta', slot: 'suit', name: 'Шапка с дредами', price: 150, lvl: 3, rare: 'rare', hide: { head: 1 } },
+  { id: 'cheat', slot: 'suit', name: 'Очки читера', price: 160, lvl: 3, rare: 'rare', hide: { eyes: 1 } },
+  { id: 'kigu', slot: 'suit', name: 'Кигуруми', price: 0, lvl: 4, rare: 'epic', hide: { head: 1, body: 1 } },
+  { id: 'mj', slot: 'suit', name: 'Майкл Джексон', price: 0, lvl: 4, rare: 'epic', hide: { head: 1, body: 1 } },
+  { id: 'tyler', slot: 'suit', name: 'Тайлер Дёрден', price: 0, lvl: 5, rare: 'mythic', hide: { eyes: 1, body: 1 } },
+  { id: 'fire', slot: 'suit', name: 'Огонь', price: 0, lvl: 5, rare: 'legend', hide: { head: 1 } },
+];
+const WEARABLE = CLOTHES.concat(SUITS);
+SUITS.forEach((x) => { if (WEAR[x.id]) WEAR[x.id].hide = x.hide; });
 const SLOTS = [['head', 'Голова'], ['eyes', 'Глаза'], ['neck', 'Шея'], ['body', 'Тело']];
 /* породы: пока одна, дальше будут обычные и редкие */
 /* редкость в игре взята от редкости в жизни */
@@ -2311,8 +2468,17 @@ const BREEDS = [
   { id: 'lundehund', name: 'Норвежский лундехунд', rare: 'legend' },
   { id: 'otterhound', name: 'Оттерхаунд', rare: 'legend' },
   { id: 'singer', name: 'Новогвинейская поющая', rare: 'legend' },
+  { id: 'chinook', name: 'Чинук', rare: 'legend' },
   { id: 'admin', name: 'Админ', rare: 'admin', admin: true },
 ];
+/* добавлены позже, порядок в списке держим по редкости */
+BREEDS.splice(BREEDS.findIndex((b) => b.rare === 'uncommon'), 0, { id: 'golden', name: 'Золотистый ретривер', rare: 'common' });
+[['poodle', 'Пудель'], ['rott', 'Ротвейлер'], ['spitz', 'Померанский шпиц']].forEach((b, i) =>
+  BREEDS.splice(BREEDS.findIndex((x) => x.rare === 'rare') + i, 0, { id: b[0], name: b[1], rare: 'uncommon' }));
+[['malamute', 'Аляскинский маламут'], ['dane', 'Немецкий дог'], ['bull', 'Английский бульдог']].forEach((b, i) =>
+  BREEDS.splice(BREEDS.findIndex((x) => x.rare === 'epic') + i, 0, { id: b[0], name: b[1], rare: 'rare' }));
+BREEDS.splice(BREEDS.findIndex((b) => b.rare === 'mythic'), 0, { id: 'papillon', name: 'Папильон', rare: 'epic' });
+BREEDS.splice(BREEDS.findIndex((b) => b.rare === 'legend'), 0, { id: 'puli', name: 'Пули', rare: 'mythic' });
 const ADMIN_PAIR = 'bob,favie';
 const PLANTS = [
   { id: 'carrot', name: 'Морковь', price: 4, min: 3 },
@@ -2784,6 +2950,7 @@ const Scene = (() => {
     if (tw) st = 'walk';
     const ta = t - Pet.t0;
     const o = { eyes: 'open', mouth: 'w', ears: 'n', tail: 0, hx: 0, hy: 0, by: 0, pose: 'sit', brows: false, blush: true, dirt: dirtCount(), wear: S.wear, sick: S.sick ? S.sick.k : '', skin: S.skin };
+    if (S.wear.suit === 'fire') o.fire = fireFrame(t);
     let ox = 0, oy = 0;
     const blink = t % 4300 < 150;
     const wag = (ms) => [0, 1, 0, 2][Math.floor(t / ms) % 4];
@@ -2899,6 +3066,13 @@ const Scene = (() => {
       p.t += dt;
       if (p.t >= p.life) return false;
       if (p.k === 'z') return true;
+      if (p.k === 'star') {                              /* искры легендарной вещи */
+        const a = p.t / p.life, yy = Math.round(p.y - a * 7), xx = Math.round(p.x);
+        bx.fillStyle = a < 0.5 ? '#fff6c8' : '#ffd25a';
+        bx.fillRect(xx, yy, 1, 1);
+        if (a > 0.18 && a < 0.82) { bx.fillRect(xx - 1, yy, 1, 1); bx.fillRect(xx + 1, yy, 1, 1); bx.fillRect(xx, yy - 1, 1, 1); bx.fillRect(xx, yy + 1, 1, 1); }
+        return true;
+      }
       p.vy += 260 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
       bx.fillStyle = p.k === 'drop' ? '#9cc6ff' : p.c;
       bx.fillRect(Math.round(p.x), Math.round(p.y), 1, p.k === 'drop' ? 2 : 1);
@@ -3014,6 +3188,7 @@ const Scene = (() => {
     clearBubbles() { foam = []; },
     shower(on) { const t = performance.now(); if (on) shower = { t0: t, off: 0 }; else if (shower) shower.off = t; lastDraw = 0; },
     night(instant) { nightSync(instant); settle(!!instant); lastDraw = 0; },
+    sparkle() { if (!petShown()) return; parts.push({ k: 'star', x: pos.x + rand(3, 42), y: pos.y + rand(4, 36), t: 0, life: 0.95 }); lastDraw = 0; },
     spawnZ() { if (!lying()) return; parts.push({ k: 'z', x: pos.x + 30, y: pos.y + 14, t: 0, life: 2.8, big: Math.random() < 0.5 }); lastDraw = 0; },
     crumbs() { for (let i = 0; i < 4; i++) parts.push({ k: 'c', c: pick(['#d6a06f', '#c98a5a', '#fff6ea']), x: pos.x + 22 + rand(-3, 3), y: pos.y + 22, vx: rand(-30, 30), vy: rand(-40, -10), t: 0, life: 0.6 }); lastDraw = 0; },
     sneezeDrops() { for (let i = 0; i < 6; i++) parts.push({ k: 'drop', x: pos.x + 22 + rand(-2, 2), y: pos.y + 19, vx: rand(-60, 60), vy: rand(-60, -20), t: 0, life: 0.5 }); lastDraw = 0; },
@@ -3231,6 +3406,7 @@ $('#rinseBtn').addEventListener('click', () => {
   if (S.sleeping) { toast('Питомец спит'); Sound.error(); return; }
   showering = true;
   Scene.shower(true); Sound.splash(); Haptic.tap(10);
+  fireWet = Date.now() + 7000;                          /* огонь на голове заливает водой */
   Scene.popAll(600);
   setTimeout(() => {
     const n = Scene.bubbleCount();
@@ -3526,6 +3702,8 @@ function mkShelf(cards) {
 }
 /* ---------- витрина дня: случайная одежда, одна и та же у обоих ---------- */
 const MK_DAY = 5;                                   /* сколько вещей в витрине */
+/* в магазине всё, у чего есть цена: остальное пойдёт из кейсов */
+const SHOP_POOL = WEARABLE.filter((x) => x.price > 0);
 const mkDay = () => Math.floor(Date.now() / 86400e3);
 const mkLeft = () => 86400e3 - (Date.now() % 86400e3);
 function mkLeftTX() {
@@ -3551,10 +3729,10 @@ function mkToday() {
      витрина у пары должна остаться общей. Пересчитываем, только если
      записанный день отстал или уехал совсем далеко. */
   if (p[1] && sd >= d && sd <= d + 1) {
-    const saved = p[1].split(',').map((id) => CLOTHES.find((c) => c.id === id)).filter(Boolean);
+    const saved = p[1].split(',').map((id) => WEARABLE.find((c) => c.id === id)).filter(Boolean);
     if (saved.length) return saved;
   }
-  const list = mkPick(d, CLOTHES, MK_DAY);
+  const list = mkPick(d, SHOP_POOL, MK_DAY);
   S.mk = d + '|' + list.map((c) => c.id).join(',');
   save();
   return list;
@@ -3579,7 +3757,9 @@ SHEETS.shop = {
     html += '<div class="mk-h"><p>Сегодня в продаже</p><b id="mkLeft">' + mkLeftTX() + '</b></div>';
     html += mkShelf(mkToday().map((c) => {
       const own = !!S.wardrobe[c.id], pet = imgTag('wdi:' + c.id + ':' + S.skin, petFrame(Object.assign({}, PET_BASE, { wear: { [c.slot]: c.id } })).cv, 2);
-      return mkCard('data-cloth="' + c.id + '"', mkCase('nb', nb, 2, pet), c.name, SLOTN[c.slot],
+      const r = RARE[c.rare] || RARE.common;
+      return mkCard('data-cloth="' + c.id + '"', mkCase('nb', nb, 2, pet), c.name,
+        '<span style="color:' + r.c + '">' + r.t + '</span>',
         priceTag(c.price, c.lvl, own, 'Куплено'), 'mk-big' + (own ? ' is-own' : S.lvl < c.lvl ? ' is-soon' : ''));
     }));
     html += '<div class="mk-h"><p>Мебель</p></div>';
@@ -3602,7 +3782,7 @@ SHEETS.shop = {
   click(e) {
     const cl = e.target.closest('[data-cloth]');
     if (cl) {
-      const c = CLOTHES.find((x) => x.id === cl.dataset.cloth); if (!c) return;
+      const c = WEARABLE.find((x) => x.id === cl.dataset.cloth); if (!c) return;
       if (S.wardrobe[c.id]) { toast('Уже куплено'); Sound.error(); return; }
       if (!buyCheck(cl, c.price, c.lvl)) return;
       addCoins(-c.price);
@@ -3651,13 +3831,13 @@ sheetBody.addEventListener('click', (e) => { if (mkMoved) { mkMoved = 0; e.stopP
 
 /* wardrobe */
 let wdSlot = 'head';
-const PET_BASE = { eyes: 'open', mouth: 'w', ears: 'n', tail: 0, hx: 0, hy: 0, by: 0, pose: 'sit', brows: false, blush: true, dirt: 0 };
+const PET_BASE = { eyes: 'open', mouth: 'w', ears: 'n', tail: 0, hx: 0, hy: 0, by: 0, pose: 'sit', brows: false, blush: true, dirt: 0, fire: 2 };
 SHEETS.wardrobe = {
   title: 'Гардероб',
   render() {
     const w = S.wear, wk = ['head', 'eyes', 'neck', 'body'].map((s) => w[s] || '-').join(',') + '|' + S.skin;
     let html = '<div class="wd-top">' + imgTag('wdp:' + wk, petFrame(Object.assign({}, PET_BASE, { wear: w, skin: S.skin })).cv, 3) + '</div>';
-    const tabs = SLOTS.concat([['breed', 'Породы']]);
+    const tabs = SLOTS.concat([['suit', 'Костюмы'], ['breed', 'Породы']]);
     html += '<div class="wd-tabs pb">' + tabs.map((s) => '<button class="wd-tab' + (s[0] === wdSlot ? ' is-on' : '') + '" type="button" data-slot="' + s[0] + '">' + s[1] + '</button>').join('') + '</div>';
     if (wdSlot === 'breed') {
       const all = breedsAll();
@@ -3665,11 +3845,14 @@ SHEETS.wardrobe = {
       all.forEach((b) => { html += breedCard(b, 1); });
     } else {
       html += '<div class="wd-grid">';
-      CLOTHES.filter((c) => c.slot === wdSlot).forEach((c) => {
-        const own = !!S.wardrobe[c.id], worn = w[c.slot] === c.id;
+      (wdSlot === 'suit' ? SUITS : CLOTHES.filter((c) => c.slot === wdSlot)).forEach((c) => {
+        const own = !!S.wardrobe[c.id], worn = w[c.slot] === c.id, r = RARE[c.rare] || RARE.common;
         const tag = own ? '<span class="buy pb is-owned">' + (worn ? 'Снять' : 'Надеть') + '</span>'
-          : '<span class="buy pb is-locked">В магазине</span>';
-        html += '<button class="wd-item pb press' + (worn ? ' is-on' : '') + '" type="button" data-cloth="' + c.id + '">' + imgTag('wdi:' + c.id + ':' + S.skin, petFrame(Object.assign({}, PET_BASE, { wear: { [c.slot]: c.id } })).cv, 1.5) + '<b>' + c.name + '</b>' + tag + '</button>';
+          : '<span class="buy pb is-locked">' + (c.price ? 'В магазине' : 'Не в продаже') + '</span>';
+        html += '<button class="wd-item pb press' + (worn ? ' is-on' : own ? '' : ' is-soon')
+          + (c.rare === 'legend' ? ' is-legend' : '') + '" type="button" data-cloth="' + c.id + '">'
+          + imgTag('wdi:' + c.id + ':' + S.skin, petFrame(Object.assign({}, PET_BASE, { wear: { [c.slot]: c.id } })).cv, 1.5)
+          + '<b>' + c.name + '</b><small class="rare" style="color:' + r.c + '">' + r.t + '</small>' + tag + '</button>';
       });
     }
     sheetBody.innerHTML = html + '</div>';
@@ -3687,7 +3870,7 @@ SHEETS.wardrobe = {
       save(); this.render(); renderRooms(); Scene.kick();
       return;
     }
-    const c = CLOTHES.find((x) => x.id === el.dataset.cloth); if (!c) return;
+    const c = WEARABLE.find((x) => x.id === el.dataset.cloth); if (!c) return;
     if (!S.wardrobe[c.id]) { nope(el); toast('Продаётся в магазине'); Sound.error(); return; }
     if (S.wear[c.slot] === c.id) { S.wear[c.slot] = null; Sound.boop(); }
     else { S.wear[c.slot] = c.id; Sound.boop(); Haptic.tap(6); }
@@ -3696,13 +3879,49 @@ SHEETS.wardrobe = {
   },
 };
 
+/* легендарное светится: искры вокруг питомца, пока оно надето */
+function legendOn() {
+  const b = BREEDS.find((x) => x.id === S.skin);
+  if (b && (b.rare === 'legend' || b.rare === 'admin')) return true;
+  return ['head', 'eyes', 'neck', 'body', 'suit'].some((k) => {
+    const it = S.wear[k] && WEARABLE.find((x) => x.id === S.wear[k]);
+    return !!it && it.rare === 'legend';
+  });
+}
+let sparkT = 0;
+function sparkTick() {
+  if (!legendOn() || S.sleeping) return;
+  const now = Date.now();
+  if (now - sparkT < 420) return;
+  sparkT = now; Scene.sparkle();
+}
+
+/* закрытая порода: чёрный силуэт со знаком вопроса, чтобы было что открывать */
+const QMARK = ['.####.', '#....#', '#....#', '....##', '...##.', '..##..', '..##..', '......', '..##..', '..##..'];
+function breedShadow(id) {
+  return art('sil:' + id, () => {
+    const f = petFrame(Object.assign({}, PET_BASE, { skin: id })).cv;
+    const c = document.createElement('canvas'); c.width = f.width; c.height = f.height;
+    const x = c.getContext('2d');
+    x.drawImage(f, 0, 0);
+    x.globalCompositeOperation = 'source-in';
+    x.fillStyle = '#2a2026'; x.fillRect(0, 0, c.width, c.height);
+    x.globalCompositeOperation = 'source-over';
+    const q = spr(QMARK, { '#': '#fff6f9' });
+    x.imageSmoothingEnabled = false;
+    x.drawImage(q, Math.round((c.width - q.width) / 2), Math.round(c.height / 2) - 8);
+    return c;
+  });
+}
 /* карточка породы: одна и та же в гардеробе и в коллекции профиля */
 function breedCard(b, act) {
   const own = hasBreed(b), on = S.skin === b.id, r = RARE[b.rare] || RARE.common;
   const tag = act ? '<span class="buy pb ' + (own ? 'is-owned' : 'is-locked') + '">' + (own ? (on ? 'Снять' : 'Надеть') : 'Нет') + '</span>' : '';
-  return '<' + (act ? 'button' : 'div') + ' class="wd-item is-breed pb' + (act ? ' press' : '') + (on ? ' is-on' : own ? '' : ' is-soon') + '"'
+  return '<' + (act ? 'button' : 'div') + ' class="wd-item is-breed pb' + (act ? ' press' : '')
+    + (b.rare === 'legend' || b.rare === 'admin' ? ' is-legend' : '') + (on ? ' is-on' : own ? '' : ' is-dark') + '"'
     + (act ? ' type="button" data-breed="' + b.id + '"' : '')
-    + '>' + imgTag('wdb:' + b.id, petFrame(Object.assign({}, PET_BASE, { skin: b.id })).cv, 1.5)
+    + '>' + (own ? imgTag('wdb:' + b.id, petFrame(Object.assign({}, PET_BASE, { skin: b.id })).cv, 1.5)
+      : imgTag('sil:' + b.id, breedShadow(b.id), 1.5))
     + '<b>' + b.name + '</b><small class="rare" style="color:' + r.c + '">' + r.t + '</small>' + tag
     + '</' + (act ? 'button' : 'div') + '>';
 }
@@ -4842,12 +5061,13 @@ if (PEOPLE) PEOPLE.watch((st) => {
   if (sheetMode === 'people' || sheetMode === 'person') renderSheet();
 });
 setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); mkTick(); achTick(); qTick(); runTick(); onTick(); renderMate(); }, 1000);
+setInterval(sparkTick, 200);
 setInterval(saveNow, 10000);
 /* порода слетает, если её нет в коллекции: подставить чужую через консоль не выйдет */
 (() => { const b = BREEDS.find((x) => x.id === S.skin); if (S.skin && (!b || !hasBreed(b))) { S.skin = ''; save(); } })();
 if (Sync) Sync.onRemote(applyRemote);
 $('#boot').hidden = true;
-if (location.hash === '#t') window.__t = { S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS, petFrame, PCOL, PET_BASE, BREEDS, SKINS, RARE, breedsDrop };
+if (location.hash === '#t') window.__t = { S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS, petFrame, PCOL, PET_BASE, BREEDS, SKINS, RARE, breedsDrop, WEARABLE, SUITS, CLOTHES, legendOn };
 
 /* разовое уведомление для favie */
 (() => {
