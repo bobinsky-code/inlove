@@ -56,7 +56,7 @@ if (!CONFIGURED) {
     /* сад и письма пишутся целиком, поэтому два действия в одну секунду затирают друг друга.
        Пока наша запись не дошла до сервера, храним точку, от которой мы считали:
        по ней видно, что именно изменил второй, и его правка складывается с нашей */
-    const DEEP = { garden: 1, mail: 1, mailSeen: 1, who: 1, q: 1 };
+    const DEEP = { garden: 1, mail: 1, mailSeen: 1, who: 1, q: 1, hide: 1 };
     const from = {};
     const jsonOf = (v) => { try { return JSON.stringify(v); } catch (e) { return undefined; } };
     function push() {
@@ -260,7 +260,7 @@ input{-webkit-user-select:text;user-select:text}
 .toast.is-on{opacity:1;transform:translate(-50%,0)}
 
 /* ---------- panel ---------- */
-.panel{flex:none;position:relative;height:118px}
+.panel{flex:none;position:relative;height:136px}
 .pane{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;visibility:hidden}
 .pane.is-on{visibility:visible;animation:paneIn .24s steps(3,end)}
 @keyframes paneIn{from{opacity:0;transform:translateY(6px)}}
@@ -276,6 +276,9 @@ input{-webkit-user-select:text;user-select:text}
 .fc-tx{min-width:0;display:flex;flex-direction:column;gap:6px}
 .fc-tx b{line-height:1}
 .fcard .eff,.row .eff,.mx-out .eff{justify-content:flex-start;flex-wrap:wrap}
+.pane-row{display:flex;align-items:center;justify-content:center;gap:10px}
+.room-b{--bg:#fff;display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:0 10px 2px;color:var(--rose2);font-size:var(--f1);line-height:1}
+.pane{gap:10px}
 .gbtns{display:flex;justify-content:center;gap:12px;width:100%;padding:0 2px}
 .gbtn{flex:1 1 0;max-width:110px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:9px 4px 8px;color:var(--ink);font-size:var(--f1);line-height:1}
 .gbtn .pi{color:var(--rose2)}
@@ -458,7 +461,7 @@ input{-webkit-user-select:text;user-select:text}
 .turn .pi{color:var(--rose2);animation:turn 2.4s steps(1,end) infinite}
 @keyframes turn{0%{transform:rotate(-90deg)}50%{transform:rotate(0)}}
 @media (orientation:landscape) and (max-height:500px) and (pointer:coarse){.turn{display:flex}.app{visibility:hidden}}
-@media (max-height:640px){.stats{gap:8px 14px}.st-b span{display:none}.st-ic{width:26px;height:26px}.panel{height:106px}.fcard{min-height:76px}.btn{min-height:40px}.top{height:34px}.stage{gap:10px}}
+@media (max-height:640px){.stats{gap:8px 14px}.st-b span{display:none}.st-ic{width:26px;height:26px}.panel{height:106px}.fcard{min-height:76px}.btn{min-height:40px}.top{height:34px}.stage{gap:10px}.pane{gap:8px}.room-b{min-height:26px}.pane[data-pane="1"] .room-b,.pane[data-pane="4"] .room-b{display:none}}
 @media (max-width:372px){.app{padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}.stage{padding-left:8px;padding-right:8px}.top{gap:8px}}
 @media (max-width:340px){.stats{gap:8px 10px}.gbtn{min-width:0}}
 @media (prefers-reduced-motion:reduce){.stat.is-low .seg i.on,.stat.is-low .st-ic{animation:none}}
@@ -495,6 +498,7 @@ input{-webkit-user-select:text;user-select:text}
     <section class="panel" aria-live="polite">
       <div class="pane" data-pane="0">
         <p class="hint">Нажми на питомца или погладь его</p>
+        <button class="room-b pb press" type="button" data-room-btn="1"><i data-ic="sofa" data-s="1.5"></i>Обстановка</button>
       </div>
       <div class="pane" data-pane="1">
         <div class="carousel">
@@ -502,13 +506,14 @@ input{-webkit-user-select:text;user-select:text}
           <button class="fcard pb press" id="fCard" type="button"></button>
           <button class="arr pb press" id="fNext" type="button" aria-label="Вперёд"><i data-ic="right"></i></button>
         </div>
+        <button class="room-b pb press" type="button" data-room-btn="1"><i data-ic="sofa" data-s="1.5"></i>Обстановка</button>
       </div>
       <div class="pane" data-pane="2">
         <p class="hint">Три пальцем по питомцу, потом смой пену</p>
-        <button class="btn pb press" id="rinseBtn" type="button"><i data-ic="shower"></i>Смыть</button>
+        <div class="pane-row"><button class="btn pb press" id="rinseBtn" type="button"><i data-ic="shower"></i>Смыть</button><button class="room-b pb press" type="button" data-room-btn="1"><i data-ic="sofa" data-s="1.5"></i>Обстановка</button></div>
       </div>
       <div class="pane" data-pane="3">
-        <button class="btn pb press" id="lightBtn" type="button"><i data-ic="bulb"></i><span id="lightTx">Выключить свет</span></button>
+        <div class="pane-row"><button class="btn pb press" id="lightBtn" type="button"><i data-ic="bulb"></i><span id="lightTx">Выключить свет</span></button><button class="room-b pb press" type="button" data-room-btn="1"><i data-ic="sofa" data-s="1.5"></i>Обстановка</button></div>
         <p class="hint" id="sleepHint">Полная энергия за час сна</p>
       </div>
       <div class="pane" data-pane="4">
@@ -516,6 +521,7 @@ input{-webkit-user-select:text;user-select:text}
           <button class="gcard pb press" type="button" data-game="catch"><b>Ловля косточек</b><small>Рекорд: <span data-best="catch">0</span></small><span class="go pb">Играть<i><i data-ic="bolt" data-s="1.5"></i>10</i></span></button>
           <button class="gcard pb press" type="button" data-game="run"><b>Прыжки</b><small>Рекорд: <span data-best="run">0</span></small><span class="go pb">Играть<i><i data-ic="bolt" data-s="1.5"></i>10</i></span></button>
         </div>
+        <button class="room-b pb press" type="button" data-room-btn="1"><i data-ic="sofa" data-s="1.5"></i>Обстановка</button>
       </div>
       <div class="pane" data-pane="5">
         <div class="gbtns">
@@ -1184,6 +1190,94 @@ OBJ.tunnel = () => {                                  /* туннель для �
   return L.canvas();
 };
 
+OBJ.aquarium = () => {                                /* аквариум на шкаф */
+  const L = Lay(23, 15);
+  L.part(L.rect(L.M(), 0, 2, 23, 12), (x, y) => (y <= 4 ? '#dff2ff' : y >= 12 ? '#6fb8d8' : x <= 2 ? '#bfe6f8' : '#9fd8ef'), '#4f8fb0');
+  L.part(L.rect(L.M(), 0, 0, 23, 2), (x, y) => (y === 0 ? '#e8e2ea' : '#b8b0c0'), '#6a6274');
+  L.fill(2, 12, 19, 1, '#f0dcb8');
+  [[5, 11], [9, 12], [15, 11], [18, 12]].forEach((p) => L.px(p[0], p[1], '#c9a86a'));
+  [[6, 6, '#ff8a3a'], [14, 8, '#ffd25a'], [17, 5, '#ff6f9c']].forEach((f) => {
+    L.part(L.clean(L.ell(L.M(), f[0], f[1], 2, 1.4)), f[2], '#b05a1a');
+    L.pts([[f[0] + 2, f[1] - 1], [f[0] + 2, f[1] + 1], [f[0] + 3, f[1]]], f[2]);
+    L.px(f[0] - 1, f[1] - 1, WHITE);
+  });
+  [[3, 10], [20, 9], [11, 10]].forEach((w) => { for (let k = 0; k < 4; k++) L.px(w[0] + (k % 2), w[1] - k, '#4f9e78'); });
+  return L.canvas();
+};
+OBJ.guitar = () => {                                  /* гитара у стены */
+  const L = Lay(12, 30);
+  L.part(L.clean(L.ell(L.M(), 6, 23, 5.4, 5.6)), (x, y, m) => (!L.has(m, x + 1, y) ? '#b07836' : '#e8a84c'), '#8a5a22');
+  L.part(L.clean(L.ell(L.M(), 6, 16, 4.2, 4.4)), (x, y, m) => (!L.has(m, x + 1, y) ? '#b07836' : '#e8a84c'), '#8a5a22');
+  L.part(L.clean(L.ell(L.M(), 6, 21, 2.2, 2.2)), '#5a3a18');
+  L.part(L.rect(L.M(), 5, 2, 3, 12), (x) => (x === 5 ? '#c99a5a' : '#8a5a22'), '#5a3a18');
+  L.part(L.rect(L.M(), 4, 0, 5, 3), '#5a3a18', '#3a2510');
+  L.fill(6, 14, 1, 12, '#fff2d8');
+  return L.canvas();
+};
+OBJ.micro = () => {                                   /* микроволновка */
+  const L = Lay(20, 13);
+  L.part(L.rect(L.M(), 0, 0, 20, 13), (x, y) => (y <= 1 ? '#f2eef6' : y >= 11 ? '#c9c2d2' : '#dfd8e8'), '#8e86a0');
+  L.part(L.rect(L.M(), 2, 2, 11, 9), (x, y) => ((x + y) % 2 ? '#3a3350' : '#272238'), '#8e86a0');
+  L.pts([[4, 5], [5, 5], [6, 6]], '#ffd25a');
+  L.part(L.rect(L.M(), 15, 3, 3, 3), '#ff8fa8', '#c7577a');
+  L.fill(15, 8, 3, 1, '#8e86a0'); L.fill(15, 10, 3, 1, '#8e86a0');
+  return L.canvas();
+};
+OBJ.cake = () => {                                    /* торт на стол */
+  const L = Lay(16, 14);
+  L.part(L.rect(L.M(), 2, 6, 12, 6), (x, y) => (y === 6 ? '#fff6f9' : y >= 11 ? '#e8c49a' : (y % 2 ? '#ffd9c0' : '#ffeedd')), '#c99a7e');
+  L.part(L.ell(L.M(), 8, 6, 6.4, 1.8), (x, y) => (y <= 5 ? '#ff9fbd' : '#f07aa0'), '#c7577a');
+  [[5, 3], [8, 2], [11, 3]].forEach((c) => { L.fill(c[0], c[1], 1, 3, '#fff6f9'); L.px(c[0], c[1] - 1, '#ffd25a'); });
+  L.part(L.ell(L.M(), 8, 12.5, 7.4, 1.6), '#f3e6ee', '#c9bdc8');
+  return L.canvas();
+};
+OBJ.scales = () => {                                  /* весы в ванной */
+  const L = Lay(15, 9);
+  L.part(L.rrect(L.M(), 0, 2, 15, 7, 2), (x, y) => (y === 2 ? '#f6f7ff' : y >= 7 ? '#b8bedd' : '#dfe4f6'), '#8e95bb');
+  L.part(L.rrect(L.M(), 4, 0, 7, 4, 1), (x, y) => (y === 0 ? WHITE : '#c9d0ee'), '#8e95bb');
+  L.px(7, 2, '#e64f7e'); L.pts([[5, 2], [9, 2]], '#8e95bb');
+  return L.canvas();
+};
+OBJ.candles = () => {                                 /* свечи на полку */
+  const L = Lay(14, 11);
+  [[2, 4, '#ff9fbd'], [6, 2, '#c9b2ee'], [10, 5, '#b2e8c6']].forEach((c) => {
+    L.part(L.rect(L.M(), c[0], c[1] + 2, 3, 9 - c[1]), (x) => (x === c[0] ? '#fff6f9' : c[2]), '#a8708a');
+    L.px(c[0] + 1, c[1] + 1, '#ffd25a'); L.px(c[0] + 1, c[1], '#fff1b0');
+  });
+  return L.canvas();
+};
+OBJ.books = () => {                                   /* стопка книг */
+  const L = Lay(14, 15);
+  [['#ff8fa8', 0], ['#9fd2ff', 1], ['#ffd25a', 0], ['#b2e8c6', 2]].forEach((b, i) => {
+    const y = 11 - i * 3;
+    L.part(L.rect(L.M(), b[1], y, 13 - b[1], 3), (x, yy) => (yy === y ? WHITE : b[0]), '#8e5470');
+    L.px(b[1] + 1, y + 1, '#fff6f9');
+  });
+  return L.canvas();
+};
+OBJ.moonLamp = () => {                                /* луна-светильник */
+  const L = Lay(17, 17);
+  L.part(L.clean(L.ell(L.M(), 8.5, 8.5, 7.4, 7.4)), (x, y, m) => (!L.has(m, x, y + 1) || !L.has(m, x + 1, y) ? '#e8c04a' : (x + y) % 7 === 0 ? '#fff6c8' : '#ffd96a'), '#b07818');
+  [[6, 6], [11, 9], [7, 12]].forEach((c) => L.part(L.clean(L.ell(L.M(), c[0], c[1], 1.6, 1.4)), '#f0c43a'));
+  return L.canvas();
+};
+OBJ.kite = () => {                                    /* воздушный змей */
+  const L = Lay(19, 24);
+  L.part(L.poly(L.M(), [[9, 0], [18, 9], [9, 18], [0, 9]]), (x, y) => (x + y < 14 ? (x < 9 ? '#ff9fbd' : '#9fd2ff') : (x < 9 ? '#ffd25a' : '#b2e8c6')), '#8e5470');
+  L.fill(9, 1, 1, 16, '#8e5470'); L.fill(1, 9, 17, 1, '#8e5470');
+  for (let k = 0; k < 6; k++) L.px(9 + (k % 2 ? 1 : -1), 18 + k, '#c7577a');
+  [[8, 20], [10, 22]].forEach((b) => L.part(L.rect(L.M(), b[0] - 1, b[1], 3, 2), '#ff6f9c', '#c7577a'));
+  return L.canvas();
+};
+OBJ.skate = () => {                                   /* скейт */
+  const L = Lay(24, 10);
+  L.part(L.clean(L.ell(L.M(), 12, 4, 12, 2.6)), (x, y) => (y <= 3 ? '#ff8fa8' : '#c7577a'), '#8e3a58');
+  [[6, 7], [18, 7]].forEach((w) => { L.part(L.clean(L.ell(L.M(), w[0], w[1], 2.2, 2.2)), '#ffd25a', '#b07818'); });
+  L.pts([[4, 6], [20, 6]], '#8e95bb');
+  L.fill(3, 2, 18, 1, '#ffc2d4');
+  return L.canvas();
+};
+
 const objCache = {};
 const obj = (name, arg) => { const k = name + ':' + (arg || ''); return objCache[k] || (objCache[k] = OBJ[name](arg)); };
 const floorY = (lh) => Math.round(lh * 0.7);
@@ -1201,23 +1295,28 @@ function roomLayout(i, lw, lh) {
     P.wardrobe = [2, fy + 2 - 49]; P.window = [Math.round(lw * 0.42) - 13, 6]; P.picture = [lw - 26, 9];
     P.plant = [lw - 34, fy + 5 - 28]; P.lamp = [lw - 16, fy + 3 - 46]; P.rug = [cx - 26, lh - 13]; P.ball = [Math.round(lw * 0.64), lh - 10];
     P.bear = [1, lh - 23]; P.heart = [P.bear[0] + 5, P.bear[1] + 10];
-    P.shelf = [30, 37]; P.pillow = [24, lh - 9]; P.poster = [52, 33];
+    P.shelf = [30, 37]; P.pillow = [26, lh - 9]; P.poster = [52, 33];
+    P.aquarium = [3, fy + 2 - 49 - 15]; P.guitar = [33, fy - 26];
   } else if (i === 1) {
     P.fridge = [2, fy + 3 - 46]; P.counter = [lw - 41, fy + 2 - 30]; P.clock = [cx - 8, 5];
     const tw = tableW(lw); P.table = [cx - (tw >> 1), lh - 20]; P.tw = tw;
     P.dish = [cx + 16, lh - 20];
     P.jars = [31, 26]; P.kettle = [58, fy - 32]; P.fruit = [cx - 29, lh - 31];
+    P.micro = [lw - 22, fy - 32]; P.cake = [cx - 10, lh - 32];
   } else if (i === 2) {
     const tw = tubW(lw); P.tw = tw; P.tub = [cx - (tw >> 1), lh - 28]; P.water = lh - 24;
     P.mirror = [lw - 21, 6]; P.towel = [3, Math.round(fy * 0.4)];
     P.bshelf = [4, Math.round(fy * 0.68)]; P.potB = [lw - 17, fy - 17]; P.duck = [cx + 3, P.water - 8];
+    P.scales = [4, fy - 9]; P.candles = [7, Math.round(fy * 0.68) - 11];
   } else if (i === 3) {
     P.window = [3, 6]; P.stand = [3, fy + 2 - 30];
     P.bed = [lw - 54, lh - 17]; P.blanket = [lw - 49, lh - 10];
     P.curtains = [0, 3]; P.stars = [lw - 42, 10]; P.nlamp = [lw - 16, fy - 15]; P.basket = [cx + 4, fy - 21];
+    P.books = [4, fy + 4]; P.moonLamp = [lw - 24, 36];
   } else if (i === 4) {
     P.toybox = [2, fy + 3 - 26]; P.blocks = [lw - 24, fy + 3 - 24]; P.ball = [Math.round(lw * 0.74), lh - 10];
     P.hoop = [lw - 25, 12]; P.poster4 = [6, 16]; P.tunnel = [lw - 39, lh - 24];
+    P.kite = [30, 18]; P.skate = [16, lh - 11];
   } else {
     P.hz = Math.round(lh * 0.3);
   }
@@ -1259,6 +1358,8 @@ function drawRoom(ctx, i, lw, lh, o) {
       for (let y = -4; y < 18; y++) for (let x = -8; x < 23; x++) { const dx = (x - 7.5) / 13, dy = (y - 7) / 11, d = dx * dx + dy * dy; if (d <= 1 && ((x + y) % 2 === 0 || d < 0.45)) ctx.fillRect(lx + x, ly + y, 1, 1); }
       put(obj('lamp'), P.lamp);
     }
+    if (owned.aquarium) put(obj('aquarium'), P.aquarium);
+    if (owned.guitar) put(obj('guitar'), P.guitar);
     if (owned.shelf) put(obj('shelf'), P.shelf);
     if (owned.poster) put(obj('poster'), P.poster);
     if (owned.rug) put(obj('rug'), P.rug);
@@ -1278,6 +1379,7 @@ function drawRoom(ctx, i, lw, lh, o) {
     put(obj('clockFace'), P.clock);
     if (owned.jars) put(obj('jars'), P.jars);
     if (owned.kettle) put(obj('kettle'), P.kettle);
+    if (owned.micro) put(obj('micro'), P.micro);
   } else if (i === 2) {
     const split = Math.round(fy * 0.34);
     ctx.fillStyle = '#f4f1ff'; ctx.fillRect(0, 0, lw, split);
@@ -1289,6 +1391,8 @@ function drawRoom(ctx, i, lw, lh, o) {
     put(obj('mirror'), P.mirror); put(obj('towel'), P.towel);
     if (owned.bshelf) put(obj('bathShelf'), P.bshelf);
     if (owned.potB) put(obj('potB'), P.potB);
+    if (owned.scales) put(obj('scales'), P.scales);
+    if (owned.candles) put(obj('candles'), P.candles);
     put(obj('tubBack', P.tw), [P.tub[0], P.tub[1] - 4]);
     put(obj('tubTap'), [P.tub[0] + P.tw - 9, P.tub[1] - 7]);
   } else if (i === 3) {
@@ -1304,6 +1408,8 @@ function drawRoom(ctx, i, lw, lh, o) {
     if (owned.stars) put(obj('stars'), P.stars);
     put(obj('nightstand'), P.stand);
     if (owned.basket) put(obj('basket'), P.basket);
+    if (owned.books) put(obj('books'), P.books);
+    if (owned.moonLamp) put(obj('moonLamp'), P.moonLamp);
     if (owned.nlamp) put(obj('nightLamp'), P.nlamp);
     if (owned.bed) put(obj('bed'), P.bed); else put(obj('blanket'), P.blanket);
   } else if (i === 4) {
@@ -1327,6 +1433,8 @@ function drawRoom(ctx, i, lw, lh, o) {
     }
     if (owned.poster4) put(obj('poster4'), P.poster4);
     if (owned.hoop) put(obj('hoop'), P.hoop);
+    if (owned.kite) put(obj('kite'), P.kite);
+    if (owned.skate) put(obj('skate'), P.skate);
     if (owned.tunnel) put(obj('tunnel'), P.tunnel);
     put(obj('toybox'), P.toybox); put(obj('blocks'), P.blocks); put(obj('ball'), P.ball);
   } else {
@@ -1417,6 +1525,7 @@ function drawRoomFront(ctx, i, lw, lh, ox, o) {
     ctx.drawImage(bowl, dx - (bowl.width >> 1), dy - bowl.height + 2);
     if (o.food && !o.foodAway) ctx.drawImage(o.food, dx - 8, dy - bowl.height - 11);
     if (o.owned && o.owned.fruit) ctx.drawImage(obj('fruit'), ox + P.fruit[0], P.fruit[1]);
+    if (o.owned && o.owned.cake) ctx.drawImage(obj('cake'), ox + P.cake[0], P.cake[1]);
   } else if (i === 2) {
     ctx.drawImage(obj('tubFront', P.tw), ox + P.tub[0], P.tub[1]);
     if (o.owned && o.owned.duck) ctx.drawImage(obj('duck'), ox + P.duck[0], P.duck[1]);
@@ -2524,24 +2633,34 @@ const ITEMS = [
   { id: 'ball', name: 'Мячик', sec: 'Комната', price: 60, lvl: 1, rare: 'common', fx: 'Настроение падает медленнее' },
   { id: 'plant', name: 'Растение', sec: 'Комната', price: 70, lvl: 2, rare: 'uncommon' },
   { id: 'shelf', name: 'Книжная полка', sec: 'Комната', price: 80, lvl: 2, rare: 'uncommon' },
+  { id: 'guitar', name: 'Гитара', sec: 'Комната', price: 160, lvl: 4, rare: 'rare' },
+  { id: 'aquarium', name: 'Аквариум', sec: 'Комната', price: 420, lvl: 6, rare: 'mythic' },
   { id: 'picture', name: 'Картина', sec: 'Комната', price: 90, lvl: 3, rare: 'uncommon' },
   { id: 'lamp', name: 'Торшер', sec: 'Комната', price: 110, lvl: 4, rare: 'rare' },
   { id: 'garland', name: 'Гирлянда', sec: 'Комната', price: 130, lvl: 5, rare: 'rare' },
   { id: 'kettle', name: 'Чайник', sec: 'Кухня', price: 60, lvl: 2, rare: 'common' },
   { id: 'jars', name: 'Банки на полке', sec: 'Кухня', price: 80, lvl: 2, rare: 'uncommon' },
   { id: 'fruit', name: 'Ваза с фруктами', sec: 'Кухня', price: 90, lvl: 3, rare: 'uncommon' },
+  { id: 'micro', name: 'Микроволновка', sec: 'Кухня', price: 110, lvl: 3, rare: 'uncommon' },
+  { id: 'cake', name: 'Торт', sec: 'Кухня', price: 150, lvl: 4, rare: 'rare' },
   { id: 'bigbowl', name: 'Большая миска', sec: 'Кухня', price: 120, lvl: 2, rare: 'uncommon', fx: 'Еда сытнее на 25%' },
+  { id: 'scales', name: 'Весы', sec: 'Ванная', price: 50, lvl: 1, rare: 'common' },
   { id: 'bshelf', name: 'Полка с баночками', sec: 'Ванная', price: 70, lvl: 2, rare: 'uncommon' },
+  { id: 'candles', name: 'Свечи', sec: 'Ванная', price: 150, lvl: 4, rare: 'rare' },
 
   { id: 'potB', name: 'Папоротник', sec: 'Ванная', price: 100, lvl: 3, rare: 'uncommon' },
   { id: 'duck', name: 'Уточка', sec: 'Ванная', price: 140, lvl: 3, rare: 'rare' },
+  { id: 'books', name: 'Стопка книг', sec: 'Спальня', price: 50, lvl: 1, rare: 'common' },
   { id: 'basket', name: 'Корзина для белья', sec: 'Спальня', price: 90, lvl: 3, rare: 'uncommon' },
+  { id: 'moonLamp', name: 'Луна-светильник', sec: 'Спальня', price: 300, lvl: 5, rare: 'epic' },
   { id: 'nlamp', name: 'Ночник', sec: 'Спальня', price: 110, lvl: 3, rare: 'uncommon' },
   { id: 'curtains', name: 'Шторы', sec: 'Спальня', price: 140, lvl: 4, rare: 'rare' },
   { id: 'bed', name: 'Лежанка', sec: 'Спальня', price: 150, lvl: 3, rare: 'rare', fx: 'Сон быстрее: энергия за 40 минут' },
   { id: 'stars', name: 'Звёзды на стене', sec: 'Спальня', price: 180, lvl: 4, rare: 'rare' },
   { id: 'poster4', name: 'Плакат с мячом', sec: 'Игровая', price: 60, lvl: 2, rare: 'common' },
+  { id: 'kite', name: 'Воздушный змей', sec: 'Игровая', price: 100, lvl: 3, rare: 'uncommon' },
   { id: 'hoop', name: 'Кольцо', sec: 'Игровая', price: 160, lvl: 4, rare: 'rare' },
+  { id: 'skate', name: 'Скейт', sec: 'Игровая', price: 170, lvl: 4, rare: 'rare' },
   { id: 'tunnel', name: 'Туннель', sec: 'Игровая', price: 220, lvl: 5, rare: 'epic' },
 ];
 const WALLS = [
@@ -2702,7 +2821,7 @@ function freshGarden() { return { plots: [null, null, null], seeds: {}, crops: {
 function fresh(now) {
   return { v: 1, name: 'Питомец', t: now, food: 80, fun: 75, energy: 90, clean: 85, sleeping: false, xp: 0, lvl: 1, coins: 50, owned: {}, walls: { pink: true }, wall: 'pink', best: { catch: 0, run: 0 }, petWin: { t: now, n: 0 }, room: 0, home: 0,
     wardrobe: {}, wear: {}, garden: freshGarden(), sick: null, healedAt: 0, buffs: {}, skin: '', created: now,
-    mail: {}, mailSeen: {}, who: {}, mk: '', ach: {}, q: null, breeds: {} };
+    mail: {}, mailSeen: {}, who: {}, mk: '', ach: {}, q: null, breeds: {}, hide: {} };
 }
 function load() {
   const now = Date.now(), f = fresh(now);
@@ -2741,6 +2860,8 @@ function saveNow() {
 function save() { clearTimeout(saveT); saveT = setTimeout(saveNow, 400); }
 /* питомец общий: пришли поля, которые поменял второй владелец.
    Комната у каждого своя — её из чужого состояния не берём. */
+/* убранное в кладовку: куплено, но в комнате не стоит */
+const shownOwned = () => { const o = {}; Object.keys(S.owned).forEach((k) => { if (S.owned[k] && !(S.hide || {})[k]) o[k] = true; }); return o; };
 const LOCAL_KEYS = { room: 1, home: 1 };
 /* купленное только копится, поэтому списки вещей сливаем, а не замещаем:
    две покупки в одну секунду с разных устройств не теряются */
@@ -3079,7 +3200,7 @@ const Scene = (() => {
   let pos = { x: 0, y: 0 }, tw = null, now = null;
   let foodCv = null, foodAway = false, flying = null, bubble = null;
 
-  const home = (i) => petHome(i, lw, lh, S.sleeping, S.owned);
+  const home = (i) => petHome(i, lw, lh, S.sleeping, shownOwned());
   /* спящий питомец остаётся на лежанке в спальне, по дому за игроком не идёт */
   const petShown = () => !S.sleeping || (cur === 3 && !sliding);
   function walkTo(p, dur) { tw = { fx: pos.x, fy: pos.y, tx: p.x, ty: p.y, t0: performance.now(), dur: Math.max(1, dur) }; lastDraw = 0; }
@@ -3105,11 +3226,11 @@ const Scene = (() => {
     draw(performance.now());
   }
   function roomCv(i) {
-    const sky = skyNow(), key = [lw, lh, S.wall, Object.keys(S.owned).filter((k) => S.owned[k]).join(','), sky].join('|');
+    const sh = shownOwned(), sky = skyNow(), key = [lw, lh, S.wall, Object.keys(sh).join(','), sky].join('|');
     const c = cache[i];
     if (c && c.key === key) return c.cv;
     const cv = document.createElement('canvas'); cv.width = lw; cv.height = lh;
-    drawRoom(cv.getContext('2d'), i, lw, lh, { wall: S.wall, owned: S.owned, sky });
+    drawRoom(cv.getContext('2d'), i, lw, lh, { wall: S.wall, owned: sh, sky });
     cache[i] = { key, cv };
     return cv;
   }
@@ -3167,7 +3288,7 @@ const Scene = (() => {
   function draw(t) {
     if (!lw) return;
     const dt = Math.max(0, Math.min(0.1, (t - lastT) / 1000)); lastT = t;
-    const opts = { owned: S.owned, night: nightOn, garden: S.garden, stageOf, food: foodCv, foodAway, sky: skyNow(), mail: mailNew(), mailTip: Date.now() < mailTip };
+    const opts = { owned: shownOwned(), night: nightOn, garden: S.garden, stageOf, food: foodCv, foodAway, sky: skyNow(), mail: mailNew(), mailTip: Date.now() < mailTip };
     bx.clearRect(0, 0, lw, lh);
     let ra = cur, rb = -1, oa = 0, ob = 0;
     if (sliding) {
@@ -3365,7 +3486,7 @@ const Scene = (() => {
     setFood(cv) { foodCv = cv; lastDraw = 0; },
     feed(cv, done) {
       let sx, sy;
-      if (cur === 1) { const P = roomLayout(1, lw, lh), b = obj('bowlT', S.owned.bigbowl ? 1 : ''); sx = P.dish[0] - 8; sy = P.dish[1] - b.height - 11; foodAway = true; }
+      if (cur === 1) { const P = roomLayout(1, lw, lh), b = obj('bowlT', shownOwned().bigbowl ? 1 : ''); sx = P.dish[0] - 8; sy = P.dish[1] - b.height - 11; foodAway = true; }
       else { sx = pos.x + 14; sy = pos.y - 18; }
       flying = { cv, sx, sy, tx: pos.x + 14, ty: pos.y + 12, t0: performance.now(), dur: 450, done };
       lastDraw = 0;
@@ -3808,6 +3929,9 @@ const THUMB = {
   bshelf: () => obj('bathShelf'), basket: () => obj('basket'), potB: () => obj('potB'), duck: () => obj('duck'),
   nlamp: () => obj('nightLamp'), curtains: () => obj('curtains'), stars: () => obj('stars'),
   poster4: () => obj('poster4'), hoop: () => obj('hoop'), tunnel: () => obj('tunnel'),
+  aquarium: () => obj('aquarium'), guitar: () => obj('guitar'), micro: () => obj('micro'), cake: () => obj('cake'),
+  scales: () => obj('scales'), candles: () => obj('candles'), books: () => obj('books'),
+  moonLamp: () => obj('moonLamp'), kite: () => obj('kite'), skate: () => obj('skate'),
 };
 /* ---------- витрина: навес, полка, ниша ---------- */
 OBJ.awning = () => {
@@ -3879,9 +4003,10 @@ function mkShelf(cards) {
   return '<div class="mk-shelf" style="' + mkBG('mkPlank', art('mkPlank', OBJ.plank), 2) + '"><div class="mk-row">' + cards.join('') + '</div></div>';
 }
 /* ---------- витрина дня: случайная одежда, одна и та же у обоих ---------- */
-const MK_DAY = 5;                                   /* сколько вещей в витрине */
+const MK_DAY = 5, MK_FURN = 8;                      /* сколько вещей и мебели в витрине */
 /* в магазине всё, у чего есть цена: остальное пойдёт из кейсов */
 const SHOP_POOL = WEARABLE.filter((x) => x.price > 0);
+const FURN_POOL = ITEMS.filter((x) => x.price > 0);
 const mkDay = () => Math.floor(Date.now() / 86400e3);
 const mkLeft = () => 86400e3 - (Date.now() % 86400e3);
 function mkLeftTX() {
@@ -3906,14 +4031,15 @@ function mkToday() {
   /* чужой день на сутки вперёд принимаем как есть: у кого-то часы спешат, но
      витрина у пары должна остаться общей. Пересчитываем, только если
      записанный день отстал или уехал совсем далеко. */
-  if (p[1] && sd >= d && sd <= d + 1) {
-    const saved = p[1].split(',').map((id) => WEARABLE.find((c) => c.id === id)).filter(Boolean);
-    if (saved.length) return saved;
+  if (p[1] && p[2] && sd >= d && sd <= d + 1) {
+    const cl = p[1].split(',').map((id) => WEARABLE.find((c) => c.id === id)).filter(Boolean);
+    const fu = p[2].split(',').map((id) => ITEMS.find((c) => c.id === id)).filter(Boolean);
+    if (cl.length && fu.length) return { cl, fu };
   }
-  const list = mkPick(d, SHOP_POOL, MK_DAY);
-  S.mk = d + '|' + list.map((c) => c.id).join(',');
+  const cl = mkPick(d, SHOP_POOL, MK_DAY), fu = mkPick(d + 104729, FURN_POOL, MK_FURN);
+  S.mk = d + '|' + cl.map((c) => c.id).join(',') + '|' + fu.map((c) => c.id).join(',');
   save();
-  return list;
+  return { cl, fu };
 }
 let mkShown = -1;
 function mkTick() {
@@ -3933,15 +4059,16 @@ SHEETS.shop = {
     const nb = art('niche:72x56', () => OBJ.niche(72, 56)), ns = art('niche:52x44', () => OBJ.niche(52, 44));
     let html = '<div class="mk-awn" style="' + mkBG('mkAwn', art('mkAwn', OBJ.awning), 2) + '"></div>';
     html += '<div class="mk-h"><p>Сегодня в продаже</p><b id="mkLeft">' + mkLeftTX() + '</b></div>';
-    html += mkShelf(mkToday().map((c) => {
+    const day = mkToday();
+    html += mkShelf(day.cl.map((c) => {
       const own = !!S.wardrobe[c.id], pet = imgTag('wdi:' + c.id + ':' + S.skin, petFrame(Object.assign({}, PET_BASE, { wear: { [c.slot]: c.id } })).cv, 2);
       const r = RARE[c.rare] || RARE.common;
       return mkCard('data-cloth="' + c.id + '"', mkCase('nb', nb, 2, pet), c.name,
         '<span style="color:' + r.c + '">' + r.t + '</span>',
         priceTag(c.price, c.lvl, own, 'Куплено'), 'mk-big' + (own ? ' is-own' : S.lvl < c.lvl ? ' is-soon' : ''));
     }));
-    html += '<div class="mk-h"><p>Мебель</p></div>';
-    html += mkShelf(ITEMS.map((it) => {
+    html += '<div class="mk-h"><p>Мебель дня</p></div>';
+    html += mkShelf(day.fu.map((it) => {
       const own = !!S.owned[it.id];
       const r = RARE[it.rare] || RARE.common;
       return mkCard('data-kind="item" data-id="' + it.id + '"', mkCase('ns', ns, 2, thumb('it-' + it.id, THUMB[it.id](), 48)), it.name,
@@ -4008,6 +4135,39 @@ function mkDrop() { if (mkDrag) mkDrag.classList.remove('is-drag'); mkDrag = nul
 window.addEventListener('pointerup', mkDrop);
 window.addEventListener('pointercancel', mkDrop);
 sheetBody.addEventListener('click', (e) => { if (mkMoved) { mkMoved = 0; e.stopPropagation(); } }, true);
+
+/* ---------- обстановка: что из купленного стоит в комнатах ---------- */
+SHEETS.furn = {
+  title: 'Обстановка',
+  render() {
+    const secs = [];
+    ITEMS.forEach((i) => { if (secs.indexOf(i.sec) < 0) secs.push(i.sec); });
+    let html = '';
+    secs.forEach((sec) => {
+      const list = ITEMS.filter((i) => i.sec === sec);
+      html += '<div class="mk-h"><p>' + sec + '</p><b>' + list.filter((i) => S.owned[i.id]).length + ' из ' + list.length + '</b></div><div class="wd-grid">';
+      list.forEach((it) => {
+        const own = !!S.owned[it.id], on = own && !S.hide[it.id], r = RARE[it.rare] || RARE.common;
+        const tag = own ? '<span class="buy pb' + (on ? ' is-owned' : '') + '">' + (on ? 'Убрать' : 'Поставить') + '</span>'
+          : '<span class="buy pb is-locked">В магазине</span>';
+        html += '<button class="wd-item pb press' + (own && on ? '' : ' is-soon') + '" type="button" data-furn="' + it.id + '">'
+          + thumb('it-' + it.id, THUMB[it.id](), 50)
+          + '<b>' + it.name + '</b><small class="rare" style="color:' + r.c + '">' + r.t + '</small>' + tag + '</button>';
+      });
+      html += '</div>';
+    });
+    sheetBody.innerHTML = html;
+  },
+  click(e) {
+    const el = e.target.closest('[data-furn]'); if (!el) return;
+    const it = ITEMS.find((x) => x.id === el.dataset.furn); if (!it) return;
+    if (!S.owned[it.id]) { nope(el); toast('Сначала купи в магазине'); Sound.error(); return; }
+    if (S.hide[it.id]) delete S.hide[it.id]; else S.hide[it.id] = 1;
+    Sound.boop(); Haptic.tap(8);
+    save(); this.render(); renderRooms(); renderKitchen(); Scene.kick();
+  },
+};
+$$('[data-room-btn]').forEach((b) => b.addEventListener('click', () => { Sound.tick(); openSheet('furn'); }));
 
 /* wardrobe */
 let wdSlot = 'head';
