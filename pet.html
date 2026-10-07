@@ -299,6 +299,10 @@ input{-webkit-user-select:text;user-select:text}
 .dot-row{flex:none;position:relative;display:flex;align-items:center;justify-content:center;min-height:20px;margin:-6px 0 -4px}
 .dots{display:flex;justify-content:center;align-items:center;gap:8px;height:10px}
 .qchip{position:absolute;right:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:5px;height:20px;padding:0 6px;color:var(--ink2)}
+.mate{position:absolute;left:0;top:50%;transform:translateY(-50%);max-width:38%;display:flex;align-items:center;gap:5px;height:20px;padding:0 6px;color:var(--ink2);font-size:var(--f1);line-height:1}
+.mate b{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:clip;color:var(--ink)}
+.mate small{font-size:var(--f1);line-height:1}
+.mate-d{flex:none;width:6px;height:6px;background:var(--rose2)}
 .qchip b{font-size:var(--f1);line-height:1}
 .qchip.is-on{--bg:#fff1f6;--bc:var(--rose2);color:var(--rose2)}
 .qchip.press:active{transform:translateY(calc(-50% + var(--p)))}
@@ -472,6 +476,7 @@ input{-webkit-user-select:text;user-select:text}
 
     <div class="dot-row">
       <div class="dots" id="dots" aria-label="Комнаты"></div>
+      <span class="mate pb" id="mateChip" hidden><i class="mate-d"></i><b id="mateTx"></b><small>в игре</small></span>
       <button class="qchip pb press" id="qBtn" type="button" aria-haspopup="dialog" aria-label="Задания дня"><i data-ic="star" data-s="1.5"></i><b id="qTx">0 / 3</b></button>
     </div>
 
@@ -3208,7 +3213,7 @@ function emoteTick() {
 
 /* ---------- sheets (shop, wardrobe, garden) ---------- */
 const sheet = $('#sheet'), sheetBg = $('#sheetBg'), sheetBody = $('#sheetBody'), sheetTitle = $('#sheetTitle');
-const qBtn = $('#qBtn'), qTx = $('#qTx');
+const qBtn = $('#qBtn'), qTx = $('#qTx'), mateChip = $('#mateChip'), mateTx = $('#mateTx');
 let sheetOpen = false, sheetMode = '', sheetArg = null;
 const SHEETS = {};
 function openSheet(mode, arg) {
@@ -3509,9 +3514,9 @@ const ABOUT_LEN = 60;
 const STAT_ROWS = [
   ['days', 'Дней'], ['fed', 'Кормлений'], ['pet', 'Поглаживаний'], ['wash', 'Купаний'],
   ['games', 'Игр'], ['grown', 'Урожаев'], ['cook', 'Блюд'], ['msgs', 'Сообщений'], ['earn', 'Монет'],
-  ['ach', 'Достижений'],
+  ['ach', 'Достижений'], ['run', 'Дней подряд'],
 ];
-const WHO_FRESH = { about: '', face: '', fed: 0, pet: 0, wash: 0, games: 0, grown: 0, cook: 0, msgs: 0, earn: 0 };
+const WHO_FRESH = { about: '', face: '', fed: 0, pet: 0, wash: 0, games: 0, grown: 0, cook: 0, msgs: 0, earn: 0, run: 0, seen: 0, on: 0 };
 function whoRec(login) {
   const k = login || ME;
   if (!k) return null;
@@ -3694,6 +3699,40 @@ SHEETS.quest = {
   click() {},
 };
 qBtn.addEventListener('click', () => { Sound.tick(); openSheet('quest'); });
+/* ---------- серия дней и метка «второй в игре» ---------- */
+const RUN_MAX = 7;                                   /* дальше награда не растёт */
+const ONLINE = 150e3;                                /* столько держится метка после последней отметки */
+/* заход в новый день: серия растёт, пропуск её обнуляет */
+function runTick() {
+  const r = whoRec();
+  if (!r) return;
+  const d = mkDay(), seen = +r.seen || 0;
+  if (seen === d) return;
+  r.run = seen === d - 1 ? (+r.run || 0) + 1 : 1;
+  r.seen = d;
+  addCoins(20 + Math.min(r.run, RUN_MAX) * 10);
+  toast('День ' + r.run + ' подряд');
+  Sound.levelUp(); Haptic.tap(16);
+  save(); pushCard();
+}
+/* отметка «я здесь» едет вместе с обычной записью состояния, лишних не делает */
+function onTick() {
+  const r = whoRec();
+  if (!r || document.visibilityState !== 'visible') return;
+  const now = Date.now();
+  if (now - (+r.on || 0) < 60e3) return;
+  r.on = now; save();
+}
+function mate() {
+  if (!OWNERS || OWNERS.length !== 2 || !ME) return null;
+  const other = OWNERS.filter((l) => l !== ME)[0];
+  return other ? { login: other, rec: S.who[other] } : null;
+}
+function renderMate() {
+  const m = mate(), on = !!(m && m.rec && Date.now() - (+m.rec.on || 0) < ONLINE);
+  if (mateChip.hidden !== !on) mateChip.hidden = !on;
+  if (on && mateTx.textContent !== m.login) mateTx.textContent = m.login;
+}
 let aboutDraft = null;
 const profBtn = $('#profBtn');
 SHEETS.prof = {
@@ -4597,7 +4636,7 @@ if (PEOPLE) PEOPLE.watch((st) => {
   renderPeople();
   if (sheetMode === 'people' || sheetMode === 'person') renderSheet();
 });
-setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); mkTick(); achTick(); qTick(); }, 1000);
+setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); mkTick(); achTick(); qTick(); runTick(); onTick(); renderMate(); }, 1000);
 setInterval(saveNow, 10000);
 if (OWNERS && !IS_ADMIN && S.skin) { S.skin = ''; save(); }
 if (Sync) Sync.onRemote(applyRemote);
