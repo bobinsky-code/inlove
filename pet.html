@@ -1662,6 +1662,8 @@ const PLANT_C = {
   berry: { leaf: '#7ccb98', leaf2: '#5fb482', fruit: '#ff5f6e', fruit2: '#c93a4a' },
   blue: { leaf: '#6cbf8e', leaf2: '#4f9e78', fruit: '#7193f2', fruit2: '#4a5fc0' },
   pumpkin: { leaf: '#7ccb98', leaf2: '#5fb482', fruit: '#ffa24a', fruit2: '#e07a24' },
+  corn: { leaf: '#8ed49f', leaf2: '#5fb482', fruit: '#ffd65a', fruit2: '#e0a81f' },
+  melon: { leaf: '#6cbf8e', leaf2: '#4f9e78', fruit: '#4aae63', fruit2: '#2d7a44' },
 };
 const GREEN_O = '#3f7a55';
 function gardenBG(ctx, lw, lh, sky) {
@@ -1750,6 +1752,19 @@ function plantArt(id, stage) {
       const m = L.M(); L.ell(m, 8, young ? 11 : 9.5, young ? 4.2 : 6, young ? 3.4 : 5); L.part(L.clean(m), (x, y, mm) => (!L.has(mm, x, y + 1) ? P.leaf2 : P.leaf), G);
       stem(8, 14, 15);
       if (!young) [[5, 8], [9, 6], [11, 10], [7, 11], [10, 12]].forEach((b) => { L.pts([[b[0], b[1]], [b[0] + 1, b[1]], [b[0], b[1] + 1], [b[0] + 1, b[1] + 1]], P.fruit); L.px(b[0], b[1], '#b8c8ff'); });
+    } else if (id === 'corn') {
+      stem(8, young ? 7 : 3, 15);
+      (young ? [[5.5, 10, -0.7], [10.5, 10, 0.7]] : [[5, 11, -0.7], [11, 11, 0.7], [5.5, 7.5, -0.5], [10.5, 7.5, 0.5]])
+        .forEach((l) => leaf(l[0], l[1], 3, 1.3, l[2], P.leaf, P.leaf2));
+      if (!young) {
+        L.part(L.clean(L.ell(L.M(), 10, 9.5, 1.7, 3, 0.25)), (x, y) => ((x + y) % 2 ? '#fff0a8' : P.fruit), '#b07c14');
+        L.pts([[10, 5], [11, 6]], '#d8c070');
+      }
+    } else if (id === 'melon') {
+      leaf(4.5, young ? 11 : 8.5, 3, 2.2, -0.3, P.leaf, P.leaf2);
+      leaf(11.5, young ? 11 : 8.5, 3, 2.2, 0.3, P.leaf, P.leaf2);
+      stem(8, young ? 11 : 8, 13);
+      if (!young) L.part(L.clean(L.ell(L.M(), 8, 12.8, 4.4, 2.8)), (x, y) => (x % 4 === 1 ? P.fruit2 : P.fruit), '#1f5c30');
     } else if (id === 'pumpkin') {
       leaf(4, young ? 10 : 7, 2.6, 2, -0.3, P.leaf, P.leaf2); leaf(12, young ? 10 : 6, 2.6, 2, 0.3, P.leaf, P.leaf2);
       stem(8, young ? 10 : 6, 15);
@@ -1970,6 +1985,19 @@ const CROP_ART = {
     [[6, 3.8], [3.6, 8], [8.4, 8]].forEach((p) => { L.part(L.clean(L.ell(L.M(), p[0], p[1], 2.8, 2.8)), (x, y, m) => (!L.has(m, x + 1, y + 1) ? C.fruit2 : C.fruit), '#2f3f8a'); L.px(Math.round(p[0]) - 1, Math.round(p[1]) - 1, '#c3d0ff'); });
     return L.canvas();
   },
+  corn() {
+    const L = Lay(12, 12), C = PLANT_C.corn;
+    L.part(L.clean(L.ell(L.M(), 3.4, 8.4, 1.5, 3.2, -0.5)), C.leaf, GREEN_O);
+    L.part(L.clean(L.ell(L.M(), 6.8, 6.4, 2.5, 4.8, 0.3)), (x, y, mm) => (!L.has(mm, x + 1, y) || !L.has(mm, x, y + 1) ? C.fruit2 : (x + y) % 2 === 0 ? '#fff0a8' : C.fruit), '#b07c14');
+    L.pts([[8, 0], [9, 1], [7, 1]], '#d8c070');
+    return L.canvas();
+  },
+  melon() {
+    const L = Lay(12, 12), C = PLANT_C.melon;
+    L.part(L.clean(L.ell(L.M(), 6, 6.8, 5, 4.4)), (x, y, mm) => (!L.has(mm, x + 1, y) || !L.has(mm, x, y + 1) ? C.fruit2 : (x + (y > 6 ? 1 : 0)) % 4 === 0 ? C.fruit2 : C.fruit), '#1f5c30');
+    L.pts([[6, 1], [6, 2], [7, 1]], '#7a5a2a');
+    return L.canvas();
+  },
   pumpkin() {
     const L = Lay(12, 12), C = PLANT_C.pumpkin;
     L.part(L.clean(L.ell(L.M(), 6, 7, 5.4, 4.3)), (x, y) => (x === 3 || x === 6 || x === 9 ? C.fruit2 : y <= 4 ? '#ffc07a' : C.fruit), '#9a4a12');
@@ -1984,6 +2012,7 @@ const DISH_LOOK = {
   soup: ['bowl', '#ff9a3d', true], smoothie: ['glass', '#ff8fb8'], tea: ['cup', '#b8e0a0', true], puree: ['bowl', '#ffc04a'],
   fresh: ['glass', '#9fe0c0'], sleepy: ['cup', '#b39ce8', true], pie: ['pie', '#ff6f8a'], broth: ['bowl', '#ffe08a', true],
   jam: ['jar', '#6f7fe0'], muffin: ['muffin', '#ffa24a'], salad: ['salad', '#8fd48a'],
+  popcorn: ['bowl', '#ffe58a'], melonade: ['glass', '#ff7f86'],
 };
 function dishArt(id) {
   return art('dish:' + id, () => {
@@ -2148,6 +2177,8 @@ const PLANTS = [
   { id: 'berry', name: 'Клубника', price: 6, min: 5 },
   { id: 'blue', name: 'Черника', price: 7, min: 6 },
   { id: 'pumpkin', name: 'Тыква', price: 10, min: 8 },
+  { id: 'corn', name: 'Кукуруза', price: 14, min: 90, y: 4 },
+  { id: 'melon', name: 'Арбуз', price: 24, min: 360, y: 6 },
 ];
 const PLOT_PRICE = [0, 0, 0, 60, 100, 150], PLOT_LVL = [1, 1, 1, 2, 3, 4], HARVEST = 2;
 /* блюда из сада: рецепт — пара растений */
@@ -2162,6 +2193,8 @@ const DISHES = {
   pie: { name: 'Сладкий пирог', mix: 'berry+pumpkin', fun: 30, buff: 'xp2', min: 20 },
   jam: { name: 'Черничный джем', mix: 'blue+blue', fun: 10, xp: 15 },
   muffin: { name: 'Тыквенный кекс', mix: 'pumpkin+pumpkin', food: 20, buff: 'coins2', min: 20 },
+  popcorn: { name: 'Попкорн', mix: 'corn+corn', food: 15, fun: 30 },
+  melonade: { name: 'Арбузный сок', mix: 'melon+melon', fun: 20, energy: 20 },
   salad: { name: 'Салат', mix: null, food: 10, fun: 5 },
 };
 const SICK = { cold: { need: ['daisy', 'mint'], cure: 'простуду' }, tummy: { need: ['carrot', 'mint'], cure: 'живот' } };
@@ -2531,6 +2564,10 @@ function skyNow() {
 }
 const plantOf = (id) => PLANTS.find((p) => p.id === id) || PLANTS[0];
 function growLeft(pl) { return pl.t + plantOf(pl.p).min * 60e3 - Date.now(); }
+/* сколько даёт грядка: у долгих растений больше */
+const yieldOf = (id) => plantOf(id).y || HARVEST;
+/* 90 минут показываем как «1 ч 30 мин» */
+const minTX = (m) => { m = Math.max(1, Math.ceil(m)); const h = Math.floor(m / 60); return h ? h + ' ч' + (m % 60 ? ' ' + (m % 60) + ' мин' : '') : m + ' мин'; };
 function stageOf(pl) { const k = (Date.now() - pl.t) / (plantOf(pl.p).min * 60e3); return k < 0.12 ? 'seed' : k < 0.45 ? 'sprout' : k < 1 ? 'young' : 'ripe'; }
 
 /* ---------- the room scene: one pixel canvas ---------- */
@@ -3986,7 +4023,7 @@ function tapPlot(i, at) {
     return;
   }
   if (stageOf(pl) === 'ripe') harvest(i, at);
-  else { toast('Ещё ' + Math.max(1, Math.ceil(growLeft(pl) / 60e3)) + ' мин'); Sound.tick(); }
+  else { toast('Ещё ' + minTX(growLeft(pl) / 60e3)); Sound.tick(); }
 }
 function plantSeed(i, id) {
   if (S.garden.plots[i] || !((S.garden.seeds[id] || 0) > 0)) return false;
@@ -3998,10 +4035,11 @@ function plantSeed(i, id) {
 function harvest(i, at) {
   const id = S.garden.plots[i].p;
   S.garden.plots[i] = null;
-  S.garden.crops[id] = (S.garden.crops[id] || 0) + HARVEST;
+  const got = yieldOf(id);
+  S.garden.crops[id] = (S.garden.crops[id] || 0) + got;
   Sound.harvest(); Haptic.tap(10);
   FX.burst(at.x, at.y, { n: 10, speed: 200, g: 300, hearts: 0.2, colors: [PLANT_C[id].fruit, PLANT_C[id].leaf, '#ffffff'], unit: Scene.px * 0.6 });
-  floatText(at.x, at.y - 10, '+' + HARVEST, '#3f8f66');
+  floatText(at.x, at.y - 10, '+' + got, '#3f8f66');
   addXP(2); bump('grown'); save(); Scene.kick();
 }
 SHEETS.seeds = {
@@ -4009,7 +4047,7 @@ SHEETS.seeds = {
   render() {
     let html = '';
     PLANTS.forEach((p) => {
-      html += rowHTML('data-seed="' + p.id + '"', imgTag('crop-' + p.id, cropArt(p.id), 3.5), p.name, p.min + ' мин · семян: ' + (S.garden.seeds[p.id] || 0), '<span class="buy pb">' + icon('coin', 1.5) + p.price + '</span>');
+      html += rowHTML('data-seed="' + p.id + '"', imgTag('crop-' + p.id, cropArt(p.id), 3.5), p.name, minTX(p.min) + ' · семян: ' + (S.garden.seeds[p.id] || 0), '<span class="buy pb">' + icon('coin', 1.5) + p.price + '</span>');
     });
     const n = S.garden.plots.length;
     if (n < 6) html += '<p class="sec">Сад</p>' + rowHTML('data-plot="1"', imgTag('soil', obj('soil'), 2.5), 'Новая грядка', 'Грядок: ' + n + ' из 6', priceTag(PLOT_PRICE[n], PLOT_LVL[n], false, ''));
@@ -4039,7 +4077,7 @@ SHEETS.plant = {
   render() {
     let html = '';
     PLANTS.filter((p) => (S.garden.seeds[p.id] || 0) > 0).forEach((p) => {
-      html += rowHTML('data-plant="' + p.id + '"', imgTag('crop-' + p.id, cropArt(p.id), 3.5), p.name, p.min + ' мин', '<span class="buy pb is-owned">×' + S.garden.seeds[p.id] + '</span>');
+      html += rowHTML('data-plant="' + p.id + '"', imgTag('crop-' + p.id, cropArt(p.id), 3.5), p.name, minTX(p.min) + ' · +' + yieldOf(p.id), '<span class="buy pb is-owned">×' + S.garden.seeds[p.id] + '</span>');
     });
     html += rowHTML('data-more="1"', icon('seed', 3), 'Семена', 'Купить ещё', '');
     sheetBody.innerHTML = html;
