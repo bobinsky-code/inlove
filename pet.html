@@ -2167,7 +2167,7 @@ function freshGarden() { return { plots: [null, null, null], seeds: {}, crops: {
 function fresh(now) {
   return { v: 1, name: 'Питомец', t: now, food: 80, fun: 75, energy: 90, clean: 85, sleeping: false, xp: 0, lvl: 1, coins: 50, owned: {}, walls: { pink: true }, wall: 'pink', best: { catch: 0, run: 0 }, petWin: { t: now, n: 0 }, room: 0, home: 0,
     wardrobe: {}, wear: {}, garden: freshGarden(), sick: null, healedAt: 0, buffs: {}, skin: '', created: now,
-    mail: {}, mailSeen: {}, who: {} };
+    mail: {}, mailSeen: {}, who: {}, mk: '' };
 }
 function load() {
   const now = Date.now(), f = fresh(now);
@@ -3333,9 +3333,28 @@ function mkPick(day, list, n) {
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; }
   return a.slice(0, n);
 }
-const mkToday = () => mkPick(mkDay(), CLOTHES, MK_DAY);
+/* набор дня лежит в общем состоянии — «<номер дня>|id,id,...». Считается он
+   одинаково у обоих, но записанный набор главнее расчёта: тогда у пары одна и
+   та же витрина, даже если часы на телефонах разошлись или у кого-то открыта
+   старая версия игры с другим списком вещей. */
+function mkToday() {
+  const d = mkDay(), p = String(S.mk || '').split('|'), sd = +p[0];
+  /* чужой день на сутки вперёд принимаем как есть: у кого-то часы спешат, но
+     витрина у пары должна остаться общей. Пересчитываем, только если
+     записанный день отстал или уехал совсем далеко. */
+  if (p[1] && sd >= d && sd <= d + 1) {
+    const saved = p[1].split(',').map((id) => CLOTHES.find((c) => c.id === id)).filter(Boolean);
+    if (saved.length) return saved;
+  }
+  const list = mkPick(d, CLOTHES, MK_DAY);
+  S.mk = d + '|' + list.map((c) => c.id).join(',');
+  save();
+  return list;
+}
+let mkShown = -1;
 function mkTick() {
   if (!sheetOpen || sheetMode !== 'shop') return;
+  if (mkShown !== mkDay()) { renderSheet(); return; }   /* наступил новый день — витрина меняется прямо так */
   const el = $('#mkLeft');
   if (el) el.textContent = mkLeftTX();
 }
@@ -3346,6 +3365,7 @@ SHEETS.shop = {
   title: 'Магазин',
   render() {
     const keep = $$('.mk-row', sheetBody).map((r) => r.scrollLeft), top = sheetBody.scrollTop;
+    mkShown = mkDay();
     const nb = art('niche:72x56', () => OBJ.niche(72, 56)), ns = art('niche:52x44', () => OBJ.niche(52, 44));
     let html = '<div class="mk-awn" style="' + mkBG('mkAwn', art('mkAwn', OBJ.awning), 2) + '"></div>';
     html += '<div class="mk-h"><p>Сегодня в продаже</p><b id="mkLeft">' + mkLeftTX() + '</b></div>';
