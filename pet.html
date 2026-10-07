@@ -1052,6 +1052,138 @@ OBJ.tubFront = (tw) => {
 OBJ.tubTap = () => spr(['..kkk.', '.k...k', 'kk...k', 'k....k', '.....k', '....kk'], { k: '#b6a6dc' });
 
 /* ---------- rooms ---------- */
+/* ---------- мебель, которую можно купить ---------- */
+OBJ.shelf = () => {                                   /* книжная полка на стену */
+  const L = Lay(22, 13);
+  L.part(L.rect(L.M(), 0, 9, 22, 2), (x, y) => (y === 9 ? '#f3dccd' : '#d6ad95'), '#c99a7e');
+  [['#ff8fa8', 2, 7], ['#9fd2ff', 3, 8], ['#ffd25a', 2, 6], ['#b2e8c6', 3, 8], ['#c9b2ee', 2, 7], ['#ffb27a', 3, 6]].forEach((b, i, a) => {
+    const x0 = 2 + a.slice(0, i).reduce((n, q) => n + q[1] + 1, 0);
+    L.part(L.rect(L.M(), x0, 9 - b[2], b[1], b[2]), (x, y) => (y === 9 - b[2] ? WHITE : b[0]), '#8e5470');
+  });
+  L.pts([[1, 11], [20, 11], [1, 12], [20, 12]], '#c99a7e');
+  return L.canvas();
+};
+OBJ.pillow = () => {                                  /* подушка на пол */
+  const L = Lay(17, 8);
+  L.part(L.clean(L.ell(L.M(), 8, 4.5, 8, 3.4)), (x, y, m) => (!L.has(m, x, y + 1) ? '#e0708f' : y <= 3 ? '#ffb3cb' : '#ff9fbd'), '#c7577a');
+  L.pts([[5, 3], [11, 3], [8, 5]], '#ffd6e2');
+  return L.canvas();
+};
+OBJ.poster = () => {                                  /* плакат с косточкой */
+  const L = Lay(16, 20);
+  L.part(L.rect(L.M(), 0, 0, 16, 20), (x, y) => (y <= 1 || y >= 18 ? '#ffe3ec' : '#fff6f9'), '#e897b1');
+  const pw = L.M();
+  L.ell(pw, 8, 12, 3.6, 3);
+  [[4.4, 7.6], [7.4, 6.4], [10.6, 7.4], [12.4, 10]].forEach((q) => L.ell(pw, q[0], q[1], 1.7, 1.8));
+  L.part(L.clean(pw), (x, y, m) => (!L.has(m, x, y + 1) ? '#e0708f' : '#ff9fbd'), '#c7577a');
+  L.fill(3, 3, 10, 1, '#ffc2d4'); L.fill(3, 16, 10, 1, '#ffc2d4');
+  return L.canvas();
+};
+OBJ.kettle = () => {                                  /* чайник на тумбу */
+  const L = Lay(15, 13);
+  L.part(L.clean(L.ell(L.M(), 7, 8, 5.4, 4.4)), (x, y, m) => (!L.has(m, x + 1, y) || !L.has(m, x, y + 1) ? '#c9577a' : x <= 4 ? '#ffb3cb' : '#ff8fa8'), '#9e3f5e');
+  L.part(L.poly(L.M(), [[12, 5], [14, 4], [14, 9], [12, 8]]), '#ff8fa8', '#9e3f5e');
+  L.part(L.rect(L.M(), 5, 2, 5, 2), '#e0708f', '#9e3f5e');
+  L.pts([[4, 3], [10, 3]], '#9e3f5e'); L.px(6, 6, '#ffd6e2');
+  return L.canvas();
+};
+OBJ.jars = () => {                                    /* банки на полке */
+  const L = Lay(23, 14);
+  L.part(L.rect(L.M(), 0, 11, 23, 2), (x, y) => (y === 11 ? '#f3dccd' : '#d6ad95'), '#c99a7e');
+  [[2, '#ffd25a', 5], [9, '#b2e8c6', 6], [16, '#ff9fbd', 4]].forEach((j) => {
+    L.part(L.rect(L.M(), j[0], 11 - j[2], 5, j[2]), (x, y) => (x === j[0] ? '#fff6f9' : j[1]), '#a8708a');
+    L.part(L.rect(L.M(), j[0], 11 - j[2] - 1, 5, 1), '#d6ad95', '#a8708a');
+  });
+  return L.canvas();
+};
+OBJ.fruit = () => {                                   /* ваза с фруктами */
+  const L = Lay(16, 12);
+  L.part(L.clean(L.ell(L.M(), 8, 4.5, 2.4, 2.4)), (x, y) => (y <= 3 ? '#ff8fa8' : '#e0607f'), '#a8304f');
+  L.part(L.clean(L.ell(L.M(), 4.5, 5.5, 2.4, 2.2)), (x, y) => (y <= 4 ? '#ffd25a' : '#e8a82c'), '#b07818');
+  L.part(L.clean(L.ell(L.M(), 11.5, 5.5, 2.4, 2.2)), (x, y) => (y <= 4 ? '#b2e8c6' : '#6cc79a'), '#3f7a55');
+  L.pts([[8, 2], [9, 1]], '#6cc79a');
+  L.part(L.poly(L.M(), [[2, 7], [14, 7], [12, 11], [4, 11]]), (x, y) => (y === 7 ? '#fff6f9' : x <= 5 ? '#ffe3ec' : '#ffc2d4'), '#c7577a');
+  return L.canvas();
+};
+OBJ.bathShelf = () => {                               /* полка с баночками в ванной */
+  const L = Lay(20, 13);
+  L.part(L.rect(L.M(), 0, 10, 20, 2), (x, y) => (y === 10 ? '#f6f7ff' : '#c3c9e6'), '#9aa2c8');
+  [[2, '#9fd2ff', 6], [8, '#c9b2ee', 7], [14, '#b2e8c6', 5]].forEach((b) => {
+    L.part(L.rect(L.M(), b[0], 10 - b[2], 4, b[2]), (x) => (x === b[0] ? '#fff6f9' : b[1]), '#8e95bb');
+    L.px(b[0] + 1, 10 - b[2] - 1, '#8e95bb'); L.px(b[0] + 2, 10 - b[2] - 1, '#8e95bb');
+  });
+  return L.canvas();
+};
+OBJ.basket = () => {                                  /* корзина для белья */
+  const L = Lay(18, 21);
+  L.part(L.poly(L.M(), [[2, 4], [16, 4], [14, 20], [4, 20]]), (x, y) => ((x + y) % 3 === 0 ? '#e8d7bd' : y >= 18 ? '#c9a87e' : '#dcc5a0'), '#a8875e');
+  L.part(L.rect(L.M(), 1, 2, 16, 2), (x, y) => (y === 2 ? '#f3e6d2' : '#dcc5a0'), '#a8875e');
+  L.part(L.clean(L.ell(L.M(), 9, 3, 4.4, 1.6)), WHITE, '#d8d2dc');
+  return L.canvas();
+};
+OBJ.duck = () => {                                    /* уточка в ванной */
+  const L = Lay(12, 10);
+  L.part(L.clean(L.ell(L.M(), 5.5, 7, 4.6, 2.6)), (x, y) => (y >= 8 ? '#e8a82c' : '#ffd25a'), '#b07818');
+  L.part(L.clean(L.ell(L.M(), 8, 3.5, 2.6, 2.6)), (x, y) => (y <= 2 ? '#ffe08a' : '#ffd25a'), '#b07818');
+  L.pts([[10, 4], [11, 4]], '#ff8a3a'); L.px(8, 3, '#2d1b22');
+  return L.canvas();
+};
+OBJ.potB = () => {                                    /* папоротник в горшке */
+  const L = Lay(15, 20);
+  [[7, 8, -0.2], [3, 10, -0.9], [11, 10, 0.9], [5, 6, -0.5], [9, 6, 0.5]].forEach((f) =>
+    L.part(L.clean(L.ell(L.M(), f[0], f[1], 1.6, 5, f[2])), (x, y, m) => (!L.has(m, x + 1, y) ? '#4f9e78' : '#7ccb98'), '#3f7a55'));
+  L.part(L.poly(L.M(), [[3, 13], [12, 13], [10, 19], [5, 19]]), (x, y) => (y === 13 ? '#ffd0b0' : x <= 5 ? '#ffb98f' : '#f09a६8'.replace('६', '6')), '#c97a4a');
+  return L.canvas();
+};
+OBJ.curtains = () => {                                /* шторы на окно */
+  const L = Lay(33, 30);
+  L.part(L.rect(L.M(), 0, 0, 33, 3), (x, y) => (y === 0 ? '#ffe3ec' : '#e897b1'), '#c7577a');
+  [0, 25].forEach((x0) => L.part(L.rect(L.M(), x0, 3, 8, 26), (x, y) => ((x - x0) % 3 === 0 ? '#ff9fbd' : (x - y) % 7 === 0 ? '#ffd6e2' : '#ffb3cb'), '#c7577a'));
+  L.pts([[8, 14], [24, 14], [8, 15], [24, 15]], '#ffd25a');
+  return L.canvas();
+};
+OBJ.nightLamp = () => {                               /* ночник на тумбу */
+  const L = Lay(13, 15);
+  L.part(L.poly(L.M(), [[3, 1], [10, 1], [12, 8], [1, 8]]), (x, y) => (y >= 7 ? '#e8a82c' : x <= 4 ? '#fff1b0' : '#ffd25a'), '#b07818');
+  L.fill(6, 9, 2, 4, '#c9b2ee');
+  L.part(L.clean(L.ell(L.M(), 6.5, 13.5, 4, 1.6)), '#9b7fd0', '#6f55a8');
+  return L.canvas();
+};
+OBJ.stars = () => {                                   /* звёзды на стене */
+  const L = Lay(38, 24);
+  const star = (x, y, c) => L.pts([[x, y - 1], [x - 1, y], [x, y], [x + 1, y], [x, y + 1]], c);
+  [[4, 4], [14, 2], [25, 5], [34, 3], [9, 12], [20, 10], [30, 13], [3, 19], [16, 20], [27, 18], [36, 16]].forEach((p, i) =>
+    star(p[0], p[1], i % 3 === 0 ? '#fff1b0' : i % 3 === 1 ? '#ffd25a' : '#c9b2ee'));
+  [[14, 2], [20, 10], [27, 18]].forEach((p) => L.px(p[0], p[1], WHITE));
+  return L.canvas();
+};
+OBJ.hoop = () => {                                    /* кольцо для мячика */
+  const L = Lay(20, 21);
+  L.part(L.rect(L.M(), 3, 0, 14, 11), (x, y) => (y <= 1 ? '#fff6f9' : x <= 5 ? '#ffe3ec' : '#ffd0de'), '#e897b1');
+  L.part(L.rect(L.M(), 7, 3, 6, 5), () => '#ff8fa8', '#c7577a');
+  L.part(L.rect(L.M(), 5, 11, 10, 2), () => '#ff6170', '#b8324a');
+  for (let k = 0; k < 7; k++) { const w = 9 - k; const x0 = 5 + Math.floor((10 - w) / 2); for (let x = x0; x < x0 + w; x++) if ((x + k) % 2 === 0) L.px(x, 13 + k, '#fff6f9'); }
+  return L.canvas();
+};
+OBJ.poster4 = () => {                                 /* плакат в игровой */
+  const L = Lay(17, 22);
+  L.part(L.rect(L.M(), 0, 0, 17, 22), (x, y) => (y <= 1 || y >= 20 ? '#d4ecff' : '#f6fbff'), '#6f9fd6');
+  L.part(L.clean(L.ell(L.M(), 8, 8, 5.4, 5)), (x, y) => (y <= 6 ? '#ffd25a' : '#e8a82c'), '#b07818');
+  L.pts([[6, 7], [10, 7]], '#2d1b22'); L.pts([[7, 10], [8, 11], [9, 10]], '#2d1b22');
+  L.fill(3, 16, 11, 1, '#9fd2ff'); L.fill(5, 18, 7, 1, '#9fd2ff');
+  return L.canvas();
+};
+OBJ.tunnel = () => {                                  /* туннель для игр */
+  const L = Lay(34, 20);
+  const m = L.M();
+  L.ell(m, 17, 14, 17, 9);
+  for (let y = 0; y < 20; y++) for (let x = 0; x < 34; x++) if (y > 18) m[y * 34 + x] = 0;
+  L.part(L.clean(m), (x, y) => (Math.floor(x / 4) % 2 ? '#9fd2ff' : '#ffd25a'), '#6f9fd6');
+  L.part(L.clean(L.ell(L.M(), 17, 15, 6.4, 6)), (x, y) => (y <= 11 ? '#3a3350' : '#272238'));
+  L.part(L.clean(L.ell(L.M(), 17, 15, 7.6, 7)), null, '#4f74db');
+  return L.canvas();
+};
+
 const objCache = {};
 const obj = (name, arg) => { const k = name + ':' + (arg || ''); return objCache[k] || (objCache[k] = OBJ[name](arg)); };
 const floorY = (lh) => Math.round(lh * 0.7);
@@ -1069,18 +1201,23 @@ function roomLayout(i, lw, lh) {
     P.wardrobe = [2, fy + 2 - 49]; P.window = [Math.round(lw * 0.42) - 13, 6]; P.picture = [lw - 26, 9];
     P.plant = [lw - 34, fy + 5 - 28]; P.lamp = [lw - 16, fy + 3 - 46]; P.rug = [cx - 26, lh - 13]; P.ball = [Math.round(lw * 0.64), lh - 10];
     P.bear = [1, lh - 23]; P.heart = [P.bear[0] + 5, P.bear[1] + 10];
+    P.shelf = [30, 37]; P.pillow = [24, lh - 9]; P.poster = [52, 33];
   } else if (i === 1) {
     P.fridge = [2, fy + 3 - 46]; P.counter = [lw - 41, fy + 2 - 30]; P.clock = [cx - 8, 5];
     const tw = tableW(lw); P.table = [cx - (tw >> 1), lh - 20]; P.tw = tw;
     P.dish = [cx + 16, lh - 20];
+    P.jars = [31, 26]; P.kettle = [58, fy - 32]; P.fruit = [cx - 29, lh - 31];
   } else if (i === 2) {
     const tw = tubW(lw); P.tw = tw; P.tub = [cx - (tw >> 1), lh - 28]; P.water = lh - 24;
     P.mirror = [lw - 21, 6]; P.towel = [3, Math.round(fy * 0.4)];
+    P.bshelf = [4, Math.round(fy * 0.68)]; P.potB = [lw - 17, fy - 17]; P.duck = [cx + 3, P.water - 8];
   } else if (i === 3) {
     P.window = [3, 6]; P.stand = [3, fy + 2 - 30];
     P.bed = [lw - 54, lh - 17]; P.blanket = [lw - 49, lh - 10];
+    P.curtains = [0, 3]; P.stars = [lw - 42, 10]; P.nlamp = [lw - 16, fy - 15]; P.basket = [cx + 4, fy - 21];
   } else if (i === 4) {
     P.toybox = [2, fy + 3 - 26]; P.blocks = [lw - 24, fy + 3 - 24]; P.ball = [Math.round(lw * 0.74), lh - 10];
+    P.hoop = [lw - 25, 12]; P.poster4 = [6, 16]; P.tunnel = [lw - 39, lh - 24];
   } else {
     P.hz = Math.round(lh * 0.3);
   }
@@ -1122,7 +1259,10 @@ function drawRoom(ctx, i, lw, lh, o) {
       for (let y = -4; y < 18; y++) for (let x = -8; x < 23; x++) { const dx = (x - 7.5) / 13, dy = (y - 7) / 11, d = dx * dx + dy * dy; if (d <= 1 && ((x + y) % 2 === 0 || d < 0.45)) ctx.fillRect(lx + x, ly + y, 1, 1); }
       put(obj('lamp'), P.lamp);
     }
+    if (owned.shelf) put(obj('shelf'), P.shelf);
+    if (owned.poster) put(obj('poster'), P.poster);
     if (owned.rug) put(obj('rug'), P.rug);
+    if (owned.pillow) put(obj('pillow'), P.pillow);
     put(obj('bear'), P.bear);
     if (owned.ball) put(obj('ball'), P.ball);
   } else if (i === 1) {
@@ -1136,6 +1276,8 @@ function drawRoom(ctx, i, lw, lh, o) {
     put(obj('fridge'), P.fridge);
     put(obj('counter'), P.counter);
     put(obj('clockFace'), P.clock);
+    if (owned.jars) put(obj('jars'), P.jars);
+    if (owned.kettle) put(obj('kettle'), P.kettle);
   } else if (i === 2) {
     const split = Math.round(fy * 0.34);
     ctx.fillStyle = '#f4f1ff'; ctx.fillRect(0, 0, lw, split);
@@ -1145,6 +1287,8 @@ function drawRoom(ctx, i, lw, lh, o) {
     pattern(ctx, 0, fy, lw, lh - fy, (x, y) => (x % 10 === 0 || y % 8 === 7 ? '#eef1fb' : '#d9dff5'));
     edge('#c3c9e6');
     put(obj('mirror'), P.mirror); put(obj('towel'), P.towel);
+    if (owned.bshelf) put(obj('bathShelf'), P.bshelf);
+    if (owned.potB) put(obj('potB'), P.potB);
     put(obj('tubBack', P.tw), [P.tub[0], P.tub[1] - 4]);
     put(obj('tubTap'), [P.tub[0] + P.tw - 9, P.tub[1] - 7]);
   } else if (i === 3) {
@@ -1156,7 +1300,11 @@ function drawRoom(ctx, i, lw, lh, o) {
     pattern(ctx, 0, fy, lw, lh - fy, (x, y) => (x % 14 === 0 ? '#bea5e2' : y % 6 === 0 ? '#d2bdef' : '#cbb4ea'));
     edge('#ad93d6');
     put(obj('window', o.sky), P.window);
+    if (owned.curtains) put(obj('curtains'), P.curtains);
+    if (owned.stars) put(obj('stars'), P.stars);
     put(obj('nightstand'), P.stand);
+    if (owned.basket) put(obj('basket'), P.basket);
+    if (owned.nlamp) put(obj('nightLamp'), P.nlamp);
     if (owned.bed) put(obj('bed'), P.bed); else put(obj('blanket'), P.blanket);
   } else if (i === 4) {
     pattern(ctx, 0, 0, lw, fy, (x, y) => {
@@ -1177,6 +1325,9 @@ function drawRoom(ctx, i, lw, lh, o) {
       ctx.fillStyle = FL[k % 4];
       [5, 5, 3, 3, 1].forEach((wd, r) => ctx.fillRect(x + (5 - wd) / 2, y + r, wd, 1));
     }
+    if (owned.poster4) put(obj('poster4'), P.poster4);
+    if (owned.hoop) put(obj('hoop'), P.hoop);
+    if (owned.tunnel) put(obj('tunnel'), P.tunnel);
     put(obj('toybox'), P.toybox); put(obj('blocks'), P.blocks); put(obj('ball'), P.ball);
   } else {
     gardenBG(ctx, lw, lh, o.sky);
@@ -1265,8 +1416,10 @@ function drawRoomFront(ctx, i, lw, lh, ox, o) {
     const bowl = obj('bowlT', o.owned && o.owned.bigbowl ? 1 : '');
     ctx.drawImage(bowl, dx - (bowl.width >> 1), dy - bowl.height + 2);
     if (o.food && !o.foodAway) ctx.drawImage(o.food, dx - 8, dy - bowl.height - 11);
+    if (o.owned && o.owned.fruit) ctx.drawImage(obj('fruit'), ox + P.fruit[0], P.fruit[1]);
   } else if (i === 2) {
     ctx.drawImage(obj('tubFront', P.tw), ox + P.tub[0], P.tub[1]);
+    if (o.owned && o.owned.duck) ctx.drawImage(obj('duck'), ox + P.duck[0], P.duck[1]);
   } else if (i === 5 && o.sky === 'night') {
     ctx.fillStyle = 'rgba(30,20,70,.32)'; ctx.fillRect(ox, 0, lw, lh);
   }
@@ -2365,14 +2518,31 @@ const FOODS = [
   { id: 'steak', name: 'Стейк', price: 30, food: 45, fun: 10, lvl: 3, xp: 8 },
 ];
 const ITEMS = [
-  { id: 'rug', name: 'Коврик', sec: 'Комната', price: 40, lvl: 1 },
-  { id: 'ball', name: 'Мячик', sec: 'Комната', price: 60, lvl: 1, fx: 'Настроение падает медленнее' },
-  { id: 'plant', name: 'Растение', sec: 'Комната', price: 70, lvl: 2 },
-  { id: 'picture', name: 'Картина', sec: 'Комната', price: 90, lvl: 3 },
-  { id: 'lamp', name: 'Торшер', sec: 'Комната', price: 110, lvl: 4 },
-  { id: 'garland', name: 'Гирлянда', sec: 'Комната', price: 130, lvl: 5 },
-  { id: 'bigbowl', name: 'Большая миска', sec: 'Кухня', price: 120, lvl: 2, fx: 'Еда сытнее на 25%' },
-  { id: 'bed', name: 'Лежанка', sec: 'Спальня', price: 150, lvl: 3, fx: 'Сон быстрее: энергия за 40 минут' },
+  { id: 'rug', name: 'Коврик', sec: 'Комната', price: 40, lvl: 1, rare: 'common' },
+  { id: 'pillow', name: 'Подушка', sec: 'Комната', price: 50, lvl: 1, rare: 'common' },
+  { id: 'poster', name: 'Плакат', sec: 'Комната', price: 60, lvl: 2, rare: 'common' },
+  { id: 'ball', name: 'Мячик', sec: 'Комната', price: 60, lvl: 1, rare: 'common', fx: 'Настроение падает медленнее' },
+  { id: 'plant', name: 'Растение', sec: 'Комната', price: 70, lvl: 2, rare: 'uncommon' },
+  { id: 'shelf', name: 'Книжная полка', sec: 'Комната', price: 80, lvl: 2, rare: 'uncommon' },
+  { id: 'picture', name: 'Картина', sec: 'Комната', price: 90, lvl: 3, rare: 'uncommon' },
+  { id: 'lamp', name: 'Торшер', sec: 'Комната', price: 110, lvl: 4, rare: 'rare' },
+  { id: 'garland', name: 'Гирлянда', sec: 'Комната', price: 130, lvl: 5, rare: 'rare' },
+  { id: 'kettle', name: 'Чайник', sec: 'Кухня', price: 60, lvl: 2, rare: 'common' },
+  { id: 'jars', name: 'Банки на полке', sec: 'Кухня', price: 80, lvl: 2, rare: 'uncommon' },
+  { id: 'fruit', name: 'Ваза с фруктами', sec: 'Кухня', price: 90, lvl: 3, rare: 'uncommon' },
+  { id: 'bigbowl', name: 'Большая миска', sec: 'Кухня', price: 120, lvl: 2, rare: 'uncommon', fx: 'Еда сытнее на 25%' },
+  { id: 'bshelf', name: 'Полка с баночками', sec: 'Ванная', price: 70, lvl: 2, rare: 'uncommon' },
+
+  { id: 'potB', name: 'Папоротник', sec: 'Ванная', price: 100, lvl: 3, rare: 'uncommon' },
+  { id: 'duck', name: 'Уточка', sec: 'Ванная', price: 140, lvl: 3, rare: 'rare' },
+  { id: 'basket', name: 'Корзина для белья', sec: 'Спальня', price: 90, lvl: 3, rare: 'uncommon' },
+  { id: 'nlamp', name: 'Ночник', sec: 'Спальня', price: 110, lvl: 3, rare: 'uncommon' },
+  { id: 'curtains', name: 'Шторы', sec: 'Спальня', price: 140, lvl: 4, rare: 'rare' },
+  { id: 'bed', name: 'Лежанка', sec: 'Спальня', price: 150, lvl: 3, rare: 'rare', fx: 'Сон быстрее: энергия за 40 минут' },
+  { id: 'stars', name: 'Звёзды на стене', sec: 'Спальня', price: 180, lvl: 4, rare: 'rare' },
+  { id: 'poster4', name: 'Плакат с мячом', sec: 'Игровая', price: 60, lvl: 2, rare: 'common' },
+  { id: 'hoop', name: 'Кольцо', sec: 'Игровая', price: 160, lvl: 4, rare: 'rare' },
+  { id: 'tunnel', name: 'Туннель', sec: 'Игровая', price: 220, lvl: 5, rare: 'epic' },
 ];
 const WALLS = [
   { id: 'pink', name: 'Розовые', price: 0, lvl: 1 },
@@ -3630,7 +3800,15 @@ function buyCheck(el, price, lvl) {
 function burstAt(el, o) { const b = el.getBoundingClientRect(); FX.burst(b.right - 40, b.top + b.height / 2, Object.assign({ n: 16, speed: 260, g: 300, hearts: 0.3 }, o)); }
 
 /* shop */
-const THUMB = { rug: () => obj('rug'), ball: () => obj('ball'), plant: () => obj('plant'), picture: () => obj('picture'), lamp: () => obj('lamp'), garland: () => obj('garlandThumb'), bigbowl: () => obj('bowl', 1), bed: () => obj('bed') };
+const THUMB = {
+  rug: () => obj('rug'), ball: () => obj('ball'), plant: () => obj('plant'), picture: () => obj('picture'),
+  lamp: () => obj('lamp'), garland: () => obj('garlandThumb'), bigbowl: () => obj('bowl', 1), bed: () => obj('bed'),
+  pillow: () => obj('pillow'), poster: () => obj('poster'), shelf: () => obj('shelf'),
+  kettle: () => obj('kettle'), jars: () => obj('jars'), fruit: () => obj('fruit'),
+  bshelf: () => obj('bathShelf'), basket: () => obj('basket'), potB: () => obj('potB'), duck: () => obj('duck'),
+  nlamp: () => obj('nightLamp'), curtains: () => obj('curtains'), stars: () => obj('stars'),
+  poster4: () => obj('poster4'), hoop: () => obj('hoop'), tunnel: () => obj('tunnel'),
+};
 /* ---------- витрина: навес, полка, ниша ---------- */
 OBJ.awning = () => {
   const W = 16, H = 14, L = Lay(W, H);
@@ -3765,7 +3943,9 @@ SHEETS.shop = {
     html += '<div class="mk-h"><p>Мебель</p></div>';
     html += mkShelf(ITEMS.map((it) => {
       const own = !!S.owned[it.id];
-      return mkCard('data-kind="item" data-id="' + it.id + '"', mkCase('ns', ns, 2, thumb('it-' + it.id, THUMB[it.id](), 48)), it.name, it.fx || it.sec,
+      const r = RARE[it.rare] || RARE.common;
+      return mkCard('data-kind="item" data-id="' + it.id + '"', mkCase('ns', ns, 2, thumb('it-' + it.id, THUMB[it.id](), 48)), it.name,
+        it.fx || '<span style="color:' + r.c + '">' + r.t + '</span> · ' + it.sec,
         priceTag(it.price, it.lvl, own, 'Куплено'), 'mk-min' + (own ? ' is-own' : S.lvl < it.lvl ? ' is-soon' : ''));
     }));
     html += '<div class="mk-h"><p>Обои</p></div>';
@@ -5067,7 +5247,7 @@ setInterval(saveNow, 10000);
 (() => { const b = BREEDS.find((x) => x.id === S.skin); if (S.skin && (!b || !hasBreed(b))) { S.skin = ''; save(); } })();
 if (Sync) Sync.onRemote(applyRemote);
 $('#boot').hidden = true;
-if (location.hash === '#t') window.__t = { S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS, petFrame, PCOL, PET_BASE, BREEDS, SKINS, RARE, breedsDrop, WEARABLE, SUITS, CLOTHES, legendOn };
+if (location.hash === '#t') window.__t = { S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS, petFrame, PCOL, PET_BASE, BREEDS, SKINS, RARE, breedsDrop, WEARABLE, SUITS, CLOTHES, legendOn, ITEMS, renderRooms };
 
 /* разовое уведомление для favie */
 (() => {
