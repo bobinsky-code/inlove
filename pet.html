@@ -368,8 +368,7 @@ input{-webkit-user-select:text;user-select:text}
 .wd-item b{font-size:var(--f1);line-height:1.15;text-align:center}
 .wd-item.is-on{--bg:#fff1f6;--bc:var(--rose2)}
 .wd-item .rare{font-size:var(--f1);line-height:1.1;color:var(--ink2)}
-.wd-item.is-breed{--bc:#000}
-.wd-item.is-breed.is-on{--bg:#f3eef0;--bc:#000}
+.wd-item .rare{line-height:1.1}
 .wd-empty{grid-column:1/-1;margin:10px 2px;font-size:var(--f1);line-height:1.4;color:var(--ink2);text-align:center}
 .wd-item.is-soon{opacity:.55}
 
@@ -1270,21 +1269,85 @@ function frontCut(i, lw, lh) { return i === 1 ? lh - 19 : i === 2 ? lh - 24 : 1e
 
 /* ---------- the pet (temporary puppy, to be replaced by the real dogs) ---------- */
 const PW = 45, PH = 45;
+/* тон светлее или темнее: палитры пород считаются от одного цвета шерсти */
+const hex3 = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+function shade(h, k) {
+  const v = hex3(h), f = (c) => Math.max(0, Math.min(255, Math.round(k > 0 ? c + (255 - c) * k : c * (1 + k))));
+  return '#' + v.map((c) => f(c).toString(16).padStart(2, '0')).join('');
+}
 const PCOL = {
   fur: '#f6dcbc', furSh: '#e8c39c', furHi: '#fff1de', cream: '#fff8ee', creamSh: '#f3dfc6',
   ear: '#b98058', earSh: '#9a6544', spot: '#e6bd92', nose: '#4a2b2b', noseHi: '#8a5a5a', eye: '#2d1b22',
   blush: '#ffadc0', tongue: '#ff8fa8', mouth: '#7a2e3e', collar: '#ff7ea6', collarSh: '#e64f7e', tag: '#ffc978', tagSh: '#f0a838',
-  dirt: '#a3775a', dirt2: '#b88a64', tail: '#f6dcbc', tailSh: '#e8c39c',
+  dirt: '#a3775a', dirt2: '#b88a64', tail: '#f6dcbc', tailSh: '#e8c39c', m: {},
 };
+/* порода = цвет шерсти плюс отметины: подпалины, проточина, маска, крап, чепрак, стоячие уши */
+function skin(o) {
+  const f = o.fur, e = o.ear || shade(f, -0.28), m = Object.assign({}, o.m);
+  if (m.tan) { m.tanHi = m.tanHi || shade(m.tan, 0.18); }
+  if (m.saddle) { m.saddleSh = shade(m.saddle, -0.2); }
+  if (m.mask) { m.maskSh = shade(m.mask, -0.18); }
+  if (m.spots) { m.spotsSh = shade(m.spots, -0.18); }
+  const base = {
+    fur: f, furSh: shade(f, -0.16), furHi: shade(f, 0.14),
+    ear: e, earSh: shade(e, -0.22),
+    cream: '#fff8ee', creamSh: '#f3dfc6', spot: f,
+    nose: '#4a2b2b', noseHi: '#8a5a5a', eye: '#2d1b22',
+    blush: '#ffadc0', tongue: '#ff8fa8', mouth: '#7a2e3e',
+    collar: '#ff7ea6', collarSh: '#e64f7e', tag: '#ffc978', tagSh: '#f0a838',
+    dirt: '#a3775a', dirt2: '#b88a64', tail: f, tailSh: shade(f, -0.16),
+  };
+  const out = Object.assign(base, o);
+  out.m = m;
+  if (o.cream && !o.creamSh) out.creamSh = shade(o.cream, -0.1);
+  if (o.ear && !o.earSh) out.earSh = shade(o.ear, -0.22);
+  return out;
+}
 /* порода «Админ»: тёмная шерсть, рыжие подпалины, белая проточина и светлый хвост */
-const PCOL_ADMIN = {
-  fur: '#4a3a33', furSh: '#372a25', furHi: '#5d4a41', cream: '#fff6e8', creamSh: '#e7d4b8',
-  ear: '#332722', earSh: '#241a16', spot: '#4a3a33', nose: '#2a1b1a', noseHi: '#6b4a45', eye: '#241a1f',
-  blush: '#ffadc0', tongue: '#ff8fa8', mouth: '#7a2e3e', collar: '#ff7ea6', collarSh: '#e64f7e', tag: '#ffc978', tagSh: '#f0a838',
-  dirt: '#6b584a', dirt2: '#80695a', tail: '#f0dcbb', tailSh: '#d6ba90',
-  tan: '#c07a3c', tanHi: '#d99755',
+const PCOL_ADMIN = skin({
+  fur: '#4a3a33', ear: '#332722', cream: '#fff6e8', creamSh: '#e7d4b8',
+  nose: '#2a1b1a', noseHi: '#6b4a45', eye: '#241a1f', tail: '#f0dcbb', tailSh: '#d6ba90',
+  dirt: '#6b584a', dirt2: '#80695a', m: { tan: '#c07a3c', blaze: 1 },
+});
+/* 30 пород: чем реже порода в жизни, тем реже и в игре */
+const SKINS = {
+  '': PCOL, admin: PCOL_ADMIN,
+  /* обычные */
+  lab: skin({ fur: '#e5c488', ear: '#d8b273', cream: '#fff6e4' }),
+  shep: skin({ fur: '#c58a48', ear: '#3a2b23', m: { saddle: '#33281f', mask: '#5a4434', earUp: 1 } }),
+  chih: skin({ fur: '#e3bb7c', ear: '#d2a468', cream: '#fff4e2', m: { earUp: 1 } }),
+  dachs: skin({ fur: '#33281f', ear: '#241c16', cream: '#e8d7bd', nose: '#241a18', m: { tan: '#a9682c' } }),
+  york: skin({ fur: '#59606e', ear: '#464c58', cream: '#efd9a0', nose: '#2a222a', m: { tan: '#c9a04a' } }),
+  /* необычные */
+  frenchie: skin({ fur: '#ddc49a', ear: '#a98f६8'.replace('६','6'), cream: '#fff6ea', m: { mask: '#75604c', earUp: 2 } }),
+  corgi: skin({ fur: '#e0944a', ear: '#cc8038', cream: '#fff6ec', m: { blaze: 1, earUp: 1 } }),
+  husky: skin({ fur: '#8b919b', ear: '#44484f', cream: '#ffffff', creamSh: '#e8edf4', eye: '#3f94dc', m: { mask: '#3c4149', blaze: 1, earUp: 1 } }),
+  pug: skin({ fur: '#e8cf9c', ear: '#3b332c', cream: '#fff6e8', m: { mask: '#50453b' } }),
+  beagle: skin({ fur: '#fdf3e2', ear: '#8a5a32', cream: '#ffffff', creamSh: '#f0e4d2', m: { saddle: '#3a2b22', tan: '#c9904c' } }),
+  collie: skin({ fur: '#2e2a2c', ear: '#241f21', cream: '#ffffff', creamSh: '#e9e4e4', nose: '#1f1a1c', m: { blaze: 1 } }),
+  /* редкие */
+  dalmatian: skin({ fur: '#fdfbf8', ear: '#2a2420', cream: '#ffffff', creamSh: '#e9e4e0', nose: '#2a2420', m: { spots: '#2a2420' } }),
+  shiba: skin({ fur: '#d8793a', ear: '#bf6428', cream: '#fff2e0', m: { earUp: 1 } }),
+  dober: skin({ fur: '#231c1a', ear: '#181313', cream: '#b3763f', creamSh: '#99632f', nose: '#191313', m: { tan: '#a8572a', earUp: 1 } }),
+  samoyed: skin({ fur: '#fdfcfa', ear: '#ddd4c8', cream: '#ffffff', creamSh: '#ece5db', nose: '#3a2e2e', m: { earUp: 2 } }),
+  berner: skin({ fur: '#2a2320', ear: '#1e1917', cream: '#fff6e8', creamSh: '#e7d4b8', nose: '#1e1716', m: { tan: '#b4652c', blaze: 1 } }),
+  sharpei: skin({ fur: '#cfa270', ear: '#a9804f', cream: '#eedcc2', m: { mask: '#7a5c3c' } }),
+  /* эпические */
+  akita: skin({ fur: '#e3b06a', ear: '#cc9550', cream: '#fff8ee', m: { blaze: 1, earUp: 1 } }),
+  chow: skin({ fur: '#c96a2a', ear: '#ab5620', cream: '#e8b47a', creamSh: '#d09a5e', tongue: '#6a5ad0', m: { earUp: 1 } }),
+  ridge: skin({ fur: '#c98a52', ear: '#ae7442', cream: '#f2dcbe', m: { saddle: '#a86a36' } }),
+  basenji: skin({ fur: '#a85a24', ear: '#8e4a1c', cream: '#fff4e6', m: { blaze: 1, earUp: 1 } }),
+  xolo: skin({ fur: '#58505e', ear: '#403946', cream: '#675d6d', creamSh: '#564d5c', nose: '#262029', eye: '#1d1820', m: { earUp: 1 } }),
+  /* мифические */
+  azawakh: skin({ fur: '#d59a5a', ear: '#bd8344', cream: '#fff6ea', m: { blaze: 1 } }),
+  komondor: skin({ fur: '#f3ecdf', ear: '#d8cdb6', cream: '#fffaf0', creamSh: '#eee4d2', nose: '#3a3028', m: { cords: 1 } }),
+  tibet: skin({ fur: '#2a221e', ear: '#1d1715', cream: '#9a4a1e', creamSh: '#7e3a14', nose: '#1b1513', m: { tan: '#9a4a1e', mane: 1 } }),
+  catalburun: skin({ fur: '#ece0cc', ear: '#a8703a', cream: '#fffaf0', creamSh: '#e9ddc8', m: { patch: '#a8703a', split: 1 } }),
+  /* легендарные */
+  lundehund: skin({ fur: '#c98a4a', ear: '#b07638', cream: '#fff6e8', m: { earUp: 1, patch: '#9a6a30' } }),
+  otterhound: skin({ fur: '#9a8468', ear: '#6a5a48', cream: '#e8ddc8', creamSh: '#d4c6ab', m: { cords: 1 } }),
+  singer: skin({ fur: '#ef9a28', ear: '#d2821a', cream: '#fff2dc', m: { earUp: 1, blaze: 1 } }),
 };
-const SKINS = { '': PCOL, admin: PCOL_ADMIN };
 const TAILS = { 0: [[30, 37], [38, 38], [38, 29]], 1: [[30, 37], [39, 37], [41, 32]], 2: [[30, 37], [37, 37], [35, 28]], down: [[30, 39], [36, 42], [41, 42]] };
 const DIRT = [[13, 9, 2], [30, 24, 2], [16, 33, 3], [28, 37, 2], [33, 30, 1], [25, 8, 1], [12, 38, 2], [20, 29, 1], [31, 14, 1], [26, 33, 1]];
 /* clothes: kind + colours [main, shade, light] */
@@ -1334,7 +1397,9 @@ function petFrame(o) {
   const key = [o.eyes, o.mouth, o.ears, o.tail, o.hx, o.hy, o.by, o.pose, o.brows ? 1 : 0, o.blush ? 1 : 0, o.dirt, wr.head || '', wr.eyes || '', wr.neck || '', wr.body || '', o.cape ? 1 : 0, o.flap || 0, o.sick || '', skin].join('|');
   let f = petCache.get(key);
   if (f) return f;
-  const L = Lay(PW, PH), C = SKINS[skin] || PCOL, adm = skin === 'admin';
+  const L = Lay(PW, PH), C = SKINS[skin] || PCOL, M = C.m || {};
+  const onFur = (i) => L.c[i] === C.fur || L.c[i] === C.furSh || L.c[i] === C.furHi;
+  const paintFur = (mask, col, colSh) => { for (let i = 0; i < mask.length; i++) if (mask[i] && onFur(i)) L.c[i] = L.c[i] === C.furSh && colSh ? colSh : col; };
   const lie = o.pose === 'lie', hx = o.hx, hy = o.hy + (lie ? 5 : 0), by = o.by;
   const X = (x) => x + hx, Y = (y) => y + hy;
   const shadeFn = (base, sh, hi) => (x, y, m) => (!L.has(m, x, y + 2) || !L.has(m, x + 2, y + 1) ? sh : hi && x < 23 && (!L.has(m, x, y - 2) || !L.has(m, x - 2, y - 1)) ? hi : base);
@@ -1352,10 +1417,23 @@ function petFrame(o) {
     L.part(L.poly(L.M(), poly), (x, y, m) => (!L.has(m, x + 1, y) || !L.has(m, x, y + 1) ? cc[1] : !L.has(m, x - 1, y) ? cc[2] : cc[0]), INK);
   }
   /* ears behind the head */
-  const ea = o.ears === 'up' ? [8.2, 16.5, 4.6, 8.6] : o.ears === 'down' ? [10.2, 21, 4.2, 8.6] : [9, 18.5, 4.5, 8.8];
-  const em = L.M();
-  L.ell(em, ea[0] + hx, ea[1] + hy, ea[2], ea[3]); L.ell(em, 45 - ea[0] + hx, ea[1] + hy, ea[2], ea[3]);
+  const em = L.M(), upEar = M.earUp && o.ears !== 'up' && o.ears !== 'down';
+  if (upEar) {                                        /* стоячие уши: треугольником, у коротких выше основание */
+    const et = M.earUp === 2 ? 8 : 3.5;
+    L.poly(em, [[X(9.5), Y(23)], [X(20.5), Y(16)], [X(13), Y(et)]]);
+    L.poly(em, [[X(35.5), Y(23)], [X(24.5), Y(16)], [X(32), Y(et)]]);
+  } else {
+    const ea = o.ears === 'up' ? [8.2, 16.5, 4.6, 8.6] : o.ears === 'down' ? [10.2, 21, 4.2, 8.6] : [9, 18.5, 4.5, 8.8];
+    L.ell(em, ea[0] + hx, ea[1] + hy, ea[2], ea[3]); L.ell(em, 45 - ea[0] + hx, ea[1] + hy, ea[2], ea[3]);
+  }
   L.part(L.clean(em), (x, y, m) => (!L.has(m, x, y + 2) || !L.has(m, x + 1, y + 2) ? C.earSh : C.ear), INK);
+  if (upEar) {
+    const im = L.M(), inC = shade(C.ear, 0.4);
+    const et2 = M.earUp === 2 ? 11 : 7;
+    L.poly(im, [[X(12), Y(20)], [X(18), Y(16)], [X(14), Y(et2)]]);
+    L.poly(im, [[X(33), Y(20)], [X(27), Y(16)], [X(31), Y(et2)]]);
+    for (let i = 0; i < im.length; i++) if (im[i] && em[i] && L.c[i] !== INK) L.c[i] = inC;
+  }
   /* hood */
   if (wBody && wBody.k === 'hoodie') L.part(L.clean(L.ell(L.M(), 22.5 + hx, 23 + hy, 12.5, 6.5)), (x, y, m) => (!L.has(m, x, y + 1) ? wBody.c[1] : wBody.c[0]), INK);
   /* body */
@@ -1365,10 +1443,10 @@ function petFrame(o) {
   const bmc = L.clean(bm);
   L.part(bmc, shadeFn(C.fur, C.furSh), INK);
   if (!lie) L.part(L.ell(L.M(), 22.5, 35.5 + by, 5.5, 5.5), (x, y, m) => (!L.has(m, x, y + 2) ? C.creamSh : C.cream));
-  if (adm && !lie) {
+  if (M.tan && !lie) {
     const lg = L.M();
     L.ell(lg, 14.5, 39.5, 4.4, 3.6); L.ell(lg, 30.5, 39.5, 4.4, 3.6);
-    for (let i = 0; i < lg.length; i++) if (lg[i] && bmc[i] && L.c[i] !== INK) L.c[i] = C.tan;
+    for (let i = 0; i < lg.length; i++) if (lg[i] && bmc[i] && L.c[i] !== INK) L.c[i] = M.tan;
   }
   /* body clothes */
   if (wBody && (wBody.k === 'tee' || wBody.k === 'sweater' || wBody.k === 'hoodie')) {
@@ -1399,22 +1477,32 @@ function petFrame(o) {
   /* head */
   const hm = L.clean(L.ell(L.M(), 22.5 + hx, 16 + hy, 13, 11));
   L.part(hm, shadeFn(C.fur, C.furSh, C.furHi), INK);
-  const sm = L.ell(L.M(), 15.5 + hx, 14.5 + hy, 4.6, 4.3);
-  for (let i = 0; i < sm.length; i++) if (sm[i] && hm[i]) L.c[i] = C.spot;
-  const mm = L.ell(L.M(), 22.5 + hx, 21.5 + hy, 6.6, 4.6);
-  for (let y = 0; y < PH; y++) for (let x = 0; x < PW; x++) if (mm[y * PW + x] && hm[y * PW + x]) L.c[y * PW + x] = !L.has(mm, x, y + 1) ? C.creamSh : C.cream;
-  if (adm) {
+  const sm = L.ell(L.M(), 15.5 + hx, 14.5 + hy, 4.6, 4.3), pc = M.patch || C.spot;
+  for (let i = 0; i < sm.length; i++) if (sm[i] && hm[i]) L.c[i] = pc;
+  const mm = L.ell(L.M(), 22.5 + hx, (M.mask ? 21 : 21.5) + hy, M.mask ? 7 : 6.6, M.mask ? 5.1 : 4.6);
+  const mC = M.mask || C.cream, mCs = M.mask ? M.maskSh : C.creamSh;
+  for (let y = 0; y < PH; y++) for (let x = 0; x < PW; x++) if (mm[y * PW + x] && hm[y * PW + x]) L.c[y * PW + x] = !L.has(mm, x, y + 1) ? mCs : mC;
+  if (M.blaze) {
     const bz = L.poly(L.M(), [[X(21.3), Y(4)], [X(23.7), Y(4)], [X(25.2), Y(19)], [X(19.8), Y(19)]]);
     for (let y = 0; y < PH; y++) for (let x = 0; x < PW; x++) {
       const i = y * PW + x;
       if (bz[i] && hm[i] && !mm[i] && L.c[i] !== INK) L.c[i] = !L.has(bz, x + 1, y) ? C.creamSh : C.cream;
     }
+  }
+  if (M.tan) {
     const ch = L.M();
     L.ell(ch, X(13.5), Y(20), 3.4, 3.6); L.ell(ch, X(31.5), Y(20), 3.4, 3.6);
-    for (let i = 0; i < ch.length; i++) if (ch[i] && hm[i] && !mm[i] && L.c[i] !== INK) L.c[i] = C.tan;
-    const brow = (bx) => { for (let dx = 0; dx < 4; dx++) for (let dy = 0; dy < 2; dy++) { const xx = X(bx + dx), yy = Y(10 + dy), i = yy * PW + xx; if (L.in(xx, yy) && hm[i] && L.c[i] !== INK) L.c[i] = dy ? C.tan : C.tanHi; } };
+    for (let i = 0; i < ch.length; i++) if (ch[i] && hm[i] && !mm[i] && L.c[i] !== INK) L.c[i] = M.tan;
+    const brow = (bx) => { for (let dx = 0; dx < 4; dx++) for (let dy = 0; dy < 2; dy++) { const xx = X(bx + dx), yy = Y(10 + dy), i = yy * PW + xx; if (L.in(xx, yy) && hm[i] && L.c[i] !== INK) L.c[i] = dy ? M.tan : M.tanHi; } };
     brow(13); brow(27);
   }
+  /* чепрак, крап, косматость и грива — по шерсти, одежду и ошейник не трогаем */
+  if (M.saddle) paintFur(L.ell(L.M(), 22.5, (lie ? 34 : 30.5) + by, lie ? 12 : 9.8, lie ? 4 : 5), M.saddle, M.saddleSh);
+  if (M.mane) { const r1 = L.ell(L.M(), X(22.5), Y(19.5), 15.5, 13), r2 = L.ell(L.M(), X(22.5), Y(18), 12.4, 9.6), mc = M.tan || C.furHi;
+    for (let i = 0; i < r1.length; i++) if (r1[i] && !r2[i] && onFur(i)) L.c[i] = mc; }
+  if (M.cords) { const cd = shade(C.fur, -0.3); for (let y = 0; y < PH; y++) for (let x = 1; x < PW; x += 3) { const i = y * PW + x; if (onFur(i)) L.c[i] = cd; } }
+  if (M.spots) [[13.5, 31], [30.5, 30], [17, 37], [27.5, 36], [11.5, 35], [33, 34], [22, 32],
+    [15, 11], [30, 12], [25, 8], [34, 21], [11, 21]].forEach((p) => paintFur(L.ell(L.M(), p[0] + (p[1] > 27 ? 0 : hx), p[1] + (p[1] > 27 ? by : hy), 1.7, 1.6), M.spots, M.spotsSh));
   /* eyes */
   const eye = (ex, side) => {
     const f = (dx, dy, c) => L.px(X(ex + dx), Y(13 + dy), c);
@@ -1433,8 +1521,9 @@ function petFrame(o) {
   }
   /* nose & mouth */
   const cold = o.sick === 'cold', tummy = o.sick === 'tummy';
-  L.pts([[X(21), Y(18)], [X(22), Y(18)], [X(23), Y(18)], [X(22), Y(19)]], cold ? '#ff5a6e' : C.nose);
-  L.px(X(21), Y(18), cold ? '#ffb3bd' : C.noseHi);
+  const nC = cold ? '#ff5a6e' : C.nose;
+  if (M.split) { L.pts([[X(20), Y(18)], [X(21), Y(18)], [X(23), Y(18)], [X(24), Y(18)], [X(21), Y(19)], [X(23), Y(19)]], nC); L.px(X(20), Y(18), cold ? '#ffb3bd' : C.noseHi); }
+  else { L.pts([[X(21), Y(18)], [X(22), Y(18)], [X(23), Y(18)], [X(22), Y(19)]], nC); L.px(X(21), Y(18), cold ? '#ffb3bd' : C.noseHi); }
   const mo = o.mouth;
   if (mo === 'w') L.pts([[X(20), Y(20)], [X(22), Y(20)], [X(24), Y(20)], [X(21), Y(21)], [X(23), Y(21)]], C.nose);
   else if (mo === 'open') {
@@ -2175,7 +2264,55 @@ const CLOTHES = [
 ];
 const SLOTS = [['head', 'Голова'], ['eyes', 'Глаза'], ['neck', 'Шея'], ['body', 'Тело']];
 /* породы: пока одна, дальше будут обычные и редкие */
-const BREEDS = [{ id: 'admin', name: 'Админ', rare: 'Админ', admin: true }];
+/* редкость в игре взята от редкости в жизни */
+const RARE = {
+  common: { t: 'Обычный', c: '#8e5470' },
+  uncommon: { t: 'Необычный', c: '#3f8f66' },
+  rare: { t: 'Редкий', c: '#3f6fd0' },
+  epic: { t: 'Эпический', c: '#8a4fd0' },
+  mythic: { t: 'Мифический', c: '#e64f7e' },
+  legend: { t: 'Легендарный', c: '#d99118' },
+};
+const RARE_ORDER = ['common', 'uncommon', 'rare', 'epic', 'mythic', 'legend'];
+const BREEDS = [
+  /* обычные: беспородных и этих пород в мире больше всего */
+  { id: '', name: 'Дворняжка', rare: 'common' },
+  { id: 'lab', name: 'Лабрадор', rare: 'common' },
+  { id: 'shep', name: 'Немецкая овчарка', rare: 'common' },
+  { id: 'chih', name: 'Чихуахуа', rare: 'common' },
+  { id: 'dachs', name: 'Такса', rare: 'common' },
+  { id: 'york', name: 'Йоркширский терьер', rare: 'common' },
+  /* необычные: популярные, но заметно реже */
+  { id: 'frenchie', name: 'Французский бульдог', rare: 'uncommon' },
+  { id: 'corgi', name: 'Вельш-корги', rare: 'uncommon' },
+  { id: 'husky', name: 'Сибирский хаски', rare: 'uncommon' },
+  { id: 'pug', name: 'Мопс', rare: 'uncommon' },
+  { id: 'beagle', name: 'Бигль', rare: 'uncommon' },
+  { id: 'collie', name: 'Бордер-колли', rare: 'uncommon' },
+  /* редкие: узнаваемые, но нечастые */
+  { id: 'dalmatian', name: 'Далматин', rare: 'rare' },
+  { id: 'shiba', name: 'Сиба-ину', rare: 'rare' },
+  { id: 'dober', name: 'Доберман', rare: 'rare' },
+  { id: 'samoyed', name: 'Самоед', rare: 'rare' },
+  { id: 'berner', name: 'Бернский зенненхунд', rare: 'rare' },
+  { id: 'sharpei', name: 'Шарпей', rare: 'rare' },
+  /* эпические: редкие и древние */
+  { id: 'akita', name: 'Акита-ину', rare: 'epic' },
+  { id: 'chow', name: 'Чау-чау', rare: 'epic' },
+  { id: 'ridge', name: 'Родезийский риджбек', rare: 'epic' },
+  { id: 'basenji', name: 'Басенджи', rare: 'epic' },
+  { id: 'xolo', name: 'Ксолоитцкуинтли', rare: 'epic' },
+  /* мифические: в мире их считают поголовно */
+  { id: 'azawakh', name: 'Азавак', rare: 'mythic' },
+  { id: 'komondor', name: 'Комондор', rare: 'mythic' },
+  { id: 'tibet', name: 'Тибетский мастиф', rare: 'mythic' },
+  { id: 'catalburun', name: 'Каталбурун', rare: 'mythic' },
+  /* легендарные: на грани исчезновения */
+  { id: 'lundehund', name: 'Норвежский лундехунд', rare: 'legend' },
+  { id: 'otterhound', name: 'Оттерхаунд', rare: 'legend' },
+  { id: 'singer', name: 'Новогвинейская поющая', rare: 'legend' },
+  { id: 'admin', name: 'Админ', rare: 'legend', admin: true },
+];
 const ADMIN_PAIR = 'bob,favie';
 const PLANTS = [
   { id: 'carrot', name: 'Морковь', price: 4, min: 3 },
@@ -2213,7 +2350,11 @@ const needXP = (l) => 60 + (l - 1) * 40;
 const ME = ((Sync && Sync.me) || '').toLowerCase();
 const OWNERS = (Sync && Sync.logins) || null;
 const IS_ADMIN = !!(OWNERS && OWNERS.length === 2 && OWNERS.join(',') === ADMIN_PAIR);
-const breedsOpen = () => BREEDS.filter((b) => !b.admin || IS_ADMIN);
+/* дворняжка есть у всех сразу, остальные нужно получить */
+const hasBreed = (b) => (b.admin ? IS_ADMIN : b.id === '' || !!S.breeds[b.id]);
+const breedsOpen = () => BREEDS.filter(hasBreed);
+/* породы, которые вообще показываем в коллекции */
+const breedsAll = () => BREEDS.filter((b) => !b.admin || IS_ADMIN);
 const GAME_COST = 10;
 /* комнаты дома — 0..4, дальше идут локации с карты */
 const HOUSE = 4;
@@ -2223,7 +2364,7 @@ function freshGarden() { return { plots: [null, null, null], seeds: {}, crops: {
 function fresh(now) {
   return { v: 1, name: 'Питомец', t: now, food: 80, fun: 75, energy: 90, clean: 85, sleeping: false, xp: 0, lvl: 1, coins: 50, owned: {}, walls: { pink: true }, wall: 'pink', best: { catch: 0, run: 0 }, petWin: { t: now, n: 0 }, room: 0, home: 0,
     wardrobe: {}, wear: {}, garden: freshGarden(), sick: null, healedAt: 0, buffs: {}, skin: '', created: now,
-    mail: {}, mailSeen: {}, who: {}, mk: '', ach: {}, q: null };
+    mail: {}, mailSeen: {}, who: {}, mk: '', ach: {}, q: null, breeds: {} };
 }
 function load() {
   const now = Date.now(), f = fresh(now);
@@ -2265,7 +2406,7 @@ function save() { clearTimeout(saveT); saveT = setTimeout(saveNow, 400); }
 const LOCAL_KEYS = { room: 1, home: 1 };
 /* купленное только копится, поэтому списки вещей сливаем, а не замещаем:
    две покупки в одну секунду с разных устройств не теряются */
-const UNION_KEYS = { owned: 1, walls: 1, wardrobe: 1, ach: 1 };
+const UNION_KEYS = { owned: 1, walls: 1, wardrobe: 1, ach: 1, breeds: 1 };
 /* трёхсторонняя склейка: чужую правку берём, свою не теряем.
    Так два одновременных действия в саду или в гардеробе не затирают друг друга */
 function merge3(base, theirs, mine) {
@@ -2484,7 +2625,11 @@ const Haptic = (() => {
       document.head.appendChild(l); l.click(); document.head.removeChild(l);
     } catch (e) { /* ignore */ }
   }
-  return { tap(ms) { if (canVibrate) { try { navigator.vibrate(ms || 8); } catch (e) { /* ignore */ } } else if (iOS) iosTick(); } };
+  /* до первого касания вибрация запрещена браузером — не зовём её впустую */
+  let tapped = false;
+  const mark = () => { tapped = true; };
+  ['pointerdown', 'keydown', 'touchstart'].forEach((e) => addEventListener(e, mark, { once: true, passive: true }));
+  return { tap(ms) { if (!tapped) return; if (canVibrate) { try { navigator.vibrate(ms || 8); } catch (e) { /* ignore */ } } else if (iOS) iosTick(); } };
 })();
 
 /* ---------- pixel particles (whole screen) ---------- */
@@ -3511,18 +3656,13 @@ SHEETS.wardrobe = {
     const w = S.wear, wk = ['head', 'eyes', 'neck', 'body'].map((s) => w[s] || '-').join(',') + '|' + S.skin;
     let html = '<div class="wd-top">' + imgTag('wdp:' + wk, petFrame(Object.assign({}, PET_BASE, { wear: w, skin: S.skin })).cv, 3) + '</div>';
     const tabs = SLOTS.concat([['breed', 'Породы']]);
-    html += '<div class="wd-tabs pb">' + tabs.map((s) => '<button class="wd-tab' + (s[0] === wdSlot ? ' is-on' : '') + '" type="button" data-slot="' + s[0] + '">' + s[1] + '</button>').join('') + '</div><div class="wd-grid">';
+    html += '<div class="wd-tabs pb">' + tabs.map((s) => '<button class="wd-tab' + (s[0] === wdSlot ? ' is-on' : '') + '" type="button" data-slot="' + s[0] + '">' + s[1] + '</button>').join('') + '</div>';
     if (wdSlot === 'breed') {
-      const list = breedsOpen();
-      if (!list.length) html += '<p class="wd-empty">Пока пусто</p>';
-      list.forEach((b) => {
-        const on = S.skin === b.id;
-        html += '<button class="wd-item is-breed pb press' + (on ? ' is-on' : '') + '" type="button" data-breed="' + b.id + '">'
-          + imgTag('wdb:' + b.id, petFrame(Object.assign({}, PET_BASE, { skin: b.id })).cv, 1.5)
-          + '<b>' + b.name + '</b><small class="rare">' + b.rare + '</small>'
-          + '<span class="buy pb is-owned">' + (on ? 'Снять' : 'Надеть') + '</span></button>';
-      });
+      const all = breedsAll();
+      html += '<div class="mk-h"><p>Собрано</p><b>' + all.filter(hasBreed).length + ' из ' + all.length + '</b></div><div class="wd-grid">';
+      all.forEach((b) => { html += breedCard(b, 1); });
     } else {
+      html += '<div class="wd-grid">';
       CLOTHES.filter((c) => c.slot === wdSlot).forEach((c) => {
         const own = !!S.wardrobe[c.id], worn = w[c.slot] === c.id;
         const tag = own ? '<span class="buy pb is-owned">' + (worn ? 'Снять' : 'Надеть') + '</span>'
@@ -3537,7 +3677,8 @@ SHEETS.wardrobe = {
     if (tb) { wdSlot = tb.dataset.slot; Sound.tick(); this.render(); return; }
     const el = e.target.closest('.wd-item'); if (!el) return;
     if (el.dataset.breed) {
-      const b = breedsOpen().find((x) => x.id === el.dataset.breed); if (!b) return;
+      const b = BREEDS.find((x) => x.id === el.dataset.breed); if (!b) return;
+      if (!hasBreed(b)) { nope(el); toast('Порода ещё не открыта'); Sound.error(); return; }
       S.skin = S.skin === b.id ? '' : b.id;
       Sound.boop(); Haptic.tap(8);
       if (S.skin) { burstAt(el); setTimeout(() => emote('heart'), 400); }
@@ -3552,6 +3693,17 @@ SHEETS.wardrobe = {
     save(); this.render(); Scene.kick();
   },
 };
+
+/* карточка породы: одна и та же в гардеробе и в коллекции профиля */
+function breedCard(b, act) {
+  const own = hasBreed(b), on = S.skin === b.id, r = RARE[b.rare] || RARE.common;
+  const tag = act ? '<span class="buy pb ' + (own ? 'is-owned' : 'is-locked') + '">' + (own ? (on ? 'Снять' : 'Надеть') : 'Нет') + '</span>' : '';
+  return '<' + (act ? 'button' : 'div') + ' class="wd-item is-breed pb' + (act ? ' press' : '') + (on ? ' is-on' : own ? '' : ' is-soon') + '"'
+    + (act ? ' type="button" data-breed="' + b.id + '"' : '')
+    + '>' + imgTag('wdb:' + b.id, petFrame(Object.assign({}, PET_BASE, { skin: b.id })).cv, 1.5)
+    + '<b>' + b.name + '</b><small class="rare" style="color:' + r.c + '">' + r.t + '</small>' + tag
+    + '</' + (act ? 'button' : 'div') + '>';
+}
 
 /* ---------- профиль: личная карточка каждого владельца ---------- */
 const ABOUT_LEN = 60;
@@ -3575,7 +3727,7 @@ function bump(k, n) {
   save(); pushCard();
 }
 const dayTX = (t) => { const d = new Date(t), p2 = (v) => (v < 10 ? '0' : '') + v; return p2(d.getDate()) + '.' + p2(d.getMonth() + 1) + '.' + d.getFullYear(); };
-const faceList = () => [''].concat(breedsOpen().map((b) => b.id));
+const faceList = () => [''].concat(breedsOpen().filter((b) => b.id).map((b) => b.id));
 const faceArt = (id) => imgTag('face:' + id, petFrame(Object.assign({}, PET_BASE, { skin: id })).cv, 1.1);
 /* подпись, мордочку и счётчики кладём в открытую карточку аккаунта:
    состояние питомца другим недоступно, а профиль показать надо */
@@ -3803,12 +3955,9 @@ SHEETS.prof = {
     if (faces.length > 1) html += '<div class="pf-face">' + faces.map((f) => '<button class="pb press'
       + ((r.face || '') === f ? ' is-on' : '') + '" type="button" data-face="' + f + '">' + faceArt(f) + '</button>').join('') + '</div>';
     html += '<div class="pf-st">' + STAT_ROWS.map((x) => '<span><b>' + num(x[0]) + '</b>' + x[1] + '</span>').join('') + '</div></div>';
-    html += '<p class="sec">Коллекция пород</p>';
-    const open = breedsOpen();
-    if (!open.length) html += '<p class="wd-empty">Пока пусто</p>';
-    else html += '<div class="wd-grid">' + open.map((b) => '<div class="wd-item is-breed pb">'
-      + imgTag('wdb:' + b.id, petFrame(Object.assign({}, PET_BASE, { skin: b.id })).cv, 1.5)
-      + '<b>' + b.name + '</b><small class="rare">' + b.rare + '</small></div>').join('') + '</div>';
+    const all = breedsAll();
+    html += '<div class="mk-h"><p>Коллекция пород</p><b>' + all.filter(hasBreed).length + ' из ' + all.length + '</b></div>';
+    html += '<div class="wd-grid">' + all.map((b) => breedCard(b, 0)).join('') + '</div>';
     html += achHTML();
     const focused = document.activeElement && document.activeElement.id === 'aboutTx';
     sheetBody.innerHTML = html;
@@ -4692,10 +4841,11 @@ if (PEOPLE) PEOPLE.watch((st) => {
 });
 setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); mkTick(); achTick(); qTick(); runTick(); onTick(); renderMate(); }, 1000);
 setInterval(saveNow, 10000);
-if (OWNERS && !IS_ADMIN && S.skin) { S.skin = ''; save(); }
+/* порода слетает, если её нет в коллекции: подставить чужую через консоль не выйдет */
+(() => { const b = BREEDS.find((x) => x.id === S.skin); if (S.skin && (!b || !hasBreed(b))) { S.skin = ''; save(); } })();
 if (Sync) Sync.onRemote(applyRemote);
 $('#boot').hidden = true;
-if (location.hash === '#t') window.__t = { S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS, petFrame, PCOL, PET_BASE };
+if (location.hash === '#t') window.__t = { S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS, petFrame, PCOL, PET_BASE, BREEDS, SKINS, RARE };
 
 /* разовое уведомление для favie */
 (() => {
