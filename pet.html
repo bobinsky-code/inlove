@@ -380,6 +380,18 @@ input{-webkit-user-select:text;user-select:text}
 .mk-case img{position:absolute;left:50%;transform:translateX(-50%)}
 .mk-big .mk-case img{bottom:15px}
 .mk-min .mk-case img{bottom:13px}
+/* ---------- достижения ---------- */
+.ach{display:flex;flex-direction:column;gap:8px}
+.ach-r{--bg:#fff;display:flex;align-items:center;gap:10px;padding:7px 10px}
+.ach-r.is-on{--bg:#fff1f6;--bc:var(--rose2)}
+.ach-ic{flex:none;display:grid;place-items:center;width:20px;color:#e3ccd6}
+.ach-r.is-on .ach-ic{color:var(--rose2)}
+.ach-r.is-part .ach-ic{color:var(--rose1)}
+.ach-tx{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:6px}
+.ach-tx b{font-size:var(--f1);line-height:1}
+.ach-bar{height:6px;background:#ffe0ea;box-shadow:0 calc(var(--p) * -1) 0 0 var(--ink),0 var(--p) 0 0 var(--ink),calc(var(--p) * -1) 0 0 0 var(--ink),var(--p) 0 0 0 var(--ink)}
+.ach-bar i{display:block;height:100%;background:var(--rose);box-shadow:inset 0 var(--p) 0 0 rgba(255,255,255,.45)}
+.ach-n{flex:none;font-size:var(--f1);line-height:1;color:var(--ink2);white-space:nowrap}
 .mx{display:flex;flex-direction:column;align-items:center;gap:16px;padding:4px 2px 2px}
 .mx-row{display:flex;align-items:center;gap:8px}
 .mx-slot{--bg:#fff7fa;width:56px;height:56px;display:grid;place-items:center;color:var(--ink2);font-size:var(--f3);line-height:1}
@@ -2158,7 +2170,7 @@ function freshGarden() { return { plots: [null, null, null], seeds: {}, crops: {
 function fresh(now) {
   return { v: 1, name: 'Питомец', t: now, food: 80, fun: 75, energy: 90, clean: 85, sleeping: false, xp: 0, lvl: 1, coins: 50, owned: {}, walls: { pink: true }, wall: 'pink', best: { catch: 0, run: 0 }, petWin: { t: now, n: 0 }, room: 0, home: 0,
     wardrobe: {}, wear: {}, garden: freshGarden(), sick: null, healedAt: 0, buffs: {}, skin: '', created: now,
-    mail: {}, mailSeen: {}, who: {}, mk: '' };
+    mail: {}, mailSeen: {}, who: {}, mk: '', ach: {} };
 }
 function load() {
   const now = Date.now(), f = fresh(now);
@@ -2200,7 +2212,7 @@ function save() { clearTimeout(saveT); saveT = setTimeout(saveNow, 400); }
 const LOCAL_KEYS = { room: 1, home: 1 };
 /* купленное только копится, поэтому списки вещей сливаем, а не замещаем:
    две покупки в одну секунду с разных устройств не теряются */
-const UNION_KEYS = { owned: 1, walls: 1, wardrobe: 1 };
+const UNION_KEYS = { owned: 1, walls: 1, wardrobe: 1, ach: 1 };
 /* трёхсторонняя склейка: чужую правку берём, свою не теряем.
    Так два одновременных действия в саду или в гардеробе не затирают друг друга */
 function merge3(base, theirs, mine) {
@@ -3488,12 +3500,13 @@ const ABOUT_LEN = 60;
 const STAT_ROWS = [
   ['days', 'Дней'], ['fed', 'Кормлений'], ['pet', 'Поглаживаний'], ['wash', 'Купаний'],
   ['games', 'Игр'], ['grown', 'Урожаев'], ['cook', 'Блюд'], ['msgs', 'Сообщений'], ['earn', 'Монет'],
+  ['ach', 'Достижений'],
 ];
 const WHO_FRESH = { about: '', face: '', fed: 0, pet: 0, wash: 0, games: 0, grown: 0, cook: 0, msgs: 0, earn: 0 };
 function whoRec(login) {
   const k = login || ME;
   if (!k) return null;
-  if (!S.who[k]) S.who[k] = Object.assign({}, WHO_FRESH);
+  if (!S.who[k]) S.who[k] = Object.assign({}, WHO_FRESH, { ach: {} });
   return S.who[k];
 }
 /* +1 в свой счётчик: вызывается из самих действий, чужие счётчики не трогаем */
@@ -3514,7 +3527,7 @@ function pushCard(now) {
     const r = whoRec();
     if (!r || !Sync || !Sync.people) return;
     const st = {};
-    STAT_ROWS.forEach((x) => { if (x[0] !== 'days') st[x[0]] = +r[x[0]] || 0; });
+    STAT_ROWS.forEach((x) => { if (x[0] !== 'days') st[x[0]] = x[0] === 'ach' ? achCount() : +r[x[0]] || 0; });
     const data = { login: ME, about: r.about || '', face: r.face || '', since: S.created || Date.now(), st };
     const j = JSON.stringify(data);
     if (j === cardSent) return;
@@ -3524,13 +3537,83 @@ function pushCard(now) {
   clearTimeout(cardT);
   if (now) run(); else cardT = setTimeout(run, 4000);
 }
+/* ---------- достижения: ступени по счётчикам, которые и так считаются ----------
+   личные берутся из своей карточки и там же отмечаются, общие — из состояния
+   питомца и отмечаются в нём: тогда за общую ступень монеты дают один раз. */
+const ACH_COINS = [20, 40, 80, 150];
+const cnt = (o) => Object.keys(o || {}).filter((k) => o[k]).length;
+const ACH = [
+  { k: 'fed', t: 'Кормления', p: 1, s: [10, 50, 200, 500] },
+  { k: 'pet', t: 'Поглаживания', p: 1, s: [10, 100, 500] },
+  { k: 'wash', t: 'Купания', p: 1, s: [5, 25, 100] },
+  { k: 'games', t: 'Мини-игры', p: 1, s: [5, 25, 100] },
+  { k: 'grown', t: 'Урожаи', p: 1, s: [5, 25, 100] },
+  { k: 'cook', t: 'Блюда', p: 1, s: [3, 15, 50] },
+  { k: 'msgs', t: 'Сообщения', p: 1, s: [5, 50, 200] },
+  { k: 'earn', t: 'Заработано монет', p: 1, s: [100, 1000, 5000] },
+  { k: 'lvl', t: 'Уровень питомца', s: [5, 10, 20], v: () => S.lvl },
+  { k: 'days', t: 'Дней вместе', s: [7, 30, 100], v: () => Math.floor((Date.now() - (S.created || Date.now())) / 86400e3) },
+  { k: 'catch', t: 'Рекорд в Ловле', s: [15, 40, 80], v: () => S.best.catch || 0 },
+  { k: 'run', t: 'Рекорд в Беге', s: [30, 80, 200], v: () => S.best.run || 0 },
+  { k: 'cloth', t: 'Одежда в гардеробе', s: [3, 10, 19], v: () => cnt(S.wardrobe) },
+  { k: 'furn', t: 'Мебель в доме', s: [3, 8], v: () => cnt(S.owned) },
+  { k: 'wall', t: 'Обои', s: [4], v: () => cnt(S.walls) },
+  { k: 'cook2', t: 'Открыто рецептов', s: [3, 8], v: () => cnt(S.garden.known) },
+];
+const ACH_ALL = ACH.reduce((n, a) => n + a.s.length, 0);
+function achStore(a) {
+  if (!a.p) return S.ach || (S.ach = {});
+  const r = whoRec();
+  return r ? r.ach || (r.ach = {}) : null;
+}
+function achVal(a) {
+  if (!a.p) return a.v();
+  const r = whoRec();
+  return r ? +r[a.k] || 0 : 0;
+}
+const achCount = () => ACH.reduce((n, a) => { const st = achStore(a); return n + (st ? a.s.filter((x, i) => st[a.k + i]).length : 0); }, 0);
+/* раз в секунду: ступени, до которых дошли, отмечаем и платим за них монетами */
+function achTick() {
+  let got = 0, coins = 0, last = '';
+  ACH.forEach((a) => {
+    const st = achStore(a);
+    if (!st) return;
+    const v = achVal(a);
+    a.s.forEach((need, i) => {
+      if (st[a.k + i] || v < need) return;
+      st[a.k + i] = 1; got++;
+      coins += ACH_COINS[Math.min(i, ACH_COINS.length - 1)];
+      last = a.t + ' — ' + need;
+    });
+  });
+  if (!got) return;
+  addCoins(coins);
+  toast(got === 1 ? last : 'Достижений: ' + got);
+  Sound.levelUp(); Haptic.tap(20);
+  save(); pushCard();
+  if (sheetOpen && sheetMode === 'prof') renderSheet();
+}
+function achHTML() {
+  let html = '<div class="mk-h"><p>Достижения</p><b>' + achCount() + ' из ' + ACH_ALL + '</b></div><div class="ach">';
+  ACH.forEach((a) => {
+    const st = achStore(a) || {}, v = achVal(a);
+    const have = a.s.filter((x, i) => st[a.k + i]).length;
+    const all = have >= a.s.length, need = all ? a.s[a.s.length - 1] : a.s[have];
+    const part = all ? 1 : Math.min(1, v / need);
+    html += '<div class="ach-r pb' + (all ? ' is-on' : have ? ' is-part' : '') + '">'
+      + '<span class="ach-ic">' + icon('star', 2) + '</span>'
+      + '<span class="ach-tx"><b>' + a.t + '</b><span class="ach-bar"><i style="width:' + Math.round(part * 100) + '%"></i></span></span>'
+      + '<span class="ach-n">' + (all ? 'Всё' : Math.min(v, need) + ' / ' + need) + '</span></div>';
+  });
+  return html + '</div>';
+}
 let aboutDraft = null;
 const profBtn = $('#profBtn');
 SHEETS.prof = {
   title: 'Профиль',
   render() {
     const days = Math.max(0, Math.floor((Date.now() - (S.created || Date.now())) / 86400e3));
-    const r = whoRec() || WHO_FRESH, num = (k) => (k === 'days' ? days : +r[k] || 0);
+    const r = whoRec() || WHO_FRESH, num = (k) => (k === 'days' ? days : k === 'ach' ? achCount() : +r[k] || 0);
     let html = '<div class="pf pb is-me">'
       + '<div class="pf-h">' + faceArt(SKINS[r.face] ? r.face : '')
       + '<div><b>' + esc(ME || '—') + '</b><small>с ' + dayTX(S.created || Date.now()) + '</small></div></div>'
@@ -3547,7 +3630,7 @@ SHEETS.prof = {
     else html += '<div class="wd-grid">' + open.map((b) => '<div class="wd-item is-breed pb">'
       + imgTag('wdb:' + b.id, petFrame(Object.assign({}, PET_BASE, { skin: b.id })).cv, 1.5)
       + '<b>' + b.name + '</b><small class="rare">' + b.rare + '</small></div>').join('') + '</div>';
-    html += '<p class="sec">Достижения</p><p class="wd-empty">Пока пусто</p>';
+    html += achHTML();
     const focused = document.activeElement && document.activeElement.id === 'aboutTx';
     sheetBody.innerHTML = html;
     const inp = $('#aboutTx');
@@ -4427,7 +4510,7 @@ if (PEOPLE) PEOPLE.watch((st) => {
   renderPeople();
   if (sheetMode === 'people' || sheetMode === 'person') renderSheet();
 });
-setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); mkTick(); }, 1000);
+setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); mkTick(); achTick(); }, 1000);
 setInterval(saveNow, 10000);
 if (OWNERS && !IS_ADMIN && S.skin) { S.skin = ''; save(); }
 if (Sync) Sync.onRemote(applyRemote);
