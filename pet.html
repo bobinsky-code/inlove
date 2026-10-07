@@ -309,6 +309,7 @@ input{-webkit-user-select:text;user-select:text}
 .mate small{font-size:var(--f1);line-height:1}
 .mate-d{flex:none;width:6px;height:6px;background:var(--rose2)}
 .qchip b{font-size:var(--f1);line-height:1}
+.qchip .qsep{flex:none;width:2px;height:10px;background:var(--rose1)}
 .qchip.is-on{--bg:#fff1f6;--bc:var(--rose2);color:var(--rose2)}
 .qchip.press:active{transform:translateY(calc(-50% + var(--p)))}
 .dots button{position:relative;width:8px;height:8px;padding:0;background:var(--rose1);transition:background .15s steps(2,end)}
@@ -482,7 +483,7 @@ input{-webkit-user-select:text;user-select:text}
     <div class="dot-row">
       <div class="dots" id="dots" aria-label="Комнаты"></div>
       <span class="mate pb" id="mateChip" hidden><i class="mate-d"></i><b id="mateTx"></b><small>в игре</small></span>
-      <button class="qchip pb press" id="qBtn" type="button" aria-haspopup="dialog" aria-label="Задания дня"><i data-ic="star" data-s="1.5"></i><b id="qTx">0 / 3</b></button>
+      <button class="qchip pb press" id="qBtn" type="button" aria-haspopup="dialog" aria-label="Задания дня и серия"><i data-ic="star" data-s="1.5"></i><b id="qTx">0 / 3</b><i class="qsep"></i><i data-ic="fire" data-s="2"></i><b id="qRun">0</b></button>
     </div>
 
     <section class="panel" aria-live="polite">
@@ -1609,6 +1610,7 @@ const IC = {
   book: ['.####.####.', '#....#....#', '#.##.#.##.#', '#....#....#', '#.##.#.##.#', '#....#....#', '#.##.#.##.#', '#....#....#', '.####.####.'],
   cross: ['..###..', '..###..', '#######', '#######', '#######', '..###..', '..###..'],
   star: ['...#...', '..###..', '#######', '.#####.', '..###..', '.##.##.', '##...##'],
+  fire: ['...#..', '..##..', '.###..', '.####.', '##.###', '##..##', '##..##', '.####.', '..##..'],
   shirt: ['.##...##.', '####.####', '#########', '.#######.', '..#####..', '..#####..', '..#####..', '..#####..'],
 };
 const COIN = { rows: ['..ddddd..', '.dyyyyyd.', 'dyywyyyOd', 'dywyyyyOd', 'dyyyyyyOd', 'dyyyyyyOd', 'dyyyyyOOd', '.dOOOOOd.', '..ddddd..'], map: { d: '#c67f12', y: '#ffd255', w: '#fff6c8', O: '#f2a93b' } };
@@ -3255,7 +3257,7 @@ function emoteTick() {
 
 /* ---------- sheets (shop, wardrobe, garden) ---------- */
 const sheet = $('#sheet'), sheetBg = $('#sheetBg'), sheetBody = $('#sheetBody'), sheetTitle = $('#sheetTitle');
-const qBtn = $('#qBtn'), qTx = $('#qTx'), mateChip = $('#mateChip'), mateTx = $('#mateTx');
+const qBtn = $('#qBtn'), qTx = $('#qTx'), qRun = $('#qRun'), mateChip = $('#mateChip'), mateTx = $('#mateTx');
 let sheetOpen = false, sheetMode = '', sheetArg = null;
 const SHEETS = {};
 function openSheet(mode, arg) {
@@ -3711,8 +3713,9 @@ function qTick() {
 function renderQ() {
   const q = S.q;
   if (!q || !q.q) return;
-  const n = qLeftN(), tx = n + ' / ' + q.q.length;
+  const n = qLeftN(), tx = n + ' / ' + q.q.length, run = String(runOf());
   if (qTx.textContent !== tx) qTx.textContent = tx;
+  if (qRun.textContent !== run) qRun.textContent = run;
   qBtn.classList.toggle('is-on', n >= q.q.length);
 }
 SHEETS.quest = {
@@ -3736,6 +3739,12 @@ SHEETS.quest = {
       + '<span class="ach-tx"><b>Все три задания</b><span class="ach-bar"><i style="width:'
       + Math.round((n / q.q.length) * 100) + '%"></i></span></span>'
       + '<span class="ach-n">' + (all ? '+' + Q_BONUS : n + ' / ' + q.q.length) + '</span></div>';
+    const run = runOf();
+    html += '</div><div class="mk-h"><p>Серия</p></div><div class="ach">'
+      + '<div class="ach-r pb is-part"><span class="ach-ic">' + icon('fire', 2) + '</span>'
+      + '<span class="ach-tx"><b>День ' + run + ' подряд</b><span class="ach-bar"><i style="width:'
+      + Math.round((Math.min(run, RUN_MAX) / RUN_MAX) * 100) + '%"></i></span></span>'
+      + '<span class="ach-n">завтра +' + runPay(run + 1) + '</span></div>';
     sheetBody.innerHTML = html + '</div>';
   },
   click() {},
@@ -3744,6 +3753,8 @@ qBtn.addEventListener('click', () => { Sound.tick(); openSheet('quest'); });
 /* ---------- серия дней и метка «второй в игре» ---------- */
 const RUN_MAX = 7;                                   /* дальше награда не растёт */
 const ONLINE = 150e3;                                /* столько держится метка после последней отметки */
+const runOf = () => { const r = whoRec(); return r ? +r.run || 0 : 0; };
+const runPay = (n) => 20 + Math.min(n, RUN_MAX) * 10;
 /* заход в новый день: серия растёт, пропуск её обнуляет */
 function runTick() {
   const r = whoRec();
@@ -3752,7 +3763,7 @@ function runTick() {
   if (seen === d) return;
   r.run = seen === d - 1 ? (+r.run || 0) + 1 : 1;
   r.seen = d;
-  addCoins(20 + Math.min(r.run, RUN_MAX) * 10);
+  addCoins(runPay(r.run));
   toast('День ' + r.run + ' подряд');
   Sound.levelUp(); Haptic.tap(16);
   save(); pushCard();
