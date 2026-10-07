@@ -1503,14 +1503,6 @@ function petFrame(o) {
 }
 /* ---------- food (16x16) ---------- */
 const FOOD_ART = {
-  kibble() {
-    const L = Lay(16, 16);
-    [[4, 11.5], [8.5, 12], [13, 11.5], [6.2, 8], [10.8, 7.8], [8.5, 4.5]].forEach((p) => {
-      const m = L.ell(L.M(), p[0], p[1], 2.9, 2.4);
-      L.part(m, (x, y, mm) => (!L.has(mm, x, y - 1) && !L.has(mm, x - 1, y) ? '#e8b383' : !L.has(mm, x, y + 1) || !L.has(mm, x + 1, y) ? '#a86a42' : '#c98a5a'), '#7a4a2e');
-    });
-    return L.canvas();
-  },
   bone(gold) {
     const L = Lay(16, 16);
     const c = gold ? ['#fff3c0', '#ffd75a', '#eeae35', '#b97a12'] : ['#ffffff', '#fff3e2', '#ecd2b0', '#b98a5f'];
@@ -2078,7 +2070,6 @@ fillIcons(document);
 /* ---------- data ---------- */
 const KEY = 'nam2-pet-v1', SND_KEY = 'nam2-sound';
 const FOODS = [
-  { id: 'kibble', name: 'Корм', price: 0, food: 12, fun: 0, lvl: 1, xp: 2 },
   { id: 'bone', name: 'Косточка', price: 8, food: 18, fun: 8, lvl: 1, xp: 4 },
   { id: 'chicken', name: 'Курица', price: 15, food: 30, fun: 4, lvl: 1, xp: 5 },
   { id: 'cookie', name: 'Печенька', price: 12, food: 10, fun: 18, lvl: 2, xp: 5 },
@@ -2151,7 +2142,7 @@ const DISHES = {
 const SICK = { cold: { need: ['daisy', 'mint'], cure: 'простуду' }, tummy: { need: ['carrot', 'mint'], cure: 'живот' } };
 const BUFF_TX = { xp2: 'Опыт ×2', coins2: 'Монеты ×2', nofun: 'Настроение не падает' };
 /* изменение показателей в час */
-const RATE = { awake: { food: -12, fun: -10, energy: -8, clean: -6 }, sleep: { food: -6, fun: 0, energy: 100, clean: -3 } };
+const RATE = { awake: { food: -18, fun: -15, energy: -8, clean: -9 }, sleep: { food: -9, fun: 0, energy: 100, clean: -5 } };
 const needXP = (l) => 60 + (l - 1) * 40;
 /* порода «Админ» доступна только одной паре логинов */
 const ME = ((Sync && Sync.me) || '').toLowerCase();
@@ -3086,7 +3077,7 @@ function renderKitchen() {
   if (it.kind === 'food') {
     const f = it.f, locked = S.lvl < f.lvl;
     ic = foodArt(f.id); name = f.name; eff = effHTML(f);
-    price = locked ? icon('lock', 1.5) + 'Ур. ' + f.lvl : f.price ? icon('coin', 1.5) + f.price : 'Бесплатно';
+    price = locked ? icon('lock', 1.5) + 'Ур. ' + f.lvl : icon('coin', 1.5) + f.price;
     fCard.classList.toggle('is-locked', locked);
   } else {
     ic = dishArt(it.id); name = it.d.name; eff = effHTML(it.d);
@@ -3129,7 +3120,7 @@ function feedItem(it, el) {
     if (S.coins < f.price) { if (el) nope(el); toast('Не хватает монет'); Sound.error(); return; }
     eating = true;
     bump('fed');
-    if (f.price) addCoins(-f.price);
+    addCoins(-f.price);
     Haptic.tap(8);
     eatAnim(foodArt(f.id), () => {
       const mult = S.owned.bigbowl ? 1.25 : 1;
