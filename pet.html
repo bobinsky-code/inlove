@@ -436,6 +436,11 @@ input{-webkit-user-select:text;user-select:text}
 .c-card{--bg:var(--paper);position:absolute;left:10px;right:10px;bottom:12px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 14px 14px;text-align:center;animation:cardIn .22s steps(3,end)}
 .c-card b{font-size:var(--f2);line-height:1.2}
 .c-card p{margin:2px 0 0;color:var(--ink2);font-size:var(--f1);line-height:1.3}
+.c-list{display:flex;flex-direction:column;gap:7px;width:100%}
+.c-row{display:flex;align-items:center;gap:10px;text-align:left}
+.c-row img{flex:none}
+.c-row b{flex:1 1 auto;min-width:0;font-size:var(--f1);line-height:1.2}
+.c-row small{flex:none;font-size:var(--f1);line-height:1}
 .c-act{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px}
 .c-act .btn{min-height:40px;padding:0 16px 2px}
 @keyframes cardIn{from{transform:translateY(14px)}to{transform:none}}
@@ -565,9 +570,7 @@ input{-webkit-user-select:text;user-select:text}
     <div class="case" id="caseBox" hidden>
       <canvas id="caseCv"></canvas>
       <div class="c-card pb2" id="caseCard" hidden>
-        <b id="caseName"></b>
-        <small class="rare" id="caseRare"></small>
-        <p id="caseWhere"></p>
+        <div class="c-list" id="caseList"></div>
         <div class="c-act">
           <button class="btn pb press" id="caseMore" type="button" hidden>Ещё кейс</button>
           <button class="btn btn--ghost pb press" id="caseX" type="button">Забрать</button>
@@ -4071,7 +4074,7 @@ OBJ.chest = () => {
 };
 
 /* цена и содержимое. Кейс один и тот же: разной бывает только удача */
-const CASE_PRICE = 200, CASE_LVL = 2;
+const CASE_PRICE = 400, CASE_LVL = 2, CASE_ITEMS = 3;   /* за открытие выпадает три вещи */
 /* шансы редкости в процентах, в сумме сто */
 const CASE_ODDS = [['common', 50], ['uncommon', 28], ['rare', 14], ['epic', 6], ['mythic', 1.7], ['legend', 0.3]];
 /* если всё этой редкости уже собрано, вместо вещи падают монеты */
@@ -4130,6 +4133,16 @@ function caseGive(d) {
   else if (d.k === 'wall') S.walls[d.id] = true;
   else if (d.k === 'seeds') S.garden.seeds[d.id] = (S.garden.seeds[d.id] || 0) + d.n;
   save();
+}
+/* открытие целиком: три вещи подряд, выданные сразу, от худшей к лучшей.
+   Каждая следующая считается уже без предыдущей, поэтому повторов в одном
+   кейсе не бывает. */
+const CASE_TIER = { common: 0, uncommon: 1, rare: 2, epic: 3, mythic: 4, legend: 5 };
+function caseOpen() {
+  const out = [];
+  for (let i = 0; i < CASE_ITEMS; i++) { const d = caseRoll(); caseGive(d); out.push(d); }
+  out.sort((a, b) => CASE_TIER[a.rare] - CASE_TIER[b.rare]);
+  return out;
 }
 const CASE_WHERE = { breed: 'Порода — в гардеробе', wear: 'Вещь — в гардеробе', furn: 'Мебель — уже в комнате',
   wall: 'Обои — выбрать в магазине', coins: 'Монеты на счету', seeds: 'Семена — в саду' };
@@ -4271,7 +4284,7 @@ SHEETS.shop = {
     /* кейсы: один и тот же сундук, разной бывает только удача */
     html += '<div class="mk-h"><p>Кейсы</p>' + (S.cases > 0 ? '<b>у вас ' + S.cases + '</b>' : '') + '</div>';
     const cases = [mkCard('data-case="buy"', mkCase('nb', nb, 2, thumb('chest', obj('chest'), 90)), 'Кейс',
-      'Порода, вещь, мебель или монеты', priceTag(CASE_PRICE, CASE_LVL, false, ''), 'mk-big' + (S.lvl < CASE_LVL ? ' is-soon' : ''))];
+      'Три вещи: порода, одежда, мебель или монеты', priceTag(CASE_PRICE, CASE_LVL, false, ''), 'mk-big' + (S.lvl < CASE_LVL ? ' is-soon' : ''))];
     if (S.cases > 0) {
       cases.push(mkCard('data-case="open"', mkCase('nb', nb, 2, thumb('chestO', obj('chestOpen'), 90)), 'Открыть',
         'Кейсов: ' + S.cases, '<span class="buy pb is-owned">Открыть</span>', 'mk-big is-own'));
@@ -4311,10 +4324,10 @@ SHEETS.shop = {
       if (cs.dataset.case === 'open') {
         if (!(S.cases > 0)) return;
         S.cases--; save();
-        const d = caseRoll(); caseGive(d);
+        const got = caseOpen();
         Sound.tick(); Haptic.tap(10);
         this.render();
-        CaseBox.open(d);
+        CaseBox.open(got);
         return;
       }
       if (!buyCheck(cs, CASE_PRICE, CASE_LVL)) return;
@@ -5547,15 +5560,19 @@ $$('.gcard').forEach((c) => c.addEventListener('click', () => {
 /* ---------- открытие кейса: чем реже вещь, тем громче ---------- */
 const CaseBox = (() => {
   const wrap = $('#caseBox'), cv = $('#caseCv'), cx = cv.getContext('2d');
-  const card = $('#caseCard'), nameEl = $('#caseName'), rareEl = $('#caseRare'), whereEl = $('#caseWhere'), moreEl = $('#caseMore');
+  const card = $('#caseCard'), listEl = $('#caseList'), moreEl = $('#caseMore');
   const buf = document.createElement('canvas'), g = buf.getContext('2d');
-  const TIER = { common: 0, uncommon: 1, rare: 2, epic: 3, mythic: 4, legend: 5 };
   /* обычная вещь просто выпадает, дальше открытие всё длиннее и ярче */
   const LEN = [0.4, 1.2, 2, 2.8, 3.6, 4.8];           /* сколько секунд идёт открытие */
   const POP = [0.5, 0.5, 0.52, 0.55, 0.58, 0.62];     /* какая их доля до хлопка крышки */
   const DIM = [0.35, 0.56, 0.76, 0.85, 0.9, 0.95];    /* насколько темнеет комната вокруг */
   let W = 0, H = 0, D = 1, N = 6, gw = 0, gh = 0;
-  let raf = 0, last = 0, t = 0, drop = null, tier = 0, col = '#fff', pic = null, P = [], banged = false, done = false;
+  /* мелочь пролетает быстро, редкое показываем не торопясь */
+  const SPD = [2.2, 2.2, 1.6, 1.4, 1.2, 1];
+  const HOLD = [0.7, 0.8, 1.1, 1.3, 1.4, 1.6];       /* сколько вещь висит на экране, если не торопить */
+  let raf = 0, last = 0, t = 0, P = [], banged = false, done = false, hold = 0;
+  let drops = [], idx = 0, drop = null, pic = null;
+  let tier = 0, itier = 0, col = '#fff';               /* tier — лучшее в кейсе, itier — то, что сейчас на экране */
 
   function size() {
     const r = wrap.getBoundingClientRect();
@@ -5575,26 +5592,35 @@ const CaseBox = (() => {
   }
   function bang() {                                    /* крышка слетела: звук, тряска, искры */
     banged = true;
-    spark(gw / 2, gh * 0.48, [10, 16, 26, 38, 54, 72][tier], 26 + tier * 9, 1 + tier * 0.25, 10 + tier * 4);
-    Haptic.tap([8, 12, 18, 26, 34, 50][tier]);
-    if (tier >= 5) Sound.fanfare();
-    else if (tier === 4) { Sound.levelUp(); setTimeout(() => Sound.cure(), 420); }
-    else if (tier === 3) Sound.levelUp();
-    else if (tier === 2) Sound.cure();
-    else if (tier === 1) Sound.coin();
+    spark(gw / 2, gh * 0.48, [10, 16, 26, 38, 54, 72][itier], 26 + itier * 9, 1 + itier * 0.25, 10 + itier * 4);
+    Haptic.tap([8, 12, 18, 26, 34, 50][itier]);
+    if (itier >= 5) Sound.fanfare();
+    else if (itier === 4) { Sound.levelUp(); setTimeout(() => Sound.cure(), 420); }
+    else if (itier === 3) Sound.levelUp();
+    else if (itier === 2) Sound.cure();
+    else if (itier === 1) Sound.coin();
     else Sound.pop();
   }
   function finish() {
     done = true;
-    const r = RARE[drop.rare] || RARE.common;
-    nameEl.textContent = caseName(drop);
-    rareEl.textContent = r.t; rareEl.style.color = r.c;
-    whereEl.textContent = CASE_WHERE[drop.k] || '';
+    listEl.innerHTML = drops.map((d) => {
+      const r = RARE[d.rare] || RARE.common;
+      return '<div class="c-row">' + thumb('cr:' + d.k + ':' + (d.id || d.n || ''), caseArt(d), 34)
+        + '<b>' + caseName(d) + '</b><small style="color:' + r.c + '">' + r.t + '</small></div>';
+    }).join('');
     moreEl.hidden = !(S.cases > 0);
     card.hidden = false;
   }
+  /* показываем следующую вещь: тот же хлопок, но уже без крышки */
+  function show(i) {
+    idx = i; drop = drops[i]; pic = caseArt(drop);
+    itier = CASE_TIER[drop.rare] || 0; col = (RARE[drop.rare] || RARE.common).c;
+    hold = 0;
+    if (i > 0) { t = LEN[tier] * POP[tier] + 0.001; banged = false; }
+  }
   function frame(now) {
-    const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    t += dt * (idx === 0 ? 1 : SPD[itier]);            /* вторую и третью вещь показываем бодрее */
     const L = LEN[tier], pop = POP[tier], u = Math.min(1, t / L);
     const closed = u < pop, k = closed ? u / pop : (u - pop) / (1 - pop);
     if (!closed && !banged) bang();
@@ -5671,7 +5697,7 @@ const CaseBox = (() => {
       if (!REDUCED && Math.random() < kk * 0.6) spark(cxp, by, 1, 18, 0.7, 14);
     }
     if (closed) g.drawImage(lid, bx, by - lh + cs, bw, lh);
-    else {
+    else if (idx === 0) {                              /* крышка улетает один раз за открытие */
       const fly = k * (2 - k);
       g.save(); g.translate(bx + bw / 2, by - lh * 0.5 - fly * gh * 0.45); g.rotate(-k * 2.4);
       g.globalAlpha = Math.max(0, 1 - k * 1.5);
@@ -5684,10 +5710,10 @@ const CaseBox = (() => {
       const iw = pic.width * is, ih = pic.height * is;
       const e = 1 - Math.pow(1 - Math.min(1, k * 2.1), 3);
       const ix = Math.round(cxp - iw / 2), iy = Math.round(by - ih * e - gh * 0.04 * e);
-      if (tier >= 3) {                                  /* мягкий ореол за редкой вещью */
+      if (itier >= 3) {                                 /* мягкий ореол за редкой вещью */
         g.globalCompositeOperation = 'lighter';
         for (let i = 3; i >= 1; i--) {
-          g.globalAlpha = (0.08 + 0.03 * Math.sin(t * 7)) * i * (tier >= 4 ? 1.3 : 0.8);
+          g.globalAlpha = (0.08 + 0.03 * Math.sin(t * 7)) * i * (itier >= 4 ? 1.3 : 0.8);
           g.fillStyle = shade(col, 0.25);
           g.beginPath(); g.arc(cxp, iy + ih / 2, ih * (0.3 + i * 0.17) * e, 0, Math.PI * 2); g.fill();
         }
@@ -5696,7 +5722,7 @@ const CaseBox = (() => {
       g.globalAlpha = Math.min(1, k * 3);
       g.drawImage(pic, ix, iy, iw, ih);
       g.globalAlpha = 1;
-      if (tier >= 3 && !REDUCED && Math.random() < 0.25) spark(ix + rand(0, iw), iy + rand(0, ih), 1, 10, 0.8, 6);
+      if (itier >= 3 && !REDUCED && Math.random() < 0.25) spark(ix + rand(0, iw), iy + rand(0, ih), 1, 10, 0.8, 6);
     }
     /* искры */
     for (let i = P.length - 1; i >= 0; i--) {
@@ -5713,12 +5739,19 @@ const CaseBox = (() => {
     cx.setTransform(1, 0, 0, 1, 0, 0); cx.imageSmoothingEnabled = false;
     cx.clearRect(0, 0, cv.width, cv.height);
     cx.drawImage(buf, Math.round(Math.sin(t * 70) * shk) * N, Math.round(Math.cos(t * 59) * shk) * N, gw * N, gh * N);
-    if (u >= 1 && !done) finish();
+    if (u >= 1 && !done) {
+      if (idx < drops.length - 1) { hold += dt; if (hold > HOLD[itier]) show(idx + 1); }
+      else finish();
+    }
     raf = requestAnimationFrame(frame);
   }
-  function openCase(d) {
-    drop = d; tier = TIER[d.rare] || 0; col = (RARE[d.rare] || RARE.common).c;
-    pic = caseArt(d); P = []; t = REDUCED ? LEN[tier] : 0; banged = false; done = false;
+  function openCase(list) {
+    drops = Array.isArray(list) ? list : [list];
+    /* сундук трясётся по лучшему, что в нём лежит */
+    tier = drops.reduce((m, d) => Math.max(m, CASE_TIER[d.rare] || 0), 0);
+    P = []; banged = false; done = false;
+    show(0);
+    t = REDUCED ? LEN[tier] : 0;
     card.hidden = true; moreEl.hidden = true;
     wrap.hidden = false;
     size();
@@ -5728,20 +5761,24 @@ const CaseBox = (() => {
   }
   function close() {
     cancelAnimationFrame(raf); raf = 0;
-    wrap.hidden = true; card.hidden = true; P = []; drop = null; pic = null;
+    wrap.hidden = true; card.hidden = true; P = []; drops = []; drop = null; pic = null;
     cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, cv.width, cv.height);
   }
-  function skip() { if (!drop || done) return; t = LEN[tier]; }
+  /* тап торопит: сначала к первой вещи, потом к следующим */
+  function skip() {
+    if (!drop || done) return;
+    if (t < LEN[tier]) { t = LEN[tier]; return; }
+    if (idx < drops.length - 1) show(idx + 1);
+  }
   $('#caseX').addEventListener('click', () => { Sound.tick(); close(); renderSheet(); });
   moreEl.addEventListener('click', () => {
     if (!(S.cases > 0)) { moreEl.hidden = true; return; }
     S.cases--; save();
-    const d = caseRoll(); caseGive(d);
-    openCase(d);
+    openCase(caseOpen());
   });
   wrap.addEventListener('pointerdown', (e) => { if (!e.target.closest('.c-card')) skip(); });
   window.addEventListener('resize', () => { if (!wrap.hidden) size(); });
-  return { open: openCase, close, skip, get on() { return !wrap.hidden; }, get drop() { return drop; } };
+  return { open: openCase, close, skip, get on() { return !wrap.hidden; }, get drop() { return drop; }, get drops() { return drops; } };
 })();
 
 /* ---------- locations: the map and the gate into the garden ---------- */
@@ -5875,7 +5912,7 @@ setInterval(saveNow, 10000);
 (() => { const b = BREEDS.find((x) => x.id === S.skin); if (S.skin && (!b || !hasBreed(b))) { S.skin = ''; save(); } })();
 if (Sync) Sync.onRemote(applyRemote);
 $('#boot').hidden = true;
-if (location.hash === '#t') window.__t = { OBJ, obj, art, CaseBox, caseRoll, casePool, caseKind, caseGive, caseName, CASE_PRICE, CASE_ODDS, CASE_MIX, GROW, growNow, petDays, growTick, S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS, petFrame, PCOL, PET_BASE, BREEDS, SKINS, RARE, breedsDrop, WEARABLE, SUITS, CLOTHES, legendOn, ITEMS, renderRooms };
+if (location.hash === '#t') window.__t = { OBJ, obj, art, CaseBox, caseRoll, caseOpen, casePool, caseKind, caseGive, caseName, CASE_PRICE, CASE_ITEMS, CASE_ODDS, CASE_MIX, GROW, growNow, petDays, growTick, S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS, petFrame, PCOL, PET_BASE, BREEDS, SKINS, RARE, breedsDrop, WEARABLE, SUITS, CLOTHES, legendOn, ITEMS, renderRooms };
 
 /* разовое уведомление для favie */
 (() => {
