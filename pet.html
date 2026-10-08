@@ -4013,23 +4013,45 @@ function caseSeeds(rare) {
   const p = pick(PLANTS.slice(0, 6)), n = 3 + Math.floor(Math.random() * 3);
   return { k: 'seeds', rare, id: p.id, n, name: p.name + ' ×' + n };
 }
-/* что вообще может выпасть этой редкости: порода, вещь, мебель, обои, монеты, семена */
-function casePool(rare) {
-  const out = [];
-  breedsDrop().forEach((b) => { if (b.rare === rare && !S.breeds[b.id]) out.push({ k: 'breed', id: b.id, name: b.name, rare }); });
-  WEARABLE.forEach((c) => { if (c.rare === rare && !S.wardrobe[c.id]) out.push({ k: 'wear', id: c.id, name: c.name, rare }); });
-  ITEMS.forEach((i) => { if (i.rare === rare && !S.owned[i.id]) out.push({ k: 'furn', id: i.id, name: i.name, rare }); });
-  if (rare === 'uncommon') WALLS.forEach((w) => { if (w.price > 0 && !S.walls[w.id]) out.push({ k: 'wall', id: w.id, name: 'Обои ' + w.name.toLowerCase(), rare }); });
-  /* мелочь в дешёвых редкостях, чтобы кейс не был только вещами */
-  const fill = rare === 'common' ? 2 : rare === 'uncommon' ? 1 : 0;
-  for (let i = 0; i < fill; i++) { out.push(caseCoins(rare)); out.push(caseSeeds(rare)); }
-  return out;
+/* что внутри кейса этой редкости: редкость решает, каким будет открытие,
+   а вес — каким будет приз. Монеты самые частые, порода — самая желанная. */
+const CASE_MIX = {
+  common: { coins: 50, seeds: 17, furn: 15, wear: 14, breed: 4 },
+  uncommon: { coins: 32, seeds: 12, furn: 22, wear: 22, wall: 6, breed: 6 },
+  rare: { coins: 18, furn: 30, wear: 30, breed: 22 },
+  epic: { coins: 12, furn: 28, wear: 30, breed: 30 },
+  mythic: { coins: 10, furn: 25, wear: 30, breed: 35 },
+  legend: { coins: 10, wear: 45, breed: 45 },
+};
+/* что этой редкости ещё не собрано — из этого и выбираем */
+function caseKind(rare, k) {
+  if (k === 'breed') return breedsDrop().filter((b) => b.rare === rare && !S.breeds[b.id]).map((b) => ({ k, id: b.id, name: b.name, rare }));
+  if (k === 'wear') return WEARABLE.filter((c) => c.rare === rare && !S.wardrobe[c.id]).map((c) => ({ k, id: c.id, name: c.name, rare }));
+  if (k === 'furn') return ITEMS.filter((i) => i.rare === rare && !S.owned[i.id]).map((i) => ({ k, id: i.id, name: i.name, rare }));
+  if (k === 'wall') return (CASE_MIX[rare] || {}).wall ? WALLS.filter((w) => w.price > 0 && !S.walls[w.id]).map((w) => ({ k, id: w.id, name: 'Обои ' + w.name.toLowerCase(), rare })) : [];
+  return [];
 }
+/* все вещи этой редкости, которые ещё можно выбить */
+const casePool = (rare) => ['breed', 'wear', 'furn', 'wall'].reduce((a, k) => a.concat(caseKind(rare, k)), []);
 function caseRoll() {
   let r = Math.random() * 100, rare = CASE_ODDS[0][0];
   for (let i = 0; i < CASE_ODDS.length; i++) { r -= CASE_ODDS[i][1]; if (r <= 0) { rare = CASE_ODDS[i][0]; break; } }
-  const pool = casePool(rare);
-  return pool.length ? pick(pool) : caseCoins(rare);
+  const mix = CASE_MIX[rare], left = [];
+  let sum = 0;
+  /* собранное из розыгрыша выпадает, его вес уходит остальным */
+  Object.keys(mix).forEach((k) => {
+    const list = k === 'coins' || k === 'seeds' ? null : caseKind(rare, k);
+    if (list && !list.length) return;
+    left.push([k, mix[k], list]); sum += mix[k];
+  });
+  let w = Math.random() * sum;
+  for (let i = 0; i < left.length; i++) {
+    w -= left[i][1];
+    if (w > 0 && i < left.length - 1) continue;
+    const k = left[i][0];
+    return k === 'coins' ? caseCoins(rare) : k === 'seeds' ? caseSeeds(rare) : pick(left[i][2]);
+  }
+  return caseCoins(rare);
 }
 /* кладём выпавшее туда, где оно живёт */
 function caseGive(d) {
@@ -5761,7 +5783,7 @@ setInterval(saveNow, 10000);
 (() => { const b = BREEDS.find((x) => x.id === S.skin); if (S.skin && (!b || !hasBreed(b))) { S.skin = ''; save(); } })();
 if (Sync) Sync.onRemote(applyRemote);
 $('#boot').hidden = true;
-if (location.hash === '#t') window.__t = { OBJ, obj, art, CaseBox, caseRoll, casePool, caseGive, caseName, CASE_PRICE, CASE_ODDS, S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS, petFrame, PCOL, PET_BASE, BREEDS, SKINS, RARE, breedsDrop, WEARABLE, SUITS, CLOTHES, legendOn, ITEMS, renderRooms };
+if (location.hash === '#t') window.__t = { OBJ, obj, art, CaseBox, caseRoll, casePool, caseKind, caseGive, caseName, CASE_PRICE, CASE_ODDS, CASE_MIX, S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS, petFrame, PCOL, PET_BASE, BREEDS, SKINS, RARE, breedsDrop, WEARABLE, SUITS, CLOTHES, legendOn, ITEMS, renderRooms };
 
 /* разовое уведомление для favie */
 (() => {
