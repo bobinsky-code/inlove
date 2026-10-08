@@ -260,7 +260,7 @@ input{-webkit-user-select:text;user-select:text}
 .toast.is-on{opacity:1;transform:translate(-50%,0)}
 
 /* ---------- panel ---------- */
-.panel{flex:none;position:relative;height:136px}
+.panel{flex:none;position:relative;height:118px}
 .pane{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;visibility:hidden}
 .pane.is-on{visibility:visible;animation:paneIn .24s steps(3,end)}
 @keyframes paneIn{from{opacity:0;transform:translateY(6px)}}
@@ -276,9 +276,6 @@ input{-webkit-user-select:text;user-select:text}
 .fc-tx{min-width:0;display:flex;flex-direction:column;gap:6px}
 .fc-tx b{line-height:1}
 .fcard .eff,.row .eff,.mx-out .eff{justify-content:flex-start;flex-wrap:wrap}
-.pane-row{display:flex;align-items:center;justify-content:center;gap:10px}
-.room-b{--bg:#fff;display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:0 10px 2px;color:var(--rose2);font-size:var(--f1);line-height:1}
-.pane{gap:10px}
 .gbtns{display:flex;justify-content:center;gap:12px;width:100%;padding:0 2px}
 .gbtn{flex:1 1 0;max-width:110px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:9px 4px 8px;color:var(--ink);font-size:var(--f1);line-height:1}
 .gbtn .pi{color:var(--rose2)}
@@ -295,7 +292,7 @@ input{-webkit-user-select:text;user-select:text}
 .gcard .go i{display:inline-flex;align-items:center;gap:2px;font-style:normal}
 
 /* ---------- tabs ---------- */
-.tabs{flex:none;display:grid;grid-template-columns:repeat(4,1fr);margin:0 2px 4px}
+.tabs{flex:none;display:grid;grid-template-columns:repeat(5,1fr);margin:0 2px 4px}
 .tab{min-width:0;display:grid;grid-template-rows:20px auto;justify-items:center;align-items:center;gap:5px;padding:7px 0 7px;color:var(--ink2);font-size:10px;line-height:1;white-space:nowrap;box-shadow:inset var(--p) 0 0 0 var(--ink)}
 .tab:first-child{box-shadow:none}
 .tab:active{background:#fff0f5}
@@ -461,7 +458,7 @@ input{-webkit-user-select:text;user-select:text}
 .turn .pi{color:var(--rose2);animation:turn 2.4s steps(1,end) infinite}
 @keyframes turn{0%{transform:rotate(-90deg)}50%{transform:rotate(0)}}
 @media (orientation:landscape) and (max-height:500px) and (pointer:coarse){.turn{display:flex}.app{visibility:hidden}}
-@media (max-height:640px){.stats{gap:8px 14px}.st-b span{display:none}.st-ic{width:26px;height:26px}.panel{height:106px}.fcard{min-height:76px}.btn{min-height:40px}.top{height:34px}.stage{gap:10px}.pane{gap:8px}.room-b{min-height:26px}.pane[data-pane="1"] .room-b,.pane[data-pane="4"] .room-b{display:none}}
+@media (max-height:640px){.stats{gap:8px 14px}.st-b span{display:none}.st-ic{width:26px;height:26px}.panel{height:106px}.fcard{min-height:76px}.btn{min-height:40px}.top{height:34px}.stage{gap:10px}.pane{gap:10px}.gbtn{gap:4px;padding:7px 4px 6px}}
 @media (max-width:372px){.app{padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}.stage{padding-left:8px;padding-right:8px}.top{gap:8px}}
 @media (max-width:340px){.stats{gap:8px 10px}.gbtn{min-width:0}}
 @media (prefers-reduced-motion:reduce){.stat.is-low .seg i.on,.stat.is-low .st-ic{animation:none}}
@@ -498,7 +495,6 @@ input{-webkit-user-select:text;user-select:text}
     <section class="panel" aria-live="polite">
       <div class="pane" data-pane="0">
         <p class="hint">Нажми на питомца или погладь его</p>
-        <button class="room-b pb press" type="button" data-room-btn="1"><i data-ic="sofa" data-s="1.5"></i>Обстановка</button>
       </div>
       <div class="pane" data-pane="1">
         <div class="carousel">
@@ -506,14 +502,13 @@ input{-webkit-user-select:text;user-select:text}
           <button class="fcard pb press" id="fCard" type="button"></button>
           <button class="arr pb press" id="fNext" type="button" aria-label="Вперёд"><i data-ic="right"></i></button>
         </div>
-        <button class="room-b pb press" type="button" data-room-btn="1"><i data-ic="sofa" data-s="1.5"></i>Обстановка</button>
       </div>
       <div class="pane" data-pane="2">
         <p class="hint">Три пальцем по питомцу, потом смой пену</p>
-        <div class="pane-row"><button class="btn pb press" id="rinseBtn" type="button"><i data-ic="shower"></i>Смыть</button><button class="room-b pb press" type="button" data-room-btn="1"><i data-ic="sofa" data-s="1.5"></i>Обстановка</button></div>
+        <button class="btn pb press" id="rinseBtn" type="button"><i data-ic="shower"></i>Смыть</button>
       </div>
       <div class="pane" data-pane="3">
-        <div class="pane-row"><button class="btn pb press" id="lightBtn" type="button"><i data-ic="bulb"></i><span id="lightTx">Выключить свет</span></button><button class="room-b pb press" type="button" data-room-btn="1"><i data-ic="sofa" data-s="1.5"></i>Обстановка</button></div>
+        <button class="btn pb press" id="lightBtn" type="button"><i data-ic="bulb"></i><span id="lightTx">Выключить свет</span></button>
         <p class="hint" id="sleepHint">Полная энергия за час сна</p>
       </div>
       <div class="pane" data-pane="4">
@@ -521,7 +516,6 @@ input{-webkit-user-select:text;user-select:text}
           <button class="gcard pb press" type="button" data-game="catch"><b>Ловля косточек</b><small>Рекорд: <span data-best="catch">0</span></small><span class="go pb">Играть<i><i data-ic="bolt" data-s="1.5"></i>10</i></span></button>
           <button class="gcard pb press" type="button" data-game="run"><b>Прыжки</b><small>Рекорд: <span data-best="run">0</span></small><span class="go pb">Играть<i><i data-ic="bolt" data-s="1.5"></i>10</i></span></button>
         </div>
-        <button class="room-b pb press" type="button" data-room-btn="1"><i data-ic="sofa" data-s="1.5"></i>Обстановка</button>
       </div>
       <div class="pane" data-pane="5">
         <div class="gbtns">
@@ -537,6 +531,7 @@ input{-webkit-user-select:text;user-select:text}
       <button class="tab" type="button" id="homeBtn"><i data-ic="home"></i>Дом</button>
       <button class="tab" type="button" id="locBtn" aria-haspopup="dialog"><i data-ic="pin"></i>Локации</button>
       <button class="tab" type="button" id="marketBtn" aria-haspopup="dialog"><i data-ic="cart"></i>Магазин</button>
+      <button class="tab" type="button" id="furnBtn" aria-haspopup="dialog"><i data-ic="sofa"></i>Мебель</button>
       <button class="tab" type="button" id="peopleBtn" aria-haspopup="dialog"><i data-ic="user"></i>Люди</button>
     </nav>
 
@@ -3574,7 +3569,7 @@ nameBtn.addEventListener('click', () => {
 
 /* ---------- rooms ---------- */
 let room = -1;
-const homeBtn = $('#homeBtn'), locBtn = $('#locBtn'), marketBtn = $('#marketBtn'), peopleBtn = $('#peopleBtn'), dotsEl = $('#dots'), panes = $$('.pane');
+const homeBtn = $('#homeBtn'), locBtn = $('#locBtn'), marketBtn = $('#marketBtn'), furnBtn = $('#furnBtn'), peopleBtn = $('#peopleBtn'), dotsEl = $('#dots'), panes = $$('.pane');
 const ROOM_NAMES = ['Комната', 'Кухня', 'Ванная', 'Спальня', 'Игры'];
 dotsEl.innerHTML = ROOM_NAMES.map((n) => '<button type="button" aria-label="' + n + '"></button>').join('');
 const dots = $$('button', dotsEl);
@@ -3881,6 +3876,7 @@ function openSheet(mode, arg) {
   SHEETS[mode].render();
   sheetBody.scrollTop = 0;
   sheetOpen = true; sheet.classList.add('is-on'); sheetBg.classList.add('is-on');
+  if (SHEETS[mode].open) SHEETS[mode].open();
   if (mode === 'mail') mailRead();
   if (mode === 'person' && PEOPLE && sheetArg && sheetArg.uid) {
     const uid = sheetArg.uid;
@@ -4137,6 +4133,7 @@ window.addEventListener('pointercancel', mkDrop);
 sheetBody.addEventListener('click', (e) => { if (mkMoved) { mkMoved = 0; e.stopPropagation(); } }, true);
 
 /* ---------- обстановка: что из купленного стоит в комнатах ---------- */
+const ROOM_SEC = ['Комната', 'Кухня', 'Ванная', 'Спальня', 'Игровая'];
 SHEETS.furn = {
   title: 'Обстановка',
   render() {
@@ -4145,7 +4142,7 @@ SHEETS.furn = {
     let html = '';
     secs.forEach((sec) => {
       const list = ITEMS.filter((i) => i.sec === sec);
-      html += '<div class="mk-h"><p>' + sec + '</p><b>' + list.filter((i) => S.owned[i.id]).length + ' из ' + list.length + '</b></div><div class="wd-grid">';
+      html += '<div class="mk-h" data-sec="' + sec + '"><p>' + sec + '</p><b>' + list.filter((i) => S.owned[i.id]).length + ' из ' + list.length + '</b></div><div class="wd-grid">';
       list.forEach((it) => {
         const own = !!S.owned[it.id], on = own && !S.hide[it.id], r = RARE[it.rare] || RARE.common;
         const tag = own ? '<span class="buy pb' + (on ? ' is-owned' : '') + '">' + (on ? 'Убрать' : 'Поставить') + '</span>'
@@ -4158,6 +4155,11 @@ SHEETS.furn = {
     });
     sheetBody.innerHTML = html;
   },
+  open() {
+    const r = clamp(S.room <= HOUSE ? S.room : S.home, 0, HOUSE);   /* из сада и локаций — к комнате, где живём */
+    const h = sheetBody.querySelector('[data-sec="' + ROOM_SEC[r] + '"]');
+    if (h) sheetBody.scrollTop += h.getBoundingClientRect().top - sheetBody.getBoundingClientRect().top - 6;
+  },
   click(e) {
     const el = e.target.closest('[data-furn]'); if (!el) return;
     const it = ITEMS.find((x) => x.id === el.dataset.furn); if (!it) return;
@@ -4167,7 +4169,7 @@ SHEETS.furn = {
     save(); this.render(); renderRooms(); renderKitchen(); Scene.kick();
   },
 };
-$$('[data-room-btn]').forEach((b) => b.addEventListener('click', () => { Sound.tick(); openSheet('furn'); }));
+furnBtn.addEventListener('click', () => { Sound.tick(); openSheet('furn'); });
 
 /* wardrobe */
 let wdSlot = 'head';
