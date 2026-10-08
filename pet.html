@@ -49,7 +49,7 @@ if (!CONFIGURED) {
     /* монеты и опыт — счётчики: шлём, на сколько их стало больше или меньше, а не итог.
        Тогда две траты (или два заработка) в одну секунду с двух устройств
        складываются, а не затирают друг друга */
-    const COUNT = { coins: 1, xp: 1 };
+    const COUNT = { coins: 1, xp: 1, cases: 1 };
     /* что, насколько мы знаем, лежит на сервере: ключ состояния → его JSON.
        отсюда видно, какие поля изменили мы, а какие — второй владелец */
     const base = {};
@@ -425,6 +425,14 @@ input{-webkit-user-select:text;user-select:text}
 .mx-crop.is-off{opacity:.4}
 
 /* ---------- games ---------- */
+.case{position:absolute;inset:0;z-index:45;overflow:hidden;clip-path:polygon(var(--p) 0,calc(100% - var(--p)) 0,100% var(--p),100% calc(100% - var(--p)),calc(100% - var(--p)) 100%,var(--p) 100%,0 calc(100% - var(--p)),0 var(--p))}
+.case canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+.c-card{--bg:var(--paper);position:absolute;left:10px;right:10px;bottom:12px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 14px 14px;text-align:center;animation:cardIn .22s steps(3,end)}
+.c-card b{font-size:var(--f2);line-height:1.2}
+.c-card p{margin:2px 0 0;color:var(--ink2);font-size:var(--f1);line-height:1.3}
+.c-act{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px}
+.c-act .btn{min-height:40px;padding:0 16px 2px}
+@keyframes cardIn{from{transform:translateY(14px)}to{transform:none}}
 .game{position:absolute;inset:0;z-index:40;background:#ffeef4;overflow:hidden;clip-path:polygon(var(--p) 0,calc(100% - var(--p)) 0,100% var(--p),100% calc(100% - var(--p)),calc(100% - var(--p)) 100%,var(--p) 100%,0 calc(100% - var(--p)),0 var(--p))}
 .game canvas{position:absolute;left:0;top:0;display:block;width:100%;height:100%;touch-action:none}
 .g-hud{position:absolute;left:16px;right:16px;top:16px;z-index:2;display:flex;align-items:center;gap:14px;pointer-events:none}
@@ -546,6 +554,19 @@ input{-webkit-user-select:text;user-select:text}
       <div class="g-hud"><span class="g-pill pb" id="gScore">0</span><span class="g-pill pb" id="gTime" hidden>0:30</span><button class="x pb press" id="gX" type="button" aria-label="Закрыть"><i data-ic="close"></i></button></div>
       <div class="g-card pb2" id="gStart"><h3 id="gTitle"></h3><p id="gHow"></p><button class="btn pb press" id="gGo" type="button">Старт</button></div>
       <div class="g-card pb2" id="gEnd" hidden><h3>Результат</h3><dl class="res"><dt>Очки</dt><dd id="rScore">0</dd><dt>Рекорд</dt><dd id="rBest">0</dd><dt>Монеты</dt><dd id="rCoins">+0</dd></dl><div class="g-actions"><button class="btn pb press" id="gAgain" type="button">Ещё раз</button><button class="btn btn--ghost pb press" id="gExit" type="button">Выйти</button></div></div>
+    </div>
+
+    <div class="case" id="caseBox" hidden>
+      <canvas id="caseCv"></canvas>
+      <div class="c-card pb2" id="caseCard" hidden>
+        <b id="caseName"></b>
+        <small class="rare" id="caseRare"></small>
+        <p id="caseWhere"></p>
+        <div class="c-act">
+          <button class="btn pb press" id="caseMore" type="button" hidden>Ещё кейс</button>
+          <button class="btn btn--ghost pb press" id="caseX" type="button">Забрать</button>
+        </div>
+      </div>
     </div>
 
     <div class="map" id="map" role="dialog" aria-modal="true" aria-label="Локации" hidden>
@@ -2816,7 +2837,7 @@ function freshGarden() { return { plots: [null, null, null], seeds: {}, crops: {
 function fresh(now) {
   return { v: 1, name: 'Питомец', t: now, food: 80, fun: 75, energy: 90, clean: 85, sleeping: false, xp: 0, lvl: 1, coins: 50, owned: {}, walls: { pink: true }, wall: 'pink', best: { catch: 0, run: 0 }, petWin: { t: now, n: 0 }, room: 0, home: 0,
     wardrobe: {}, wear: {}, garden: freshGarden(), sick: null, healedAt: 0, buffs: {}, skin: '', created: now,
-    mail: {}, mailSeen: {}, who: {}, mk: '', ach: {}, q: null, breeds: {}, hide: {} };
+    mail: {}, mailSeen: {}, who: {}, mk: '', ach: {}, q: null, breeds: {}, hide: {}, cases: 0 };
 }
 function load() {
   const now = Date.now(), f = fresh(now);
@@ -2841,6 +2862,7 @@ function load() {
       m.created = s.created || now;
       if (m.room > 5) m.room = 0;
       m.home = clamp(Math.round(+s.home || 0), 0, HOUSE);
+      m.cases = Math.max(0, Math.round(+s.cases || 0));
       return m;
     }
   } catch (e) { /* fresh state */ }
@@ -3065,6 +3087,8 @@ const Sound = (() => {
     eww() { osc(170, { d: 0.3, vol: 0.08, to: 110, type: 'triangle' }); noise({ d: 0.18, vol: 0.04, f: 300, type: 'lowpass' }); },
     tick() { osc(880, { d: 0.04, vol: 0.04, type: 'triangle' }); },
     woof() { [0, 0.2].forEach((at) => { osc(260, { at, d: 0.12, vol: 0.12, to: 150, type: 'triangle' }); noise({ at, d: 0.08, vol: 0.05, f: 600, type: 'lowpass' }); }); },
+    rumble() { noise({ d: 0.85, vol: 0.03, f: 200, f2: 1100, type: 'lowpass', q: 0.8 }); osc(70, { d: 0.8, vol: 0.03, to: 130, type: 'triangle' }); },
+    fanfare() { [0, 2, 4, 7, 9, 11, 14].forEach((n, i) => bell(pent(n, 69), i * 0.09, 0.1, 1.6)); [0, 4, 7].forEach((n, i) => bell(pent(n + 7, 76), 0.66 + i * 0.07, 0.08, 2.2)); noise({ at: 0.6, d: 1.3, vol: 0.022, f: 5200, q: 0.5 }); },
   };
 })();
 
@@ -3929,6 +3953,106 @@ const THUMB = {
   scales: () => obj('scales'), candles: () => obj('candles'), books: () => obj('books'),
   moonLamp: () => obj('moonLamp'), kite: () => obj('kite'), skate: () => obj('skate'),
 };
+/* ---------- кейс ---------- */
+/* сундук собран из двух частей: при открытии крышка отлетает отдельно */
+const CHEST = { gold: '#ffd25a', goldHi: '#fff0b8', goldSh: '#d99118', rose: '#ff7ea6', roseHi: '#ffa8c4', roseSh: '#e64f7e', dark: '#a8305a', ink: '#7d2342' };
+OBJ.chestBody = (open) => {
+  const W = 22, H = 9, C = CHEST, L = Lay(W, H);
+  L.part(L.rrect(L.M(), 2, 0, 18, 8, 2), (x, y) => (y >= 7 ? C.dark : y === 0 ? C.rose : C.roseSh), C.ink);
+  [4, 17].forEach((x) => L.fill(x, 1, 1, 6, C.goldSh));
+  L.pts([[2, 0], [19, 0], [2, 7], [19, 7]], C.gold);
+  if (open) {                                          /* нутро: темно, а по краю свет */
+    L.fill(4, 0, 14, 3, '#5a1b33');
+    L.fill(4, 0, 14, 1, '#ffe9a0');
+    L.fill(5, 1, 12, 1, '#d98a4a');
+  }
+  return L.canvas();
+};
+OBJ.chestLid = (lock) => {
+  const W = 22, H = 9, C = CHEST, L = Lay(W, H);
+  const m = L.M();
+  L.rrect(m, 2, 1, 18, 6, 3); L.rect(m, 2, 5, 18, 3);
+  L.part(m, (x, y) => (y <= 2 ? C.roseHi : y <= 4 ? C.rose : C.roseSh), C.ink);
+  L.fill(2, 6, 18, 1, C.gold); L.fill(2, 7, 18, 1, C.goldSh);
+  [4, 17].forEach((x) => L.fill(x, 2, 1, 4, C.gold));
+  if (lock) {                                          /* замок-сердечко свисает с крышки */
+    const h = L.M();
+    [[9, 6], [10, 6], [12, 6], [13, 6],
+      [9, 7], [10, 7], [11, 7], [12, 7], [13, 7],
+      [10, 8], [11, 8], [12, 8]].forEach((p) => { h[p[1] * W + p[0]] = 1; });
+    L.part(h, C.gold, C.goldSh);
+    L.px(10, 6, C.goldHi); L.px(11, 7, '#8a5a1a');
+  }
+  return L.canvas();
+};
+/* открытый — для карточки «Открыть» */
+OBJ.chestOpen = () => {
+  const cv = document.createElement('canvas'); cv.width = 24; cv.height = 19;
+  const x = cv.getContext('2d'); x.imageSmoothingEnabled = false;
+  x.drawImage(obj('chestBody', 'open'), 1, 10);
+  x.save(); x.translate(13, 6); x.rotate(-0.3); x.drawImage(obj('chestLid', ''), -11, -5); x.restore();
+  return cv;
+};
+/* закрытый сундук целиком — для витрины */
+OBJ.chest = () => {
+  const cv = document.createElement('canvas'); cv.width = 22; cv.height = 19;
+  const x = cv.getContext('2d'); x.imageSmoothingEnabled = false;
+  x.drawImage(obj('chestBody', ''), 0, 10);
+  x.drawImage(obj('chestLid', 1), 0, 2);
+  return cv;
+};
+
+/* цена и содержимое. Кейс один и тот же: разной бывает только удача */
+const CASE_PRICE = 200, CASE_LVL = 2;
+/* шансы редкости в процентах, в сумме сто */
+const CASE_ODDS = [['common', 50], ['uncommon', 28], ['rare', 14], ['epic', 6], ['mythic', 1.7], ['legend', 0.3]];
+/* если всё этой редкости уже собрано, вместо вещи падают монеты */
+const CASE_COINS = { common: 30, uncommon: 70, rare: 150, epic: 350, mythic: 800, legend: 1800 };
+const caseCoins = (rare) => ({ k: 'coins', rare, n: Math.round((CASE_COINS[rare] * rand(0.8, 1.2)) / 5) * 5 });
+function caseSeeds(rare) {
+  const p = pick(PLANTS.slice(0, 6)), n = 3 + Math.floor(Math.random() * 3);
+  return { k: 'seeds', rare, id: p.id, n, name: p.name + ' ×' + n };
+}
+/* что вообще может выпасть этой редкости: порода, вещь, мебель, обои, монеты, семена */
+function casePool(rare) {
+  const out = [];
+  breedsDrop().forEach((b) => { if (b.rare === rare && !S.breeds[b.id]) out.push({ k: 'breed', id: b.id, name: b.name, rare }); });
+  WEARABLE.forEach((c) => { if (c.rare === rare && !S.wardrobe[c.id]) out.push({ k: 'wear', id: c.id, name: c.name, rare }); });
+  ITEMS.forEach((i) => { if (i.rare === rare && !S.owned[i.id]) out.push({ k: 'furn', id: i.id, name: i.name, rare }); });
+  if (rare === 'uncommon') WALLS.forEach((w) => { if (w.price > 0 && !S.walls[w.id]) out.push({ k: 'wall', id: w.id, name: 'Обои ' + w.name.toLowerCase(), rare }); });
+  /* мелочь в дешёвых редкостях, чтобы кейс не был только вещами */
+  const fill = rare === 'common' ? 2 : rare === 'uncommon' ? 1 : 0;
+  for (let i = 0; i < fill; i++) { out.push(caseCoins(rare)); out.push(caseSeeds(rare)); }
+  return out;
+}
+function caseRoll() {
+  let r = Math.random() * 100, rare = CASE_ODDS[0][0];
+  for (let i = 0; i < CASE_ODDS.length; i++) { r -= CASE_ODDS[i][1]; if (r <= 0) { rare = CASE_ODDS[i][0]; break; } }
+  const pool = casePool(rare);
+  return pool.length ? pick(pool) : caseCoins(rare);
+}
+/* кладём выпавшее туда, где оно живёт */
+function caseGive(d) {
+  if (d.k === 'coins') { addCoins(d.n); return; }
+  if (d.k === 'breed') S.breeds[d.id] = true;
+  else if (d.k === 'wear') S.wardrobe[d.id] = true;
+  else if (d.k === 'furn') S.owned[d.id] = true;
+  else if (d.k === 'wall') S.walls[d.id] = true;
+  else if (d.k === 'seeds') S.garden.seeds[d.id] = (S.garden.seeds[d.id] || 0) + d.n;
+  save();
+}
+const CASE_WHERE = { breed: 'Порода — в гардеробе', wear: 'Вещь — в гардеробе', furn: 'Мебель — уже в комнате',
+  wall: 'Обои — выбрать в магазине', coins: 'Монеты на счету', seeds: 'Семена — в саду' };
+const caseName = (d) => (d.k === 'coins' ? d.n + ' монет' : d.k === 'seeds' ? 'Семена: ' + d.name : d.name);
+/* картинка выпавшего */
+function caseArt(d) {
+  if (d.k === 'breed') return petFrame(Object.assign({}, PET_BASE, { skin: d.id })).cv;
+  if (d.k === 'wear') { const c = WEARABLE.find((x) => x.id === d.id); return petFrame(Object.assign({}, PET_BASE, { wear: { [c.slot]: c.id } })).cv; }
+  if (d.k === 'furn') return THUMB[d.id]();
+  if (d.k === 'wall') return art('nw:' + d.id, () => nicheWall(d.id, 52, 44));
+  if (d.k === 'coins') return art('caseCoin', () => spr(COIN.rows, COIN.map));
+  return art('caseSeed', () => spr(IC.seed, { '#': '#b98058' }));
+}
 /* ---------- витрина: навес, полка, ниша ---------- */
 OBJ.awning = () => {
   const W = 16, H = 14, L = Lay(W, H);
@@ -4054,6 +4178,15 @@ SHEETS.shop = {
     mkShown = mkDay();
     const nb = art('niche:72x56', () => OBJ.niche(72, 56)), ns = art('niche:52x44', () => OBJ.niche(52, 44));
     let html = '<div class="mk-awn" style="' + mkBG('mkAwn', art('mkAwn', OBJ.awning), 2) + '"></div>';
+    /* кейсы: один и тот же сундук, разной бывает только удача */
+    html += '<div class="mk-h"><p>Кейсы</p>' + (S.cases > 0 ? '<b>у вас ' + S.cases + '</b>' : '') + '</div>';
+    const cases = [mkCard('data-case="buy"', mkCase('nb', nb, 2, thumb('chest', obj('chest'), 90)), 'Кейс',
+      'Порода, вещь, мебель или монеты', priceTag(CASE_PRICE, CASE_LVL, false, ''), 'mk-big' + (S.lvl < CASE_LVL ? ' is-soon' : ''))];
+    if (S.cases > 0) {
+      cases.push(mkCard('data-case="open"', mkCase('nb', nb, 2, thumb('chestO', obj('chestOpen'), 90)), 'Открыть',
+        'Кейсов: ' + S.cases, '<span class="buy pb is-owned">Открыть</span>', 'mk-big is-own'));
+    }
+    html += mkShelf(cases);
     html += '<div class="mk-h"><p>Сегодня в продаже</p><b id="mkLeft">' + mkLeftTX() + '</b></div>';
     const day = mkToday();
     html += mkShelf(day.cl.map((c) => {
@@ -4083,6 +4216,25 @@ SHEETS.shop = {
     sheetBody.scrollTop = top;
   },
   click(e) {
+    const cs = e.target.closest('[data-case]');
+    if (cs) {
+      if (cs.dataset.case === 'open') {
+        if (!(S.cases > 0)) return;
+        S.cases--; save();
+        const d = caseRoll(); caseGive(d);
+        Sound.tick(); Haptic.tap(10);
+        this.render();
+        CaseBox.open(d);
+        return;
+      }
+      if (!buyCheck(cs, CASE_PRICE, CASE_LVL)) return;
+      addCoins(-CASE_PRICE);
+      S.cases++;
+      Haptic.tap(12); burstAt(cs);
+      toast('Кейс куплен');
+      this.render(); save();
+      return;
+    }
     const cl = e.target.closest('[data-cloth]');
     if (cl) {
       const c = WEARABLE.find((x) => x.id === cl.dataset.cloth); if (!c) return;
@@ -5278,6 +5430,206 @@ $$('.gcard').forEach((c) => c.addEventListener('click', () => {
   Sound.unlock(); Game.open(c.dataset.game);
 }));
 
+/* ---------- открытие кейса: чем реже вещь, тем громче ---------- */
+const CaseBox = (() => {
+  const wrap = $('#caseBox'), cv = $('#caseCv'), cx = cv.getContext('2d');
+  const card = $('#caseCard'), nameEl = $('#caseName'), rareEl = $('#caseRare'), whereEl = $('#caseWhere'), moreEl = $('#caseMore');
+  const buf = document.createElement('canvas'), g = buf.getContext('2d');
+  const TIER = { common: 0, uncommon: 1, rare: 2, epic: 3, mythic: 4, legend: 5 };
+  /* обычная вещь просто выпадает, дальше открытие всё длиннее и ярче */
+  const LEN = [0.4, 1.2, 2, 2.8, 3.6, 4.8];           /* сколько секунд идёт открытие */
+  const POP = [0.5, 0.5, 0.52, 0.55, 0.58, 0.62];     /* какая их доля до хлопка крышки */
+  const DIM = [0.35, 0.56, 0.76, 0.85, 0.9, 0.95];    /* насколько темнеет комната вокруг */
+  let W = 0, H = 0, D = 1, N = 6, gw = 0, gh = 0;
+  let raf = 0, last = 0, t = 0, drop = null, tier = 0, col = '#fff', pic = null, P = [], banged = false, done = false;
+
+  function size() {
+    const r = wrap.getBoundingClientRect();
+    W = r.width || 320; H = r.height || 480; D = DPR();
+    cv.width = Math.max(1, Math.round(W * D)); cv.height = Math.max(1, Math.round(H * D));
+    N = Math.max(2, Math.round(3 * D));                /* размер «пикселя» картинки */
+    gw = Math.ceil(cv.width / N); gh = Math.ceil(cv.height / N);
+    buf.width = gw; buf.height = gh;
+  }
+  function spark(x, y, n, sp, life, up) {
+    if (REDUCED) n = Math.ceil(n / 3);
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, v = sp * (0.35 + Math.random());
+      P.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - (up || 0), t: 0, life: life || 1,
+        s: Math.random() < 0.3 ? 2 : 1, c: Math.random() < 0.5 ? col : shade(col, 0.55) });
+    }
+  }
+  function bang() {                                    /* крышка слетела: звук, тряска, искры */
+    banged = true;
+    spark(gw / 2, gh * 0.48, [10, 16, 26, 38, 54, 72][tier], 26 + tier * 9, 1 + tier * 0.25, 10 + tier * 4);
+    Haptic.tap([8, 12, 18, 26, 34, 50][tier]);
+    if (tier >= 5) Sound.fanfare();
+    else if (tier === 4) { Sound.levelUp(); setTimeout(() => Sound.cure(), 420); }
+    else if (tier === 3) Sound.levelUp();
+    else if (tier === 2) Sound.cure();
+    else if (tier === 1) Sound.coin();
+    else Sound.pop();
+  }
+  function finish() {
+    done = true;
+    const r = RARE[drop.rare] || RARE.common;
+    nameEl.textContent = caseName(drop);
+    rareEl.textContent = r.t; rareEl.style.color = r.c;
+    whereEl.textContent = CASE_WHERE[drop.k] || '';
+    moreEl.hidden = !(S.cases > 0);
+    card.hidden = false;
+  }
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+    const L = LEN[tier], pop = POP[tier], u = Math.min(1, t / L);
+    const closed = u < pop, k = closed ? u / pop : (u - pop) / (1 - pop);
+    if (!closed && !banged) bang();
+    const cxp = Math.round(gw / 2), cyp = Math.round(gh * 0.48);
+    g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1;
+    g.clearRect(0, 0, gw, gh); g.imageSmoothingEnabled = false;
+    const dim = DIM[tier] * Math.min(1, u / 0.2);
+    if (dim > 0.01) { g.globalAlpha = dim; g.fillStyle = '#1b0f16'; g.fillRect(0, 0, gw, gh); g.globalAlpha = 1; }
+    /* лучи из сундука */
+    if (!closed && tier >= 2) {
+      const n = tier >= 4 ? 16 : tier >= 3 ? 12 : 10;
+      g.save(); g.translate(cxp + 0.5, cyp + 0.5); g.rotate(t * (0.4 + tier * 0.12));
+      g.globalCompositeOperation = 'lighter';
+      g.globalAlpha = 0.5 * Math.min(1, k * 5) * (1 - 0.3 * k);
+      for (let i = 0; i < n; i++) {
+        g.rotate((Math.PI * 2) / n);
+        g.fillStyle = i % 2 ? shade(col, 0.45) : shade(col, 0.12);
+        const len = gh * (0.6 + 0.2 * Math.sin(t * 5 + i)) * (0.4 + 0.5 * k), w = 3 + tier * 0.9;
+        g.beginPath(); g.moveTo(0, 0); g.lineTo(len, -w); g.lineTo(len, w); g.closePath(); g.fill();
+      }
+      g.restore(); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+    }
+    /* кольца ударной волны */
+    if (!closed && tier >= 3) {
+      for (let i = 0; i < tier - 2; i++) {
+        const kk = k * 1.7 - i * 0.2;
+        if (kk <= 0 || kk >= 1) continue;
+        g.globalAlpha = (1 - kk) * 0.9; g.strokeStyle = shade(col, 0.5); g.lineWidth = 1;
+        g.beginPath(); g.arc(cxp + 0.5, cyp + 0.5, kk * gw * 0.8, 0, Math.PI * 2); g.stroke();
+      }
+      g.globalAlpha = 1;
+    }
+    /* звёздный дождь у самых редких */
+    if (!closed && tier >= 4 && !REDUCED && Math.random() < 0.5) {
+      P.push({ x: rand(0, gw), y: -2, vx: 0, vy: rand(12, 26), t: 0, life: 2.4, s: Math.random() < 0.4 ? 2 : 1, c: shade(col, 0.5) });
+    }
+    /* сундук: трясётся, наливается светом, потом крышка улетает */
+    const cs = Math.max(2, Math.round(gw / 50));
+    const body = obj('chestBody', closed ? '' : 'open'), lid = obj('chestLid', closed ? 1 : '');
+    const bw = body.width * cs, bh = body.height * cs, lh = lid.height * cs;
+    let sx = 0, sy = 0;
+    if (closed && tier > 0) {
+      const amp = (0.5 + tier * 0.6) * (0.2 + k);
+      sx = Math.round(Math.sin(t * 36) * amp);
+      sy = Math.round(Math.cos(t * 27) * amp * 0.5 - Math.max(0, Math.sin(t * 7)) * tier * k);
+    }
+    const bx = Math.round(cxp - bw / 2) + sx, by = Math.round(cyp + lh * 0.3) + sy;
+    /* свечение под сундуком растёт к хлопку */
+    if (closed && tier >= 2) {
+      const kk = Math.max(0, (k - 0.1) / 0.9);
+      g.globalCompositeOperation = 'lighter';
+      for (let i = 2; i >= 1; i--) {
+        g.globalAlpha = 0.13 * kk * (0.75 + 0.25 * Math.sin(t * 9)) * i;
+        g.fillStyle = shade(col, 0.2);
+        g.beginPath(); g.arc(cxp, by + bh / 2, bw * (0.35 + i * 0.22) * (0.6 + kk * 0.6), 0, Math.PI * 2); g.fill();
+      }
+      g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+    }
+    /* к самым редким искры слетаются к сундуку */
+    if (closed && tier >= 4 && !REDUCED && k > 0.25 && Math.random() < 0.45) {
+      const a = Math.random() * Math.PI * 2, R = gw * 0.42;
+      P.push({ x: cxp + Math.cos(a) * R, y: cyp + Math.sin(a) * R, vx: -Math.cos(a) * R, vy: -Math.sin(a) * R,
+        t: 0, life: 0.95, s: 1, c: shade(col, 0.5), suck: 1 });
+    }
+    g.globalAlpha = closed ? 1 : Math.max(0.4, 1 - Math.max(0, (k - 0.3) / 0.7) * 0.6);
+    g.drawImage(body, bx, by, bw, bh);
+    g.globalAlpha = 1;
+    /* свет из щели перед хлопком */
+    if (closed && tier >= 2 && k > 0.25) {
+      const kk = (k - 0.25) / 0.75;
+      g.globalAlpha = kk * (0.7 + 0.3 * Math.sin(t * 12)); g.fillStyle = shade(col, 0.7);
+      g.fillRect(bx + cs, by - cs, bw - cs * 2, Math.max(1, Math.round(cs * kk * 1.6)));
+      g.globalAlpha = 1;
+      if (!REDUCED && Math.random() < kk * 0.6) spark(cxp, by, 1, 18, 0.7, 14);
+    }
+    if (closed) g.drawImage(lid, bx, by - lh + cs, bw, lh);
+    else {
+      const fly = k * (2 - k);
+      g.save(); g.translate(bx + bw / 2, by - lh * 0.5 - fly * gh * 0.45); g.rotate(-k * 2.4);
+      g.globalAlpha = Math.max(0, 1 - k * 1.5);
+      g.drawImage(lid, -bw / 2, -lh / 2, bw, lh);
+      g.restore(); g.globalAlpha = 1;
+    }
+    /* сама вещь поднимается из сундука */
+    if (!closed && pic) {
+      const is = Math.max(1, Math.min(4, Math.floor((gw * 0.3) / Math.max(pic.width, pic.height))));
+      const iw = pic.width * is, ih = pic.height * is;
+      const e = 1 - Math.pow(1 - Math.min(1, k * 2.1), 3);
+      const ix = Math.round(cxp - iw / 2), iy = Math.round(by - ih * e - gh * 0.04 * e);
+      if (tier >= 3) {                                  /* мягкий ореол за редкой вещью */
+        g.globalCompositeOperation = 'lighter';
+        for (let i = 3; i >= 1; i--) {
+          g.globalAlpha = (0.08 + 0.03 * Math.sin(t * 7)) * i * (tier >= 4 ? 1.3 : 0.8);
+          g.fillStyle = shade(col, 0.25);
+          g.beginPath(); g.arc(cxp, iy + ih / 2, ih * (0.3 + i * 0.17) * e, 0, Math.PI * 2); g.fill();
+        }
+        g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+      }
+      g.globalAlpha = Math.min(1, k * 3);
+      g.drawImage(pic, ix, iy, iw, ih);
+      g.globalAlpha = 1;
+      if (tier >= 3 && !REDUCED && Math.random() < 0.25) spark(ix + rand(0, iw), iy + rand(0, ih), 1, 10, 0.8, 6);
+    }
+    /* искры */
+    for (let i = P.length - 1; i >= 0; i--) {
+      const p = P[i]; p.t += dt;
+      if (p.t >= p.life) { P.splice(i, 1); continue; }
+      if (!p.suck) p.vy += 24 * dt;
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      if (p.t / p.life > 0.7 && Math.floor(p.t * 16) % 2 === 0) continue;
+      g.fillStyle = p.c; g.fillRect(Math.round(p.x), Math.round(p.y), p.s, p.s);
+    }
+    /* вспышка в момент хлопка */
+    if (!closed && k < 0.2) { g.globalAlpha = (1 - k / 0.2) * (0.3 + tier * 0.12); g.fillStyle = '#fff'; g.fillRect(0, 0, gw, gh); g.globalAlpha = 1; }
+    const shk = !closed && tier >= 3 && k < 0.35 ? (1 - k / 0.35) * (tier - 2) * 1.4 : 0;
+    cx.setTransform(1, 0, 0, 1, 0, 0); cx.imageSmoothingEnabled = false;
+    cx.clearRect(0, 0, cv.width, cv.height);
+    cx.drawImage(buf, Math.round(Math.sin(t * 70) * shk) * N, Math.round(Math.cos(t * 59) * shk) * N, gw * N, gh * N);
+    if (u >= 1 && !done) finish();
+    raf = requestAnimationFrame(frame);
+  }
+  function openCase(d) {
+    drop = d; tier = TIER[d.rare] || 0; col = (RARE[d.rare] || RARE.common).c;
+    pic = caseArt(d); P = []; t = REDUCED ? LEN[tier] : 0; banged = false; done = false;
+    card.hidden = true; moreEl.hidden = true;
+    wrap.hidden = false;
+    size();
+    last = performance.now();
+    cancelAnimationFrame(raf); raf = requestAnimationFrame(frame);
+    if (tier >= 2) Sound.rumble();
+  }
+  function close() {
+    cancelAnimationFrame(raf); raf = 0;
+    wrap.hidden = true; card.hidden = true; P = []; drop = null; pic = null;
+    cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, cv.width, cv.height);
+  }
+  function skip() { if (!drop || done) return; t = LEN[tier]; }
+  $('#caseX').addEventListener('click', () => { Sound.tick(); close(); renderSheet(); });
+  moreEl.addEventListener('click', () => {
+    if (!(S.cases > 0)) { moreEl.hidden = true; return; }
+    S.cases--; save();
+    const d = caseRoll(); caseGive(d);
+    openCase(d);
+  });
+  wrap.addEventListener('pointerdown', (e) => { if (!e.target.closest('.c-card')) skip(); });
+  window.addEventListener('resize', () => { if (!wrap.hidden) size(); });
+  return { open: openCase, close, skip, get on() { return !wrap.hidden; }, get drop() { return drop; } };
+})();
+
 /* ---------- locations: the map and the gate into the garden ---------- */
 const LOCS = [
   { id: 'garden', name: 'Сад', nx: 0.3, ny: 0.26, room: 5, open: true },
@@ -5409,7 +5761,7 @@ setInterval(saveNow, 10000);
 (() => { const b = BREEDS.find((x) => x.id === S.skin); if (S.skin && (!b || !hasBreed(b))) { S.skin = ''; save(); } })();
 if (Sync) Sync.onRemote(applyRemote);
 $('#boot').hidden = true;
-if (location.hash === '#t') window.__t = { S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS, petFrame, PCOL, PET_BASE, BREEDS, SKINS, RARE, breedsDrop, WEARABLE, SUITS, CLOTHES, legendOn, ITEMS, renderRooms };
+if (location.hash === '#t') window.__t = { OBJ, obj, art, CaseBox, caseRoll, casePool, caseGive, caseName, CASE_PRICE, CASE_ODDS, S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS, petFrame, PCOL, PET_BASE, BREEDS, SKINS, RARE, breedsDrop, WEARABLE, SUITS, CLOTHES, legendOn, ITEMS, renderRooms };
 
 /* разовое уведомление для favie */
 (() => {
