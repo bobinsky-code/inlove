@@ -618,7 +618,16 @@ function Lay(w, h) {
   L.M = () => new Uint8Array(w * h);
   L.in = (x, y) => x >= 0 && y >= 0 && x < w && y < h;
   L.has = (m, x, y) => L.in(x, y) && m[y * w + x] === 1;
+  /* сжатие рисунка к точке: им уменьшаем тело щенка, не трогая мордочку.
+     Маски и L.has живут уже в пиксельных координатах, их это не касается. */
+  let T = null;
+  L.T = (t) => { T = t || null; return L; };
+  L.tx = (x) => (T ? T.x + (x - T.x) * T.s : x);
+  L.ty = (y) => (T ? T.y + (y - T.y) * T.s : y);
+  L.ts = (v) => (T ? v * T.s : v);
+  const rx0 = (x) => Math.round(L.tx(x)), ry0 = (y) => Math.round(L.ty(y));
   L.ell = (m, cx, cy, rx, ry, ang) => {
+    cx = L.tx(cx); cy = L.ty(cy); rx = L.ts(rx); ry = L.ts(ry);
     const ca = Math.cos(ang || 0), sa = Math.sin(ang || 0);
     const x0 = Math.max(0, Math.floor(cx - Math.max(rx, ry) - 1)), x1 = Math.min(w - 1, Math.ceil(cx + Math.max(rx, ry) + 1));
     const y0 = Math.max(0, Math.floor(cy - Math.max(rx, ry) - 1)), y1 = Math.min(h - 1, Math.ceil(cy + Math.max(rx, ry) + 1));
@@ -629,8 +638,13 @@ function Lay(w, h) {
     }
     return m;
   };
-  L.rect = (m, x0, y0, rw, rh) => { for (let y = y0; y < y0 + rh; y++) for (let x = x0; x < x0 + rw; x++) if (L.in(x, y)) m[y * w + x] = 1; return m; };
+  L.rect = (m, x0, y0, rw, rh) => {
+    const x1 = rx0(x0 + rw), y1 = ry0(y0 + rh);
+    for (let y = ry0(y0); y < y1; y++) for (let x = rx0(x0); x < x1; x++) if (L.in(x, y)) m[y * w + x] = 1;
+    return m;
+  };
   L.rrect = (m, x0, y0, rw, rh, r) => {
+    rw = Math.round(L.ts(rw)); rh = Math.round(L.ts(rh)); r = L.ts(r); x0 = rx0(x0); y0 = ry0(y0);
     for (let y = y0; y < y0 + rh; y++) for (let x = x0; x < x0 + rw; x++) {
       if (!L.in(x, y)) continue;
       const dx = Math.max(x0 + r - x - 0.5, 0, x + 0.5 - (x0 + rw - r)), dy = Math.max(y0 + r - y - 0.5, 0, y + 0.5 - (y0 + rh - r));
@@ -639,6 +653,7 @@ function Lay(w, h) {
     return m;
   };
   L.poly = (m, pts) => {
+    pts = pts.map((p) => [L.tx(p[0]), L.ty(p[1])]);
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       const px = x + 0.5, py = y + 0.5; let ins = false;
       for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
@@ -670,9 +685,15 @@ function Lay(w, h) {
     }
     return L;
   };
-  L.px = (x, y, col) => { if (L.in(x, y)) L.c[y * w + x] = col; return L; };
+  L.px = (x, y, col) => { x = rx0(x); y = ry0(y); if (L.in(x, y)) L.c[y * w + x] = col; return L; };
   L.pts = (list, col) => { for (let i = 0; i < list.length; i++) L.px(list[i][0], list[i][1], col); return L; };
-  L.fill = (x0, y0, rw, rh, col) => { for (let y = y0; y < y0 + rh; y++) for (let x = x0; x < x0 + rw; x++) L.px(x, y, col); return L; };
+  L.fill = (x0, y0, rw, rh, col) => {
+    const x1 = rx0(x0 + rw), y1 = ry0(y0 + rh), T0 = T;
+    T = null;                                          /* координаты уже переведены */
+    for (let y = ry0(y0); y < y1; y++) for (let x = rx0(x0); x < x1; x++) L.px(x, y, col);
+    T = T0;
+    return L;
+  };
   L.canvas = () => {
     const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
     const x = cv.getContext('2d');
@@ -1705,15 +1726,32 @@ const skinOf = (v) => (v == null ? S.skin : v);
 /* огонь на голове гаснет от воды и через несколько секунд разгорается снова */
 let fireWet = 0;
 const fireFrame = (t) => (Date.now() < fireWet ? 0 : 1 + (Math.floor(t / 170) % 3));
+/* ---------- рост: щенок становится взрослым сам, по времени ---------- */
+/* s — насколько сжато тело, dy — насколько ниже сидит голова */
+const GROW = [
+  { id: 'pup', name: 'Щенок', d: 0, s: 0.72, dy: 4 },
+  { id: 'teen', name: 'Подросток', d: 7, s: 0.87, dy: 1 },
+  { id: 'adult', name: 'Взрослый', d: 21, s: 1, dy: 0 },
+];
+const GROW_BY = {};
+GROW.forEach((g) => { GROW_BY[g.id] = g; });
+const petDays = () => Math.max(0, (Date.now() - (S.created || Date.now())) / 86400e3);
+function growAt(days) { let g = GROW[0]; for (let i = 0; i < GROW.length; i++) if (days >= GROW[i].d) g = GROW[i]; return g; }
+const growNow = () => growAt(petDays());
 function petFrame(o) {
   const wr = o.wear || {}, skin = skinOf(o.skin);
-  const key = [o.eyes, o.mouth, o.ears, o.tail, o.hx, o.hy, o.by, o.pose, o.brows ? 1 : 0, o.blush ? 1 : 0, o.dirt, wr.head || '', wr.eyes || '', wr.neck || '', wr.body || '', o.cape ? 1 : 0, o.flap || 0, o.sick || '', skin, wr.suit || '', o.fire || 0].join('|');
+  const G = GROW_BY[o.grow] || growNow();
+  const key = [o.eyes, o.mouth, o.ears, o.tail, o.hx, o.hy, o.by, o.pose, o.brows ? 1 : 0, o.blush ? 1 : 0, o.dirt, wr.head || '', wr.eyes || '', wr.neck || '', wr.body || '', o.cape ? 1 : 0, o.flap || 0, o.sick || '', skin, wr.suit || '', o.fire || 0, G.id].join('|');
   let f = petCache.get(key);
   if (f) return f;
   const L = Lay(PW, PH), C = SKINS[skin] || PCOL, M = C.m || {};
   const onFur = (i) => L.c[i] === C.fur || L.c[i] === C.furSh || L.c[i] === C.furHi;
   const paintFur = (mask, col, colSh) => { for (let i = 0; i < mask.length; i++) if (mask[i] && onFur(i)) L.c[i] = L.c[i] === C.furSh && colSh ? colSh : col; };
-  const lie = o.pose === 'lie', hx = o.hx, hy = o.hy + (lie ? 5 : 0), by = o.by;
+  const lie = o.pose === 'lie', hx = o.hx, hy = o.hy + (lie ? 5 : 0) + G.dy, by = o.by;
+  /* тело, лапы и хвост сжимаются к полу, мордочка остаётся прежней */
+  const BT = G.s < 1 ? { x: 22.5, y: 45, s: G.s } : null;
+  const TX = (x) => Math.round(BT ? BT.x + (x - BT.x) * BT.s : x);
+  const TY = (y) => Math.round(BT ? BT.y + (y - BT.y) * BT.s : y);
   const X = (x) => x + hx, Y = (y) => y + hy;
   const shadeFn = (base, sh, hi) => (x, y, m) => (!L.has(m, x, y + 2) || !L.has(m, x + 2, y + 1) ? sh : hi && x < 23 && (!L.has(m, x, y - 2) || !L.has(m, x - 2, y - 1)) ? hi : base);
   const W = (s) => (wr[s] && WEAR[wr[s]] ? WEAR[wr[s]] : null);
@@ -1724,6 +1762,7 @@ function petFrame(o) {
   const caped = o.cape || (wBody && wBody.k === 'cape');
   const NY = (lie ? 31 : 27) + by;
   /* tail */
+  L.T(BT);
   const tp = TAILS[lie ? 'down' : o.tail] || TAILS[0];
   L.part(L.clean(bez(L, L.M(), tp[0], tp[1], [tp[2][0], tp[2][1] + by], 1.9)), shadeFn(C.tail, C.tailSh), INK);
   /* cape behind the body */
@@ -1733,6 +1772,7 @@ function petFrame(o) {
     L.part(L.poly(L.M(), poly), (x, y, m) => (!L.has(m, x + 1, y) || !L.has(m, x, y + 1) ? cc[1] : !L.has(m, x - 1, y) ? cc[2] : cc[0]), INK);
   }
   /* ears behind the head */
+  L.T(null);
   const em = L.M(), upEar = M.earUp && o.ears !== 'up' && o.ears !== 'down';
   if (upEar) {                                        /* стоячие уши: треугольником, у коротких выше основание */
     const et = M.earUp === 2 ? 8 : 3.5;
@@ -1754,6 +1794,7 @@ function petFrame(o) {
   /* hood */
   if (wBody && wBody.k === 'hoodie') L.part(L.clean(L.ell(L.M(), 22.5 + hx, 23 + hy, 12.5, 6.5)), (x, y, m) => (!L.has(m, x, y + 1) ? wBody.c[1] : wBody.c[0]), INK);
   /* body */
+  L.T(BT);
   const bm = L.M();
   if (lie) L.ell(bm, 22.5, 37.5 + by, 14, 6.6);
   else { L.ell(bm, 22.5, 34 + by, 10.5, 8.8); L.ell(bm, 14.5, 38.5, 5.5, 4.6); L.ell(bm, 30.5, 38.5, 5.5, 4.6); }
@@ -1769,29 +1810,34 @@ function petFrame(o) {
   /* любая одежда на теле: маска тела между двумя строками */
   const bodyMask = (top, bot) => { const cm = L.M(); for (let y = top; y <= bot; y++) for (let x = 0; x < PW; x++) if (L.has(bmc, x, y)) cm[y * PW + x] = 1; return cm; };
   if (wBody && wBody.k === 'vest') {
-    const c = wBody.c, top = lie ? 33 + by : NY + 2, bot = lie ? 41 + by : NY + 11, cm = bodyMask(top, bot);
-    for (let y = top; y <= bot; y++) for (let x = 20; x <= 25; x++) cm[y * PW + x] = 0;   /* распашонка */
+    const c = wBody.c, top = TY(lie ? 33 + by : NY + 2), bot = TY(lie ? 41 + by : NY + 11), cm = bodyMask(top, bot);
+    for (let y = top; y <= bot; y++) for (let x = TX(20); x <= TX(25); x++) cm[y * PW + x] = 0;   /* распашонка */
     L.part(cm, (x, y, m) => (!L.has(m, x, y + 1) || !L.has(m, x + 1, y) ? c[1] : !L.has(m, x - 2, y) ? c[2] : c[0]));
   }
   if (suitK === 'kigu' || suitK === 'mj' || suitK === 'tyler') {
-    const c = wSuit.c, top = lie ? 32 + by : NY + 1, bot = lie ? 42 + by : NY + 14, cm = bodyMask(top, bot);
+    const c = wSuit.c, top = TY(lie ? 32 + by : NY + 1), bot = TY(lie ? 42 + by : NY + 14), cm = bodyMask(top, bot);
     L.part(cm, (x, y, m) => (y === bot || !L.has(m, x, y + 1) ? c[1] : !L.has(m, x - 2, y) ? c[2] : !L.has(m, x + 2, y) ? c[1] : c[0]));
     if (suitK === 'kigu') {
       L.part(L.ell(L.M(), 22.5, (lie ? 37 : NY + 8) + by, 5.6, 4.2), (x, y, m) => (!L.has(m, x, y + 1) ? c[1] : c[2]));
     } else if (suitK === 'mj') {
-      for (let d = 0; d < 6; d++) for (let x = 21 - d; x <= 24 + d; x++) { const y = top + 1 + d; if (cm[y * PW + x]) L.px(x, y, d > 3 ? c[2] : WHITE); }
+      for (let d = 0; d < 6; d++) for (let x = TX(21) - d; x <= TX(24) + d; x++) { const y = top + 1 + d; if (cm[y * PW + x]) { L.T(null); L.px(x, y, d > 3 ? c[2] : WHITE); L.T(BT); } }
     } else {
-      for (let d = 0; d < 5; d++) { const y = top + 1 + d; if (cm[y * PW + (19 - d)]) L.px(19 - d, y, c[2]); if (cm[y * PW + (26 + d)]) L.px(26 + d, y, c[2]); }
+      L.T(null);
+      for (let d = 0; d < 5; d++) { const y = top + 1 + d, xl = TX(19) - d, xr = TX(26) + d; if (cm[y * PW + xl]) L.px(xl, y, c[2]); if (cm[y * PW + xr]) L.px(xr, y, c[2]); }
+      L.T(BT);
     }
   }
   if (wBody && (wBody.k === 'tee' || wBody.k === 'sweater' || wBody.k === 'hoodie')) {
-    const c = wBody.c, top = lie ? 33 + by : NY + 2, bot = wBody.k === 'tee' ? top + 6 : lie ? 42 + by : NY + 13;
+    const c = wBody.c, top = TY(lie ? 33 + by : NY + 2), bot = wBody.k === 'tee' ? top + Math.round(6 * G.s) : TY(lie ? 42 + by : NY + 13);
     const cm = bodyMask(top, bot);
     L.part(cm, (x, y, m) => (y === bot || !L.has(m, x, y + 1) ? c[1] : wBody.k === 'sweater' && (y - top) % 3 === 2 ? c[2] : !L.has(m, x - 2, y) ? c[2] : !L.has(m, x + 2, y) ? c[1] : c[0]));
     if (wBody.k === 'hoodie' && !lie) {
-      for (let x = 18; x <= 27; x++) L.px(x, NY + 8, c[1]);
-      L.px(18, NY + 9, c[1]); L.px(27, NY + 9, c[1]); L.px(18, NY + 10, c[1]); L.px(27, NY + 10, c[1]);
-      L.pts([[20, NY + 2], [20, NY + 3], [20, NY + 4], [25, NY + 2], [25, NY + 3], [25, NY + 4]], WHITE);
+      const p1 = TY(NY + 8), xl = TX(18), xr = TX(27);
+      L.T(null);
+      for (let x = xl; x <= xr; x++) L.px(x, p1, c[1]);
+      [1, 2].forEach((d) => { L.px(xl, p1 + d, c[1]); L.px(xr, p1 + d, c[1]); });
+      [TX(20), TX(25)].forEach((x) => [TY(NY + 2), TY(NY + 3), TY(NY + 4)].forEach((y) => L.px(x, y, WHITE)));
+      L.T(BT);
     }
   }
   /* paws */
@@ -1803,18 +1849,23 @@ function petFrame(o) {
   if (suitK === 'mj') {                                  /* белая перчатка на одной лапе */
     const gx = lie ? 15.5 : 19, gm = L.ell(L.M(), gx, lie ? 41.5 : 41.2, lie ? 3.6 : 3, 2.4);
     for (let i = 0; i < gm.length; i++) if (gm[i] && L.c[i] && L.c[i] !== INK) L.c[i] = WHITE;
-    for (let x = Math.round(gx) - 3; x <= Math.round(gx) + 3; x++) { const y = 39; if (L.c[y * PW + x] && L.c[y * PW + x] !== INK) L.c[y * PW + x] = wSuit.c[1]; }
-    L.pts([[Math.round(gx) - 1, 41], [Math.round(gx) + 1, 42]], '#cfd6e4');
+    const gxp = TX(gx), gy = TY(39);
+    for (let x = gxp - 3; x <= gxp + 3; x++) { if (L.c[gy * PW + x] && L.c[gy * PW + x] !== INK) L.c[gy * PW + x] = wSuit.c[1]; }
+    L.T(null); L.pts([[gxp - 1, TY(41)], [gxp + 1, TY(42)]], '#cfd6e4'); L.T(BT);
   }
   /* collar + tag */
   if (!lie) {
-    for (let y = 27; y <= 28; y++) for (let x = 13; x <= 31; x++) if (L.has(bmc, x, y + by) && L.c[(y + by) * PW + x] !== INK) L.px(x, y + by, y === 28 ? C.collarSh : C.collar);
+    const c1 = TY(27 + by), c2 = TY(28 + by), xl = TX(13), xr = TX(31);
+    L.T(null);
+    for (let y = c1; y <= c2; y++) for (let x = xl; x <= xr; x++) if (L.has(bmc, x, y) && L.c[y * PW + x] !== INK) L.px(x, y, y === c2 ? C.collarSh : C.collar);
     if (!(wNeck && (wNeck.k === 'bandana'))) {
-      L.pts([[21, 29 + by], [23, 29 + by], [21, 30 + by], [22, 30 + by]], C.tag);
-      L.pts([[23, 30 + by], [22, 31 + by]], C.tagSh);
+      L.pts([[TX(21), TY(29 + by)], [TX(23), TY(29 + by)], [TX(21), TY(30 + by)], [TX(22), TY(30 + by)]], C.tag);
+      L.pts([[TX(23), TY(30 + by)], [TX(22), TY(31 + by)]], C.tagSh);
     }
+    L.T(BT);
   }
   /* head */
+  L.T(null);
   const hm = L.clean(L.ell(L.M(), 22.5 + hx, 16 + hy, 13, 11));
   L.part(hm, shadeFn(C.fur, C.furSh, C.furHi), INK);
   const sm = L.ell(L.M(), 15.5 + hx, 14.5 + hy, 4.6, 4.3), pc = M.patch || C.spot;
@@ -1837,12 +1888,17 @@ function petFrame(o) {
     brow(13); brow(27);
   }
   /* чепрак, крап, косматость и грива — по шерсти, одежду и ошейник не трогаем */
-  if (M.saddle) paintFur(L.ell(L.M(), 22.5, (lie ? 34 : 30.5) + by, lie ? 12 : 9.8, lie ? 4 : 5), M.saddle, M.saddleSh);
+  if (M.saddle) { L.T(BT); paintFur(L.ell(L.M(), 22.5, (lie ? 34 : 30.5) + by, lie ? 12 : 9.8, lie ? 4 : 5), M.saddle, M.saddleSh); L.T(null); }
   if (M.mane) { const r1 = L.ell(L.M(), X(22.5), Y(19.5), 15.5, 13), r2 = L.ell(L.M(), X(22.5), Y(18), 12.4, 9.6), mc = M.tan || C.furHi;
     for (let i = 0; i < r1.length; i++) if (r1[i] && !r2[i] && onFur(i)) L.c[i] = mc; }
   if (M.cords) { const cd = shade(C.fur, -0.3); for (let y = 0; y < PH; y++) for (let x = 1; x < PW; x += 3) { const i = y * PW + x; if (onFur(i)) L.c[i] = cd; } }
   if (M.spots) [[13.5, 31], [30.5, 30], [17, 37], [27.5, 36], [11.5, 35], [33, 34], [22, 32],
-    [15, 11], [30, 12], [25, 8], [34, 21], [11, 21]].forEach((p) => paintFur(L.ell(L.M(), p[0] + (p[1] > 27 ? 0 : hx), p[1] + (p[1] > 27 ? by : hy), 1.7, 1.6), M.spots, M.spotsSh));
+    [15, 11], [30, 12], [25, 8], [34, 21], [11, 21]].forEach((p) => {
+    const onBody = p[1] > 27;
+    if (onBody) L.T(BT);
+    paintFur(L.ell(L.M(), p[0] + (onBody ? 0 : hx), p[1] + (onBody ? by : hy), 1.7, 1.6), M.spots, M.spotsSh);
+    if (onBody) L.T(null);
+  });
   /* eyes */
   const eye = (ex, side) => {
     const f = (dx, dy, c) => L.px(X(ex + dx), Y(13 + dy), c);
@@ -1920,22 +1976,27 @@ function petFrame(o) {
   }
   /* neck */
   if (wNeck) {
+    L.T(BT);
     const c = wNeck.c, NX = lie ? 0 : 0;
     if (wNeck.k === 'bandana') {
       const m = L.poly(L.M(), [[13 + NX, NY], [32 + NX, NY], [22.5 + NX, NY + 8.5]]);
       L.part(m, (x, y) => ((x + y) % 4 === 0 && y > NY ? c[2] : !L.has(m, x, y + 1) ? c[1] : c[0]), INK);
     } else if (wNeck.k === 'bowtie') {
-      patDraw(L, 18, NY, BOWROWS, { '#': c[0], h: c[2], k: c[1], o: c[1] });
+      patDraw(L, TX(18), TY(NY), BOWROWS, { '#': c[0], h: c[2], k: c[1], o: c[1] });
     } else if (wNeck.k === 'tie') {
-      patDraw(L, 21, NY, ['###', '.#.'], { '#': c[1] });
-      for (let d = 0; d < 7; d++) { const y = NY + 2 + d, w = d < 2 ? 1 : 2; for (let x = 22 - (w >> 1); x <= 22 + (w >> 1) + (w % 2 === 0 ? 0 : 0); x++) L.px(x, y, x === 22 ? c[0] : c[2]); if (d >= 2) { L.px(21, y, c[0]); L.px(23, y, c[1]); } }
+      const nx = TX(22), ny = TY(NY);
+      patDraw(L, nx - 1, ny, ['###', '.#.'], { '#': c[1] });
+      L.T(null);
+      for (let d = 0; d < 7; d++) { const y = ny + 2 + d; L.px(nx, y, c[0]); if (d >= 2) { L.px(nx - 1, y, c[0]); L.px(nx + 1, y, c[1]); } }
+      L.T(BT);
     } else if (wNeck.k === 'scarf') {
-      const m = L.M();
-      for (let y = NY - 1; y <= NY + 1; y++) for (let x = 12; x <= 32; x++) if (L.has(bmc, x, y) || L.has(hm, x, y) || y === NY) m[y * PW + x] = 1;
+      const m = L.M(), ny = TY(NY), xl = TX(12), xr = TX(32);
+      for (let y = ny - 1; y <= ny + 1; y++) for (let x = xl; x <= xr; x++) if (L.has(bmc, x, y) || L.has(hm, x, y) || y === ny) m[y * PW + x] = 1;
       L.rect(m, 26, NY + 2, 3, lie ? 3 : 6);
       L.part(m, (x, y) => ((x >> 1) % 2 ? c[0] : c[1]), c[2]);
-      if (!lie) L.pts([[26, NY + 8], [28, NY + 8]], c[0]);
+      if (!lie) { L.T(null); L.pts([[TX(26), ny + 8], [TX(28), ny + 8]], c[0]); L.T(BT); }
     }
+    L.T(null);
   }
   /* head things */
   if (wHead) {
@@ -2023,7 +2084,8 @@ function petFrame(o) {
   }
   /* dirt */
   for (let i = 0; i < Math.min(o.dirt, DIRT.length); i++) {
-    const d = DIRT[i], head = d[1] < 27, dx = d[0] + (head ? hx : 0), dy = d[1] + (head ? hy : by);
+    const d = DIRT[i], head = d[1] < 27;
+    const dx = head ? d[0] + hx : TX(d[0]), dy = head ? d[1] + hy : TY(d[1] + by);
     const cells = d[2] === 1 ? [[0, 0], [1, 0]] : d[2] === 2 ? [[0, 0], [1, 0], [0, 1], [1, 1], [2, 1]] : [[1, 0], [0, 1], [1, 1], [2, 1], [1, 2], [2, 0]];
     cells.forEach((c) => { const x = dx + c[0], y = dy + c[1]; if (L.in(x, y) && L.c[y * PW + x] && L.c[y * PW + x] !== INK) L.c[y * PW + x] = c[0] === 0 && c[1] === 0 ? C.dirt2 : C.dirt; });
   }
@@ -2837,7 +2899,7 @@ function freshGarden() { return { plots: [null, null, null], seeds: {}, crops: {
 function fresh(now) {
   return { v: 1, name: 'Питомец', t: now, food: 80, fun: 75, energy: 90, clean: 85, sleeping: false, xp: 0, lvl: 1, coins: 50, owned: {}, walls: { pink: true }, wall: 'pink', best: { catch: 0, run: 0 }, petWin: { t: now, n: 0 }, room: 0, home: 0,
     wardrobe: {}, wear: {}, garden: freshGarden(), sick: null, healedAt: 0, buffs: {}, skin: '', created: now,
-    mail: {}, mailSeen: {}, who: {}, mk: '', ach: {}, q: null, breeds: {}, hide: {}, cases: 0 };
+    mail: {}, mailSeen: {}, who: {}, mk: '', ach: {}, q: null, breeds: {}, hide: {}, cases: 0, grow: '' };
 }
 function load() {
   const now = Date.now(), f = fresh(now);
@@ -4444,6 +4506,7 @@ function breedCard(b, act) {
 
 /* ---------- профиль: личная карточка каждого владельца ---------- */
 const ABOUT_LEN = 60;
+const dayWord = (n) => { const a = n % 10, b = n % 100; return a === 1 && b !== 11 ? 'день' : a >= 2 && a <= 4 && (b < 10 || b > 20) ? 'дня' : 'дней'; };
 const STAT_ROWS = [
   ['days', 'Дней'], ['fed', 'Кормлений'], ['pet', 'Поглаживаний'], ['wash', 'Купаний'],
   ['games', 'Игр'], ['grown', 'Урожаев'], ['cook', 'Блюд'], ['msgs', 'Сообщений'], ['earn', 'Монет'],
@@ -4639,6 +4702,19 @@ SHEETS.quest = {
   click() {},
 };
 qBtn.addEventListener('click', () => { Sound.tick(); openSheet('quest'); });
+/* подрос — замечаем один раз и показываем */
+function growTick() {
+  const g = growNow();
+  if (!S.grow) { S.grow = g.id; save(); return; }        /* первый запуск: просто запоминаем */
+  if (S.grow === g.id) return;
+  S.grow = g.id; save();
+  petCache.clear(); Scene.kick();
+  toast('Питомец подрос: ' + g.name);
+  Sound.levelUp(); Haptic.tap(20);
+  const r = scene.getBoundingClientRect();
+  FX.burst(r.left + r.width / 2, r.top + r.height * 0.62, { n: 22, speed: 250, g: 260, hearts: 0.5 });
+}
+
 /* ---------- серия дней и метка «второй в игре» ---------- */
 const RUN_MAX = 7;                                   /* дальше награда не растёт */
 const ONLINE = 150e3;                                /* столько держится метка после последней отметки */
@@ -4692,6 +4768,16 @@ SHEETS.prof = {
     if (faces.length > 1) html += '<div class="pf-face">' + faces.map((f) => '<button class="pb press'
       + ((r.face || '') === f ? ' is-on' : '') + '" type="button" data-face="' + f + '">' + faceArt(f) + '</button>').join('') + '</div>';
     html += '<div class="pf-st">' + STAT_ROWS.map((x) => '<span><b>' + num(x[0]) + '</b>' + x[1] + '</span>').join('') + '</div></div>';
+    /* рост питомца: стадия и сколько до следующей */
+    const g = growNow(), nx = GROW[GROW.indexOf(g) + 1];
+    const left = nx ? Math.max(1, Math.ceil(nx.d - petDays())) : 0;
+    const pk = 'gr:' + g.id + ':' + (S.skin || '') + ':' + SLOTS.concat([['suit']]).map((x) => S.wear[x[0]] || '').join(',');
+    html += '<div class="mk-h"><p>Питомец</p><b>' + g.name + '</b></div>';
+    html += '<div class="pf pb"><div class="pf-h">' + imgTag(pk, petFrame(Object.assign({}, PET_BASE, { skin: S.skin, wear: S.wear })).cv, 1.5)
+      + '<div><b>' + esc(S.name) + '</b><small>' + g.name + '</small></div></div>'
+      + '<div class="pf-st"><span><b>' + days + '</b>' + dayWord(days) + '</span>'
+      + (nx ? '<span><b>' + left + '</b>дн. до стадии «' + nx.name + '»</span>' : '<span><b>—</b>вырос полностью</span>')
+      + '</div></div>';
     const all = breedsAll();
     html += '<div class="mk-h"><p>Коллекция пород</p><b>' + all.filter(hasBreed).length + ' из ' + all.length + '</b></div>';
     html += '<div class="wd-grid">' + all.map((b) => breedCard(b, 0)).join('') + '</div>';
@@ -5776,14 +5862,14 @@ if (PEOPLE) PEOPLE.watch((st) => {
   renderPeople();
   if (sheetMode === 'people' || sheetMode === 'person') renderSheet();
 });
-setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); mkTick(); achTick(); qTick(); runTick(); onTick(); renderMate(); }, 1000);
+setInterval(() => { simulate(Date.now()); renderStats(); sickTick(); emoteTick(); mkTick(); achTick(); qTick(); runTick(); onTick(); renderMate(); growTick(); }, 1000);
 setInterval(sparkTick, 200);
 setInterval(saveNow, 10000);
 /* порода слетает, если её нет в коллекции: подставить чужую через консоль не выйдет */
 (() => { const b = BREEDS.find((x) => x.id === S.skin); if (S.skin && (!b || !hasBreed(b))) { S.skin = ''; save(); } })();
 if (Sync) Sync.onRemote(applyRemote);
 $('#boot').hidden = true;
-if (location.hash === '#t') window.__t = { OBJ, obj, art, CaseBox, caseRoll, casePool, caseKind, caseGive, caseName, CASE_PRICE, CASE_ODDS, CASE_MIX, S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS, petFrame, PCOL, PET_BASE, BREEDS, SKINS, RARE, breedsDrop, WEARABLE, SUITS, CLOTHES, legendOn, ITEMS, renderRooms };
+if (location.hash === '#t') window.__t = { OBJ, obj, art, CaseBox, caseRoll, casePool, caseKind, caseGive, caseName, CASE_PRICE, CASE_ODDS, CASE_MIX, GROW, growNow, petDays, growTick, S, emote, Scene, sickTick, setSleep, goRoom, renderKitchen, openSheet, Game, MapView, LOCS, petFrame, PCOL, PET_BASE, BREEDS, SKINS, RARE, breedsDrop, WEARABLE, SUITS, CLOTHES, legendOn, ITEMS, renderRooms };
 
 /* разовое уведомление для favie */
 (() => {
