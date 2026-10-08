@@ -1,0 +1,49 @@
+#  Заголовки для Cloudflare Pages. На GitHub Pages файл просто лежит без дела.
+#  Страницы и воркер всегда проверяем заново — иначе новая версия игры
+#  доезжает до телефона с задержкой. Картинки и SDK меняются редко, их кешируем.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+/
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
+
+/app.html
+  Cache-Control: no-cache
+
+/home.html
+  Cache-Control: no-cache
+
+/pet.html
+  Cache-Control: no-cache
+
+/sw.js
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Cache-Control: no-cache
+
+/fb.js
+  Cache-Control: no-cache
+
+/vendor/*
+  Cache-Control: public, max-age=86400
+
+/icon-192.png
+  Cache-Control: public, max-age=604800
+
+/icon-512.png
+  Cache-Control: public, max-age=604800
+
+/icon-mask.png
+  Cache-Control: public, max-age=604800
+
+/icon-64.png
+  Cache-Control: public, max-age=604800
+
+/icon.svg
+  Cache-Control: public, max-age=604800
