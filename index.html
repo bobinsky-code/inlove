@@ -11,6 +11,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="inlove">
+<script>/* игра живёт на своём домене: со старого адреса уводим и подчищаем за собой */
+if (location.hostname.indexOf('github.io') >= 0) {
+  try { if (navigator.serviceWorker) navigator.serviceWorker.getRegistrations().then((r) => r.forEach((x) => x.unregister())); } catch (e) { /* ignore */ }
+  try { if (window.caches) caches.keys().then((k) => k.forEach((n) => caches.delete(n))); } catch (e) { /* ignore */ }
+  location.replace('https://inlove-game.online/' + location.pathname.split('/').pop() + location.search + location.hash);
+}</script>
 <script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
 <title>Вход</title>
 <style>
